@@ -2,13 +2,14 @@
   <Import Project="..\Directory.Build.props" />
 
   <PropertyGroup>
-    <!-- [CS1591] Missing XML comment for publicly visible type or member 'MySqlAnnotationCodeGenerator' -->
+    <!-- [CS1591] Missing XML comment for publicly visible type or member 'SingleStoreAnnotationCodeGenerator' -->
     <NoWarn>$(NoWarn);CS1591;EF1001</NoWarn>
     <CodeAnalysisRuleSet>$(MSBuildThisFileDirectory)..\rulesets\EFCore.ruleset</CodeAnalysisRuleSet>
     <GenerateDocumentationFile>True</GenerateDocumentationFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.FxCopAnalyzers" PrivateAssets="All" />
     <PackageReference Include="DotNetAnalyzers.DocumentationAnalyzers" PrivateAssets="All" />
   </ItemGroup>
 
@@ -17,7 +18,6 @@
     <IncludeSymbols>true</IncludeSymbols>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
-    <AllowedOutputExtensionsInPackageBuildOutputFolder Condition="'$(PackPdb)' == 'true'">$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
   </PropertyGroup>
 
   <ItemGroup>

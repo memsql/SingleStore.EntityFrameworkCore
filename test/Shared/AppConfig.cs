@@ -3,9 +3,10 @@ using System.IO;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using MySqlConnector;
+using SingleStoreConnector;
+using EntityFrameworkCore.SingleStore.Storage;
 
-namespace Pomelo.EntityFrameworkCore.MySql.Tests
+namespace EntityFrameworkCore.SingleStore.Tests
 {
     public static class AppConfig
     {
@@ -24,11 +25,13 @@ namespace Pomelo.EntityFrameworkCore.MySql.Tests
             ? (uint?)Convert.ToUInt32(Environment.GetEnvironmentVariable("EF_PORT"))
             : null;
 
+        public static bool ManagedService => Config.GetValue<bool>("ManagedService");
+
         public static string ConnectionString
         {
             get
             {
-                var csb = new MySqlConnectionStringBuilder(Config["Data:ConnectionString"]);
+                var csb = new SingleStoreConnectionStringBuilder(Config["Data:ConnectionString"]);
 
                 if (EfPort.HasValue)
                 {

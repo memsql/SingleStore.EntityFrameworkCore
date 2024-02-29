@@ -1,0 +1,184 @@
+// Copyright (c) Pomelo Foundation. All rights reserved.
+// Copyright (c) SingleStore Inc. All rights reserved.
+// Licensed under the MIT. See LICENSE in the project root for license information.
+
+using System;
+using System.Data.Common;
+using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Utilities;
+using SingleStoreConnector;
+using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
+
+namespace EntityFrameworkCore.SingleStore.Storage.Internal
+{
+    /// <summary>
+    ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+    ///     directly from your code. This API may change or be removed in future releases.
+    /// </summary>
+    public class SingleStoreStringTypeMapping : SingleStoreTypeMapping
+    {
+        private readonly bool _forceToString;
+        private const int UnicodeMax = 4000;
+        private const int AnsiMax = 8000;
+
+        private readonly int _maxSpecificSize;
+        private readonly ISingleStoreOptions _options;
+
+        public virtual bool IsUnquoted { get; }
+        public virtual bool IsNationalChar
+            => StoreTypeNameBase.StartsWith("n", StringComparison.OrdinalIgnoreCase) &&
+               StoreTypeNameBase.Contains("char", StringComparison.OrdinalIgnoreCase);
+
+        public SingleStoreStringTypeMapping(
+            [NotNull] string storeType,
+            ISingleStoreOptions options,
+            StoreTypePostfix storeTypePostfix,
+            bool unicode = true,
+            int? size = null,
+            bool fixedLength = false,
+            bool unquoted = false,
+            bool forceToString = false)
+            : this(
+                new RelationalTypeMappingParameters(
+                    new CoreTypeMappingParameters(typeof(string)),
+                    storeType,
+                    storeTypePostfix,
+                    unicode
+                        ? fixedLength
+                            ? System.Data.DbType.StringFixedLength
+                            : System.Data.DbType.String
+                        : fixedLength
+                            ? System.Data.DbType.AnsiStringFixedLength
+                            : System.Data.DbType.AnsiString,
+                    unicode,
+                    size,
+                    fixedLength),
+                fixedLength
+                    ? SingleStoreDbType.String
+                    : SingleStoreDbType.VarString,
+                options,
+                unquoted,
+                forceToString)
+        {
+        }
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        protected SingleStoreStringTypeMapping(
+            RelationalTypeMappingParameters parameters,
+            SingleStoreDbType mySqlDbType,
+            ISingleStoreOptions options,
+            bool isUnquoted,
+            bool forceToString)
+            : base(parameters, mySqlDbType)
+        {
+            _maxSpecificSize = CalculateSize(parameters.Unicode, parameters.Size);
+            _options = options;
+            _forceToString = forceToString;
+            IsUnquoted = isUnquoted;
+        }
+
+        private static int CalculateSize(bool unicode, int? size)
+            => unicode
+                ? size.HasValue && size <= UnicodeMax ? size.Value : UnicodeMax
+                : size.HasValue && size <= AnsiMax ? size.Value : AnsiMax;
+
+        /// <summary>
+        ///     Creates a copy of this mapping.
+        /// </summary>
+        /// <param name="parameters"> The parameters for this mapping. </param>
+        /// <returns> The newly created mapping. </returns>
+        protected override RelationalTypeMapping Clone(RelationalTypeMappingParameters parameters)
+            => new SingleStoreStringTypeMapping(parameters, SingleStoreDbType, _options, IsUnquoted, _forceToString);
+
+        public virtual RelationalTypeMapping Clone(bool? unquoted = null, bool? forceToString = null)
+            => new SingleStoreStringTypeMapping(Parameters, SingleStoreDbType, _options, unquoted ?? IsUnquoted, forceToString ?? _forceToString);
+
+        /// <summary>
+        ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
+        ///     directly from your code. This API may change or be removed in future releases.
+        /// </summary>
+        protected override void ConfigureParameter(DbParameter parameter)
+        {
+            // For strings and byte arrays, set the max length to the size facet if specified, or
+            // 8000 bytes if no size facet specified, if the data will fit so as to avoid query cache
+            // fragmentation by setting lots of different Size values otherwise always set to
+            // -1 (unbounded) to avoid size inference.
+
+            var value = parameter.Value;
+            if (_forceToString && value != null && value != DBNull.Value)
+            {
+                value = value.ToString();
+            }
+
+            int? length;
+            if (value is string stringValue)
+            {
+                length = stringValue.Length;
+            }
+            else if (value is byte[] byteArray)
+            {
+                length = byteArray.Length;
+            }
+            else
+            {
+                length = null;
+            }
+
+            parameter.Size = value == null || value == DBNull.Value || length != null && length <= _maxSpecificSize
+                ? _maxSpecificSize
+                : -1;
+
+            if (parameter.Value != value)
+            {
+                parameter.Value = value;
+            }
+        }
+
+        protected override string GenerateNonNullSqlLiteral(object value)
+        {
+            var stringValue = _forceToString
+                ? value.ToString()
+                : (string)value;
+
+            return IsUnquoted
+                ? EscapeSqlLiteral(stringValue, !_options.NoBackslashEscapes)
+                : EscapeSqlLiteralWithLineBreaks(stringValue, !_options.NoBackslashEscapes, _options.ReplaceLineBreaksWithCharFunction);
+        }
+
+        public static string EscapeSqlLiteralWithLineBreaks(string value, bool escapeBackslashes, bool replaceLineBreaksWithCharFunction)
+        {
+            var escapedLiteral = $"'{EscapeSqlLiteral(value, escapeBackslashes)}'";
+
+            // BUG: EF Core indents idempotent scripts, which can lead to unexpected values for strings
+            //      that contain line breaks.
+            //      Tracked by: https://github.com/aspnet/EntityFrameworkCore/issues/15256
+            //
+            //      Convert line break characters to their CHAR() representation as a workaround.
+
+            if (replaceLineBreaksWithCharFunction
+                && (value.Contains("\r") || value.Contains("\n")))
+            {
+                escapedLiteral = "CONCAT(" + escapedLiteral
+                    .Replace("\r\n", "', CHAR(13, 10), '")
+                    .Replace("\r", "', CHAR(13), '")
+                    .Replace("\n", "', CHAR(10), '") + ")";
+            }
+
+            return escapedLiteral;
+        }
+
+        public static string EscapeSqlLiteral(string literal, bool escapeBackslashes)
+            => EscapeBackslashes(Check.NotNull(literal, nameof(literal)).Replace("'", "''"), escapeBackslashes);
+
+        public static string EscapeBackslashes(string literal, bool escapeBackslashes)
+        {
+            return escapeBackslashes
+                ? literal.Replace(@"\", @"\\")
+                : literal;
+        }
+    }
+}

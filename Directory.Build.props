@@ -3,43 +3,34 @@
   <Import Project="Development.props" Condition="Exists('Development.props')" />
 
   <PropertyGroup>
-    <StrongNameKeyId>Pomelo.EntityFrameworkCore.MySql</StrongNameKeyId>
-    <PackageTags>pomelo;mysql;mariadb;Entity Framework Core;entity-framework-core;ef;efcore;ef core;orm;sql</PackageTags>
-    <Product>Pomelo.EntityFrameworkCore.MySql</Product>
+    <StrongNameKeyId>EntityFrameworkCore.SingleStore</StrongNameKeyId>
+    <PackageTags>singlestore;Entity Framework Core;entity-framework-core;ef;efcore;ef core;orm;sql</PackageTags>
+    <Product>EntityFrameworkCore.SingleStore</Product>
     <Authors>Laurents Meyer, Caleb Lloyd, Yuko Zheng</Authors>
-    <Company>Pomelo Foundation</Company>
-    <Copyright>Copyright $([System.DateTime]::Now.Year) © Pomelo Foundation</Copyright>
-    <PackageIconUrl>https://avatars3.githubusercontent.com/u/19828814</PackageIconUrl>
-    <PackageIcon>icon.png</PackageIcon>
+    <Company>SingleStore Inc.</Company>
+    <Copyright>Copyright 2017-2022 © Pomelo Foundation. Copyright $([System.DateTime]::Now.Year) © SingleStore Inc.</Copyright>
+    <PackageIcon>singlestore_logo.png</PackageIcon>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
+    <DebugType>portable</DebugType>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql</PackageProjectUrl>
+    <PackageProjectUrl>https://github.com/memsql/SingleStore.EntityFrameworkCore</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql</RepositoryUrl>
+    <RepositoryUrl>https://github.com/memsql/SingleStore.EntityFrameworkCore.git</RepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DebugType Condition="'$(DebugType)' == ''">portable</DebugType>
+    <DefaultNetCoreTargetFramework>net6.0</DefaultNetCoreTargetFramework>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <PomeloTargetFramework>net8.0</PomeloTargetFramework>
-    <PomeloTestTargetFramework>net8.0</PomeloTestTargetFramework>
-    <EfCoreTargetFramework>net8.0</EfCoreTargetFramework>
-    <EfCoreTestTargetFramework>net8.0</EfCoreTestTargetFramework>
-    <MySqlConnectorTargetFramework>net8.0</MySqlConnectorTargetFramework>
-    <MySqlConnectorDependencyInjectionTargetFramework>net7.0</MySqlConnectorDependencyInjectionTargetFramework>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)Pomelo.snk</AssemblyOriginatorKeyFile>
+   <PropertyGroup>
+    <AssemblyOriginatorKeyFile>$(MSBuildThisFileDirectory)SingleStoreEFCore.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>
-    <None Include="$(MSBuildThisFileDirectory)icon.png" Pack="true" PackagePath=""/>
+    <None Include="$(MSBuildThisFileDirectory)singlestore_logo.png" Pack="true" PackagePath=""/>
   </ItemGroup>
 
   <ItemGroup>

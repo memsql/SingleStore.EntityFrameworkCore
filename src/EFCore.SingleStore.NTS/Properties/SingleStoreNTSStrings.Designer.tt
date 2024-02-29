@@ -1,0 +1,6 @@
+<#
+    Session["ResourceFile"] = "SingleStoreNTSStrings.resx";
+    Session["LoggingDefinitionsClass"] = "SingleStoreNtsLoggingDefinitions";
+    Session["NoDiagnostics"] = true;
+#>
+<#@ include file="..\..\..\tools\Resources.tt" #>
