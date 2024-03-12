@@ -3,7 +3,7 @@ Integration and Performance Tests
 
 **Configuring the Database**
 
-1. Configure your MySQL database by opening the `config.json.example` file, specifying the connection string and saving the changed file as `config.json`.
+1. Configure your SingleStore database by opening the `config.json.example` file, specifying the connection string and saving the changed file as `config.json`.
 2. Run the `scripts/rebuild.sh` script on Linux or the `scripts/rebuild.ps1` script on Windows to rebuild all migrations. Any time you make changes to database models, run the rebuild script again.
 
 **Running Integration Tests**
