@@ -6,7 +6,7 @@
 
 Milestone | Status               | Release Date
 ----------|----------------------|-------------
-6.0.2| general availability | March 2024
+6.0.2| general availability | April 2024
 ## Getting Started
 
 ### 1. Project Configuration
