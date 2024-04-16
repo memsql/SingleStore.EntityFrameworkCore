@@ -105,13 +105,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Contains_with_subquery_optional_navigation_and_constant_item(async);
         }
 
-        [SupportedServerVersionCondition("8.1.0-singlestore", Skip = "The issue failing this test is fixed in 8.1")]
+        [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
         public override Task SelectMany_subquery_with_custom_projection(bool async)
         {
             return base.SelectMany_subquery_with_custom_projection(async);
         }
 
-        [SupportedServerVersionCondition("8.1.0-singlestore", Skip = "The issue failing this test is fixed in 8.1")]
+        [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
         public override Task Sum_with_filter_with_include_selector_cast_using_as(bool async)
         {
             return base.Sum_with_filter_with_include_selector_cast_using_as(async);

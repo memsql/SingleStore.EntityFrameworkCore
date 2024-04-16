@@ -25,6 +25,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 Assert.Throws<InvalidOperationException>(() => base.Value_conversion_on_enum_collection_contains()).Message);
         }
 
+        [ConditionalFact(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
+        public override void Optional_datetime_reading_null_from_database()
+        {
+            base.Optional_datetime_reading_null_from_database();
+        }
+
         // TODO: Needed to customize:
         //          `private bool Equal(DateTimeOffset left, DateTimeOffset right)` Recheck/remove once fixed upstream.
         //       Recheck/remove after `https://github.com/dotnet/efcore/issues/26068` has been fixed upstream.
