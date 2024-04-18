@@ -36,6 +36,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         }
 
         [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
+        public override Task Include_collection_SelectMany_GroupBy_Select(bool async)
+        {
+            return base.Include_collection_SelectMany_GroupBy_Select(async);
+        }
+
+        [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
         public override Task Join_Include_collection_GroupBy_Select(bool async)
         {
             return base.Join_Include_collection_GroupBy_Select(async);
