@@ -13,7 +13,7 @@
           - "servicing" - EF Core release independent, code quality production ready, mainly bugfixes
     -->
     <VersionPrefix>6.0.2</VersionPrefix>
-    <PreReleaseVersionLabel>beta</PreReleaseVersionLabel>
+    <PreReleaseVersionLabel>servicing</PreReleaseVersionLabel>
 
     <!--
       The following properties will automatically be set by CI builds when appropriate:

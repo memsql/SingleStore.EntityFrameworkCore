@@ -1,12 +1,12 @@
 # SingleStore.EntityFrameworkCore
 
-`SingleStore.EntityFrameworkCore` is the Entity Framework Core provider for SingleStore. It supports EF Core up to its latest version and uses [SingleStoreConnector](https://github.com/memsql/SingleStoreNETConnector) for high-performance database server communication.
+`SingleStore.EntityFrameworkCore` is the Entity Framework Core provider for SingleStore. It uses [SingleStoreConnector](https://github.com/memsql/SingleStoreNETConnector) for high-performance database server communication.
 
 ## Schedule and Roadmap
 
-Milestone | Status | Release Date
-----------|--------|-------------
-6.0.2-beta| in progress | February 2023
+Milestone | Status               | Release Date
+----------|----------------------|-------------
+6.0.2| general availability | April 2024
 ## Getting Started
 
 ### 1. Project Configuration
@@ -14,7 +14,7 @@ Milestone | Status | Release Date
 Ensure that your `.csproj` file contains the following reference:
 
 ```xml
-<PackageReference Include="EntityFrameworkCore.SingleStore" Version="6.0.2-beta" />
+<PackageReference Include="EntityFrameworkCore.SingleStore" Version="6.0.2" />
 ```
 
 ### 2. Services Configuration
