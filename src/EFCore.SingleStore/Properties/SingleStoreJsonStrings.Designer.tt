@@ -1,0 +1,6 @@
+<#
+    Session["ResourceFile"] = "SingleStoreJsonStrings.resx";
+    Session["LoggingDefinitionsClass"] = "SingleStoreJsonLoggingDefinitions";
+    Session["NoDiagnostics"] = true;
+#>
+<#@ include file="..\..\..\tools\Resources.tt" #>
