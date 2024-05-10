@@ -9,7 +9,7 @@
 
       The EFCore assemblies are being compiled with an AssemblyVersion of
       "42.42.42.42" by default. To not get any compilation errors
-      for the EFCore.MySql.IntegrationTests project, that uses
+      for the EFCore.SingleStore.IntegrationTests project, that uses
       Microsoft.AspNetCore.Identity.EntityFrameworkCore, which references
       it's own version of EFCore, you have to make sure that your local
       EFCore assemblies are compiled with an AssemblyVersion <= the one
@@ -22,6 +22,6 @@
       dotnet build "/p:AssemblyVersion=6.0.0.0"
     -->
     <LocalEFCoreRepository>C:\Repositories\EntityFrameworkCore</LocalEFCoreRepository>
-    <LocalMySqlConnectorRepository>C:\Repositories\MySqlConnector</LocalMySqlConnectorRepository>
+    <LocalSingleStoreConnectorRepository>C:\Repositories\SingleStoreConnector</LocalSingleStoreConnectorRepository>
   </PropertyGroup>
 </Project>

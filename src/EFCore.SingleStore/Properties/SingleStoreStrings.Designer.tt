@@ -1,0 +1,5 @@
+<#
+    Session["ResourceFile"] = "SingleStoreStrings.resx";
+    Session["LoggingDefinitionsClass"] = "Diagnostics.Internal.SingleStoreLoggingDefinitions";
+#>
+<#@ include file="..\..\..\tools\Resources.tt" #>

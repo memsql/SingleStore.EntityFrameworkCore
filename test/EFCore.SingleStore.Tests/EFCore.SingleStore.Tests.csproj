@@ -1,0 +1,69 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>$(DefaultNetCoreTargetFramework)</TargetFramework>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <AssemblyName>EntityFrameworkCore.SingleStore.Tests</AssemblyName>
+    <RootNamespace>EntityFrameworkCore.SingleStore</RootNamespace>
+    <DefaultItemExcludes>$(DefaultItemExcludes);*.trx</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);$(NoWarn)</MSBuildWarningsAsMessages>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\xunit.runner.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="config.json">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\EFCore.SingleStore\EFCore.SingleStore.csproj" />
+    <ProjectReference Include="..\EFCore.SingleStore.FunctionalTests\EFCore.SingleStore.FunctionalTests.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    <PackageReference Include="Microsoft.Extensions.DependencyModel" />
+    <PackageReference Include="Moq" />
+    <PackageReference Include="Newtonsoft.Json" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(LocalEFCoreRepository)' == ''">
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Design" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" />
+      <PackageReference Include="Microsoft.EntityFrameworkCore.Relational.Specification.Tests" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(LocalEFCoreRepository)' != ''">
+    <Reference Include="Microsoft.EntityFrameworkCore">
+      <HintPath>$(LocalEFCoreRepository)\artifacts\bin\EFCore.Relational.Tests\Debug\$(TargetFramework)\Microsoft.EntityFrameworkCore.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Abstractions">
+      <HintPath>$(LocalEFCoreRepository)\artifacts\bin\EFCore.Relational.Tests\Debug\$(TargetFramework)\Microsoft.EntityFrameworkCore.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Analyzers">
+      <HintPath>$(LocalEFCoreRepository)\artifacts\bin\EFCore.Relational.Tests\Debug\$(TargetFramework)\Microsoft.EntityFrameworkCore.Analyzers.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Design">
+      <HintPath>$(LocalEFCoreRepository)\artifacts\bin\EFCore.Design.Tests\Debug\$(TargetFramework)\Microsoft.EntityFrameworkCore.Design.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Proxies">
+      <HintPath>$(LocalEFCoreRepository)\artifacts\bin\EFCore.Relational.Tests\Debug\$(TargetFramework)\Microsoft.EntityFrameworkCore.Proxies.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Relational">
+      <HintPath>$(LocalEFCoreRepository)\artifacts\bin\EFCore.Relational.Tests\Debug\$(TargetFramework)\Microsoft.EntityFrameworkCore.Relational.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Relational.Specification.Tests">
+      <HintPath>$(LocalEFCoreRepository)\artifacts\bin\EFCore.Relational.Tests\Debug\$(TargetFramework)\Microsoft.EntityFrameworkCore.Relational.Specification.Tests.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.EntityFrameworkCore.Specification.Tests">
+      <HintPath>$(LocalEFCoreRepository)\artifacts\bin\EFCore.Relational.Tests\Debug\$(TargetFramework)\Microsoft.EntityFrameworkCore.Specification.Tests.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+</Project>

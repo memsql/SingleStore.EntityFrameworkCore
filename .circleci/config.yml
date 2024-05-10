@@ -1,0 +1,212 @@
+version: 2.1
+parameters:
+  dotnet-version:
+    type: string
+    default: "6.0.200"
+
+orbs:
+  win: circleci/windows@2.4.0
+
+commands:
+  setup-environment-ubuntu:
+    description: Setup Linux environment
+    steps:
+      - run:
+          name: Install .NET Core 6.0
+          command: |
+            wget https://packages.microsoft.com/config/ubuntu/21.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+            sudo dpkg -i packages-microsoft-prod.deb
+            rm packages-microsoft-prod.deb
+            sudo apt-get update
+            sudo apt-get install -y apt-transport-https
+            sudo apt-get update
+            sudo apt-get install -y mariadb-client-core-10.3
+            sudo apt-get install -y dotnet-sdk-6.0
+            dotnet --info
+      - run:
+          name: Install Powershell
+          command: |
+            sudo snap install powershell --classic
+  copy-config:
+    parameters:
+      test-block:
+        type: string
+    steps:
+      - run:
+          name: "Copy config file for << parameters.test-block >>"
+          command: |
+            cp ./.circleci/config.json test/<< parameters.test-block >>/config.json
+            sed -i "s|SINGLESTORE_HOST|127.0.0.1|g" test/<< parameters.test-block >>/config.json
+            sed -i "s|SQL_USER_PASSWORD|${SQL_USER_PASSWORD}|g" test/<< parameters.test-block >>/config.json
+            sed -i "s|SQL_USER_NAME|root|g" test/<< parameters.test-block >>/config.json
+  copy-config-for-all:
+    steps:
+      - copy-config:
+          test-block: EFCore.SingleStore.Tests
+      - copy-config:
+          test-block: EFCore.SingleStore.IntegrationTests
+      - copy-config:
+          test-block: EFCore.SingleStore.FunctionalTests
+  run-test-block:
+    parameters:
+      test-block:
+        type: string
+    steps:
+      - run:
+          name: "Run << parameters.test-block >> "
+          command: |
+            cd test/<< parameters.test-block >>
+            dotnet test -f net6.0 -c Release --no-build
+            cd ../../
+  run-tests-win:
+    description: Run tests on Windows
+    parameters:
+      target_framework:
+        type: string
+      func_test_block_path:
+        type: string
+    steps:
+      - run:
+          name: EFCore.SingleStore.Tests
+          command: |
+            .\.circleci\run-test-windows.ps1 -test_block EFCore.SingleStore.Tests -target_framework << parameters.target_framework >>
+      - run:
+          name: Rebuild all migrations for Integration tests
+          command: |
+            .\test\EFCore.SingleStore.IntegrationTests\scripts\rebuild.ps1
+      - run:
+          name: EFCore.SingleStore.IntegrationTests
+          command: |
+            .\.circleci\run-test-windows.ps1 -test_block EFCore.SingleStore.IntegrationTests -target_framework << parameters.target_framework >>
+      - run:
+          name: EFCore.SingleStore.FunctionalTests
+          command: |
+            << parameters.func_test_block_path >>
+  change-git-repo-version:
+    steps:
+      - run:
+          name: Change Git repository format version
+          command: |
+            git config core.repositoryformatversion 0
+
+jobs:
+  test-ubuntu:
+    parameters:
+      singlestore_image:
+        type: string
+    machine:
+      image: ubuntu-2004:202104-01
+      docker_layer_caching: true
+    environment:
+      SINGLESTORE_IMAGE: << parameters.singlestore_image >>
+    steps:
+      - checkout
+      - setup-environment-ubuntu
+      - change-git-repo-version
+      - run:
+          name: Start SingleStore for tests
+          command: |
+            ./.circleci/setup_cluster.sh
+      - copy-config-for-all
+      - run:
+          name: Build provider
+          command: |
+            dotnet build SingleStore.EFCore.sln -c Release
+      - run-test-block:
+          test-block: EFCore.SingleStore.Tests
+      - run:
+          name: Rebuild all migrations for Integration tests
+          command: |
+            ./test/EFCore.SingleStore.IntegrationTests/scripts/rebuild.ps1
+      - run-test-block:
+          test-block: EFCore.SingleStore.IntegrationTests
+      - run:
+          name: Run EFCore.SingleStore.FunctionalTests
+          command: |
+            ./.circleci/run_functional_tests.sh
+
+
+  test-windows:
+    parameters:
+      func_test_block_path:
+        type: string
+    executor: win/default
+    steps:
+      - checkout
+      - change-git-repo-version
+      - run:
+          name: Start SingleStore for tests
+          command: |
+            pip install singlestoredb
+            python.exe .circleci\s2ms_cluster.py start singlestoretest
+      - run:
+          name: Fill test configs
+          command: |
+            python.exe .circleci\fill_test_config.py EFCore.SingleStore.Tests
+            python.exe .circleci\fill_test_config.py EFCore.SingleStore.IntegrationTests
+            python.exe .circleci\fill_test_config.py EFCore.SingleStore.FunctionalTests
+      - run:
+          name: Build project binaries
+          command: |
+            choco install dotnet-sdk --version=<< pipeline.parameters.dotnet-version >>
+            dotnet.exe build SingleStore.EFCore.sln -c Release
+      - run-tests-win:
+          target_framework: net6.0
+          func_test_block_path: << parameters.func_test_block_path >>
+      - run:
+          name: Terminate test cluster
+          when: always
+          command: python.exe .circleci\s2ms_cluster.py terminate
+
+  publish-windows:
+    executor: win/default
+    steps:
+      - checkout
+      - run:
+          name: Build project binaries
+          command: |
+            choco install dotnet-sdk --version=<< pipeline.parameters.dotnet-version >>
+            dotnet.exe build .\src\EFCore.SingleStore\EFCore.SingleStore.csproj -c Release
+      - run:
+          name: Creating CI Artifacts directory
+          command: |
+            mkdir \efcore_provider
+      - run:
+          name: Build NuGet packages
+          command: |
+            dotnet pack --output \efcore_provider .\src\EFCore.SingleStore\EFCore.SingleStore.csproj
+      - store_artifacts:
+          path: \efcore_provider
+
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - test-ubuntu:
+          name: Test 8.1 cluster-in-a-box
+          matrix:
+            parameters:
+              singlestore_image:
+                - singlestore/cluster-in-a-box:alma-8.1.30-e0a67e68e5-4.0.16-1.17.6
+      - test-ubuntu:
+          name: Test 8.5 cluster-in-a-box
+          matrix:
+            parameters:
+              singlestore_image:
+                - singlestore/cluster-in-a-box:alma-8.5.6-b51bc5471a-4.0.17-1.17.8
+      - test-windows:
+          name: Test first block of functional tests S2MS on Windows
+          func_test_block_path:  .\.circleci\run-functional-tests1.ps1
+      - test-windows:
+          name: Test second block of functional tests S2MS on Windows
+          func_test_block_path:  .\.circleci\run-functional-tests2.ps1
+
+
+  publish:
+    jobs:
+      - publish-windows:
+          filters:
+            tags:
+              only: /.*/
+            branches:
+              ignore: /.*/

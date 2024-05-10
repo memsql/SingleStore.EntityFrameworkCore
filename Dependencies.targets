@@ -1,6 +1,7 @@
 <Project>
   <PropertyGroup Label="Common Versions">
     <DotnetRuntimeVersion>6.0.2</DotnetRuntimeVersion>
+    <!-- EF Core providers typically do not work across major versions. For example, a provider released for EF Core 6 will not work with EF Core 7. -->
     <EFCoreVersion>[$(DotnetRuntimeVersion), 7.0.0)</EFCoreVersion>
     <DependencyPreviewVersion>$(DotnetRuntimeVersion)</DependencyPreviewVersion>
     <AspNetCoreVersion>$(DotnetRuntimeVersion)</AspNetCoreVersion>
@@ -12,7 +13,7 @@
     <PackageReference Update="Microsoft.EntityFrameworkCore.Relational" Version="$(EFCoreVersion)" />
     <PackageReference Update="Microsoft.EntityFrameworkCore" Version="$(EFCoreVersion)" />
 
-    <PackageReference Update="MySqlConnector" Version="2.1.2" />
+    <PackageReference Update="SingleStoreConnector" Version="1.1.4" />
 
     <PackageReference Update="NetTopologySuite" Version="2.3.0" />
     <PackageReference Update="System.Text.Json" Version="6.0.2" />
