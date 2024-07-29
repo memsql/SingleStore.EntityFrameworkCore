@@ -63,12 +63,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(LocalSingleStoreConnectorRepository)' != ''">
-    <Reference Include="SingleStoreConnector">
-      <HintPath>$(LocalSingleStoreConnectorRepository)\src\SingleStoreConnector\bin\Debug\$(TargetFramework)\SingleStoreConnector.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
   <ItemGroup>
     <Compile Remove="TestResults\**" />
   </ItemGroup>
