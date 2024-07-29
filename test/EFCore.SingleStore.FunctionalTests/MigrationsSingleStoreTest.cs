@@ -4,9 +4,13 @@ using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations.Design;
 using Microsoft.EntityFrameworkCore.Scaffolding;
 using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -15,7 +19,6 @@ using EntityFrameworkCore.SingleStore.Metadata.Internal;
 using EntityFrameworkCore.SingleStore.Scaffolding.Internal;
 using EntityFrameworkCore.SingleStore.Tests;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
-using Microsoft.EntityFrameworkCore.Storage;
 using SingleStoreConnector;
 using Xunit;
 using Xunit.Abstractions;
@@ -118,7 +121,7 @@ SELECT ROW_COUNT();",
                 @"ALTER TABLE `People` MODIFY COLUMN `Sum` int NOT NULL;");
         }
 
-        [ConditionalFact(Skip = "Requested ALTER TABLE cannot be performed online because it modifies column from NULL to NOT NULL. SingleStore only supports online ALTER TABLE.")]
+        [ConditionalFact(Skip = "Requested ALTER TABLE cannot be performed online because it modifies column from NULL to NOT NULL. SingleStore only supports online ALTER TABLE.")]]
         public virtual async Task Alter_string_column_make_required_generates_update_statement_instead_of_default_value()
         {
             await Test(
@@ -281,9 +284,15 @@ SELECT ROW_COUNT();",
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_primary_key()
+        public override Task Add_primary_key_int()
         {
-            return base.Add_primary_key();
+            return base.Add_primary_key_int();
+        }
+
+        [ConditionalTheory(Skip = "TODO")]
+        public override async Task Add_primary_key_string()
+        {
+            await base.Add_primary_key_string();
         }
 
         [ConditionalTheory(Skip = "TODO")]
@@ -328,13 +337,42 @@ SELECT ROW_COUNT();",
             return base.Alter_column_set_collation();
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Alter_sequence_all_settings()
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override async Task Alter_sequence_all_settings()
         {
-            return base.Alter_sequence_all_settings();
+            await Test(
+                builder => builder.HasSequence<int>("foo"),
+                builder => { },
+                builder => builder.HasSequence<int>("foo")
+                    .StartsAt(-3)
+                    .IncrementsBy(2)
+                    .HasMin(-5)
+                    .HasMax(10)
+                    .IsCyclic(),
+                model =>
+                {
+                    var sequence = Assert.Single(model.Sequences);
+
+                    // Assert.Equal(-3, sequence.StartValue);
+                    Assert.Equal(1, sequence.StartValue); // Restarting doesn't change the scaffolded start value
+
+                    Assert.Equal(2, sequence.IncrementBy);
+                    Assert.Equal(-5, sequence.MinValue);
+                    Assert.Equal(10, sequence.MaxValue);
+                    Assert.True(sequence.IsCyclic);
+                });
+
+            AssertSql(
+                """
+ALTER SEQUENCE `foo` INCREMENT BY 2 MINVALUE -5 MAXVALUE 10 CYCLE;
+""",
+                //
+                """
+ALTER SEQUENCE `foo` RESTART WITH -3;
+""");
         }
 
-        [ConditionalTheory(Skip = "TODO")]
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
         public override Task Alter_sequence_increment_by()
         {
             return base.Alter_sequence_increment_by();
@@ -385,16 +423,54 @@ SELECT ROW_COUNT();",
             return base.Create_schema();
         }
 
-        [ConditionalTheory(Skip = "TODO")]
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
         public override Task Create_sequence()
         {
             return base.Create_sequence();
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Create_sequence_all_settings()
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override Task Create_sequence_long()
         {
-            return base.Create_sequence_all_settings();
+            return base.Create_sequence_long();
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override Task Create_sequence_short()
+        {
+            return base.Create_sequence_short();
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override async Task Create_sequence_all_settings()
+        {
+            await Test(
+                builder => { },
+                builder => builder.HasSequence<long>("TestSequence", "dbo2")
+                    .StartsAt(3)
+                    .IncrementsBy(2)
+                    .HasMin(2)
+                    .HasMax(916)
+                    .IsCyclic(),
+                model =>
+                {
+                    var sequence = Assert.Single(model.Sequences);
+
+                    // Assert.Equal("TestSequence", sequence.Name);
+                    // Assert.Equal("dbo2", sequence.Schema);
+                    Assert.Equal("dbo2_TestSequence", sequence.Name);
+
+                    Assert.Equal(3, sequence.StartValue);
+                    Assert.Equal(2, sequence.IncrementBy);
+                    Assert.Equal(2, sequence.MinValue);
+                    Assert.Equal(916, sequence.MaxValue);
+                    Assert.True(sequence.IsCyclic);
+                });
+
+            AssertSql(
+"""
+CREATE SEQUENCE `dbo2_TestSequence` START WITH 3 INCREMENT BY 2 MINVALUE 2 MAXVALUE 916 CYCLE;
+""");
         }
 
         [ConditionalTheory(Skip = "TODO")]
@@ -409,11 +485,12 @@ SELECT ROW_COUNT();",
 
             AssertSql(
                 @"CREATE TABLE `People` (
-    `Id` int NOT NULL,
+    `Id` int NOT NULL AUTO_INCREMENT,
     `Name` longtext CHARACTER SET utf8 NULL COMMENT 'This is a multi-line
 column comment.
 More information can
-be found in the docs.'
+be found in the docs.',
+    CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
 ) CHARACTER SET=utf8 COMMENT='This is a multi-line
 table comment.
 More information can
@@ -424,6 +501,35 @@ be found in the docs.';");
         public override Task Create_unique_index_with_filter()
         {
             return base.Create_unique_index_with_filter();
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DescendingIndexes))]
+        public override async Task Create_index_descending()
+        {
+            await base.Create_index_descending();
+
+            AssertSql(
+                @"CREATE INDEX `IX_People_X` ON `People` (`X` DESC);");
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DescendingIndexes))]
+        public override async Task Create_index_descending_mixed()
+        {
+            await base.Create_index_descending_mixed();
+
+            AssertSql(
+                @"CREATE INDEX `IX_People_X_Y_Z` ON `People` (`X`, `Y` DESC, `Z`);");
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DescendingIndexes))]
+        public override async Task Alter_index_change_sort_order()
+        {
+            await base.Alter_index_change_sort_order();
+
+            AssertSql(
+                @"ALTER TABLE `People` DROP INDEX `IX_People_X_Y_Z`;",
+                //
+                @"CREATE INDEX `IX_People_X_Y_Z` ON `People` (`X`, `Y` DESC, `Z`);");
         }
 
         [ConditionalTheory(Skip = "TODO: Syntax issue in MySQL 7 only.")]
@@ -439,12 +545,18 @@ be found in the docs.';");
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Drop_primary_key()
+        public override Task Drop_primary_key_int()
         {
-            return base.Drop_primary_key();
+            return base.Drop_primary_key_int();
         }
 
         [ConditionalTheory(Skip = "TODO")]
+        public override async Task Drop_primary_key_string()
+        {
+            await base.Drop_primary_key_string();
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
         public override Task Drop_sequence()
         {
             return base.Drop_sequence();
@@ -456,10 +568,24 @@ be found in the docs.';");
             return base.Drop_unique_constraint();
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Move_sequence()
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override async Task Move_sequence()
         {
-            return base.Move_sequence();
+            await Test(
+                builder => builder.HasSequence<int>("TestSequenceMove"),
+                builder => builder.HasSequence<int>("TestSequenceMove", "TestSequenceSchema"),
+                model =>
+                {
+                    var sequence = Assert.Single(model.Sequences);
+                    // Assert.Equal("TestSequenceSchema", sequence.Schema);
+                    // Assert.Equal("TestSequence", sequence.Name);
+                    Assert.Equal("TestSequenceSchema_TestSequenceMove", sequence.Name);
+                });
+
+            AssertSql(
+"""
+ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
+""");
         }
 
         [ConditionalTheory(Skip = "TODO")]
@@ -468,10 +594,15 @@ be found in the docs.';");
             return base.Move_table();
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Rename_sequence()
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override async Task Rename_sequence()
         {
-            return base.Rename_sequence();
+            await base.Rename_sequence();
+
+            AssertSql(
+"""
+ALTER TABLE `TestSequence` RENAME `testsequence`;
+""");
         }
 
         [ConditionalTheory(Skip = "TODO")]
@@ -588,9 +719,10 @@ be found in the docs.';");
                 });
 
             AssertSql(
-                $@"CREATE TABLE `IceCream` (
-    `IceCreamId` int NOT NULL,
-    `Name` NVARCHAR(45) NULL
+                @"CREATE TABLE `IceCream` (
+    `IceCreamId` int NOT NULL AUTO_INCREMENT,
+    `Name` NVARCHAR(45) NULL,
+    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) CHARACTER SET=utf8mb4;");
         }
 
@@ -615,7 +747,8 @@ be found in the docs.';");
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` char(36) COLLATE utf8_general_ci NOT NULL
+    `IceCreamId` char(36) COLLATE utf8_general_ci NOT NULL,
+    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) COLLATE={DefaultCollation};");
         }
 
@@ -641,7 +774,8 @@ be found in the docs.';");
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` char(36) COLLATE {NonDefaultCollation} NOT NULL
+    `IceCreamId` char(36) COLLATE {NonDefaultCollation} NOT NULL,
+    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) COLLATE={DefaultCollation};");
         }
 
@@ -667,7 +801,8 @@ be found in the docs.';");
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` char(36) COLLATE {NonDefaultCollation} NOT NULL
+    `IceCreamId` char(36) COLLATE {NonDefaultCollation} NOT NULL,
+    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) COLLATE={DefaultCollation};");
         }
 
@@ -693,7 +828,8 @@ be found in the docs.';");
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` char(36) NOT NULL
+    `IceCreamId` char(36) NOT NULL,
+    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) COLLATE={DefaultCollation};");
         }
 
@@ -814,6 +950,17 @@ be found in the docs.';");
                 result => { });
 
             AssertSql(
+                @"set @__pomelo_TableCharset = (
+    SELECT `ccsa`.`CHARACTER_SET_NAME` as `TABLE_CHARACTER_SET`
+    FROM `INFORMATION_SCHEMA`.`TABLES` as `t`
+    LEFT JOIN `INFORMATION_SCHEMA`.`COLLATION_CHARACTER_SET_APPLICABILITY` as `ccsa` ON `ccsa`.`COLLATION_NAME` = `t`.`TABLE_COLLATION`
+    WHERE `TABLE_SCHEMA` = SCHEMA() AND `TABLE_NAME` = 'IceCream' AND `TABLE_TYPE` IN ('BASE TABLE', 'VIEW'));
+
+SET @__pomelo_SqlExpr = CONCAT('ALTER TABLE `IceCream` CHARACTER SET = ', @__pomelo_TableCharset, ';');
+PREPARE __pomelo_SqlExprExecute FROM @__pomelo_SqlExpr;
+EXECUTE __pomelo_SqlExprExecute;
+DEALLOCATE PREPARE __pomelo_SqlExprExecute;",
+                //
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Name` longtext COLLATE {NonDefaultCollation} NULL;",
                 //
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Brand` longtext COLLATE {NonDefaultCollation2} NULL;");
@@ -946,9 +1093,10 @@ be found in the docs.';");
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
+    `IceCreamId` int NOT NULL AUTO_INCREMENT,
     `Brand` longtext CHARACTER SET {NonDefaultCharSet} NULL,
-    `IceCreamId` int NOT NULL,
-    `Name` longtext COLLATE {DefaultCollation} NULL
+    `Name` longtext COLLATE {DefaultCollation} NULL,
+    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) COLLATE={DefaultCollation};");
         }
 
@@ -983,9 +1131,10 @@ be found in the docs.';");
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
+    `IceCreamId` int NOT NULL AUTO_INCREMENT,
     `Brand` longtext COLLATE {NonDefaultCollation2} NULL,
-    `IceCreamId` int NOT NULL,
-    `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL
+    `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL,
+    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) CHARACTER SET={NonDefaultCharSet};");
         }
 
@@ -1016,8 +1165,9 @@ be found in the docs.';");
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` int NOT NULL,
-    `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL
+    `IceCreamId` int NOT NULL AUTO_INCREMENT,
+    `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL,
+    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) CHARACTER SET=utf8;");
         }
 
@@ -1160,7 +1310,7 @@ be found in the docs.';");
                 //
                 @"ALTER TABLE `Foo` DROP KEY `AK_Foo_FooAK`;",
                 //
-                @"ALTER TABLE `Foo` ADD CONSTRAINT `FK_Foo_Bar_BarFK` FOREIGN KEY (`BarFK`) REFERENCES `Bar` (`BarPK`);");
+                @"ALTER TABLE `Foo` ADD CONSTRAINT `FK_Foo_Bar_BarFK` FOREIGN KEY (`BarFK`) REFERENCES `Bar` (`BarPK`) ON DELETE CASCADE;");
         }
 
         [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
@@ -1169,7 +1319,9 @@ be found in the docs.';");
             await base.Add_foreign_key();
 
             AssertSql(
-                @"ALTER TABLE `Orders` ADD CONSTRAINT `FK_Orders_Customers_CustomerId` FOREIGN KEY (`CustomerId`) REFERENCES `Customers` (`Id`);");
+                @"CREATE INDEX `IX_Orders_CustomerId` ON `Orders` (`CustomerId`);",
+                //
+                @"ALTER TABLE `Orders` ADD CONSTRAINT `FK_Orders_Customers_CustomerId` FOREIGN KEY (`CustomerId`) REFERENCES `Customers` (`Id`) ON DELETE CASCADE;");
         }
 
         [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore.")]
@@ -1196,6 +1348,17 @@ be found in the docs.';");
             return base.Drop_foreign_key();
         }
 
+        public override Task Rename_table()
+            => Test(
+                builder => builder.Entity("People").Property<int>("Id"),
+                builder => builder.Entity("People").ToTable("Persons").Property<int>("Id"),
+                model =>
+                {
+                    var table = Assert.Single(model.Tables);
+                    Assert.Equal("Persons", table.Name);
+                },
+                withConventions: false);
+
         protected virtual string DefaultCollation => ((SingleStoreTestStore)Fixture.TestStore).DatabaseCollation;
 
         protected override string NonDefaultCollation
@@ -1217,22 +1380,32 @@ be found in the docs.';");
             Action<ModelBuilder> buildSourceAction,
             Action<ModelBuilder> buildTargetAction,
             Action<MigrationBuilder> migrationBuilderAction,
-            Action<DatabaseModel> asserter)
+            Action<DatabaseModel> asserter,
+            bool withConventions = true)
         {
             var services = TestHelpers.CreateContextServices();
+            var modelRuntimeInitializer = services.GetRequiredService<IModelRuntimeInitializer>();
 
-            // Build the source and target models. Add current/latest product version if one wasn't set.
-            var sourceModelBuilder = CreateConventionlessModelBuilder();
+            // Build the source model, possibly with conventions
+            var sourceModelBuilder = CreateModelBuilder(withConventions);
             buildCommonAction(sourceModelBuilder);
             buildSourceAction(sourceModelBuilder);
-            var sourceModel = services.GetRequiredService<IModelRuntimeInitializer>()
-                .Initialize(sourceModelBuilder.FinalizeModel(), designTime: true, validationLogger: null);
+            var preSnapshotSourceModel = modelRuntimeInitializer.Initialize(
+                (IModel)sourceModelBuilder.Model, designTime: true, validationLogger: null);
 
-            var targetModelBuilder = CreateConventionlessModelBuilder();
+            // Round-trip the source model through a snapshot, compiling it and then extracting it back again.
+            // This simulates the real-world migration flow and can expose errors in snapshot generation
+            var migrationsCodeGenerator = Fixture.TestHelpers.CreateDesignServiceProvider().GetRequiredService<IMigrationsCodeGenerator>();
+            var sourceModelSnapshot = migrationsCodeGenerator.GenerateSnapshot(
+                modelSnapshotNamespace: null, typeof(DbContext), "MigrationsTestSnapshot", preSnapshotSourceModel);
+            var sourceModel = BuildModelFromSnapshotSource(sourceModelSnapshot);
+
+            // Build the target model, possibly with conventions
+            var targetModelBuilder = CreateModelBuilder(withConventions);
             buildCommonAction(targetModelBuilder);
             buildTargetAction(targetModelBuilder);
-            var targetModel = services.GetRequiredService<IModelRuntimeInitializer>()
-                .Initialize(targetModelBuilder.FinalizeModel(), designTime: true, validationLogger: null);
+            var targetModel = modelRuntimeInitializer.Initialize(
+                (IModel)targetModelBuilder.Model, designTime: true, validationLogger: null);
 
             var migrationBuilder = new MigrationBuilder(null);
             migrationBuilderAction(migrationBuilder);
@@ -1240,13 +1413,16 @@ be found in the docs.';");
             return Test(sourceModel, targetModel, migrationBuilder.Operations, asserter);
         }
 
+        private ModelBuilder CreateModelBuilder(bool withConventions)
+            => withConventions ? Fixture.TestHelpers.CreateConventionBuilder() : new ModelBuilder(new ConventionSet());
+
         public class MigrationsSingleStoreFixture : MigrationsFixtureBase
         {
             protected override string StoreName
                 => nameof(MigrationsSingleStoreTest);
 
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
-            public override TestHelpers TestHelpers => SingleStoreTestHelpers.Instance;
+            public override RelationalTestHelpers TestHelpers => SingleStoreTestHelpers.Instance;
 
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
             {

@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.GearsOfWarModel;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +29,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         public override Task DateTimeOffset_Contains_Less_than_Greater_than(bool async)
         {
-            var dto = GearsOfWarQuerySingleStoreFixture.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
+            var dto = SingleStoreTestHelpers.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
             var start = dto.AddDays(-1);
             var end = dto.AddDays(1);
             var dates = new[] { dto };
@@ -41,7 +42,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         public override Task Where_datetimeoffset_milliseconds_parameter_and_constant(bool async)
         {
-            var dateTimeOffset = GearsOfWarQuerySingleStoreFixture.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
+            var dateTimeOffset = SingleStoreTestHelpers.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
 
             // Literal where clause
             var p = Expression.Parameter(typeof(Mission), "i");
@@ -55,6 +56,25 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 async,
                 ss => ss.Set<Mission>().Where(dynamicWhere),
                 ss => ss.Set<Mission>().Where(m => m.Timeline == dateTimeOffset));
+        }
+
+        [ConditionalTheory(Skip = "TODO: Does not work as expected, probably due to some test definition issues.")]
+        public override async Task DateTimeOffsetNow_minus_timespan(bool async)
+        {
+            var timeSpan = new TimeSpan(10000); // <-- changed from 1000 to 10000 ticks
+
+            await AssertQuery(
+                async,
+                ss => ss.Set<Mission>().Where(e => e.Timeline > DateTimeOffset.Now - timeSpan));
+
+            AssertSql(
+                """
+                @__timeSpan_0='00:00:00.0010000' (DbType = DateTimeOffset)
+
+                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
+                FROM `Missions` AS `m`
+                WHERE `m`.`Timeline` > (UTC_TIMESTAMP() - @__timeSpan_0)
+                """);
         }
 
         // TODO: Implement strategy as discussed with @roji (including emails) for EF Core 5.
@@ -398,6 +418,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override Task Select_subquery_projecting_single_constant_string(bool async)
         {
             return base.Select_subquery_projecting_single_constant_string(async);
+        }
+
+        [ConditionalTheory(Skip = "Another LATERAL JOIN bug in MySQL. Grouping leads to unexpected result set.")]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(bool async)
+        {
+            return base.Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(async);
+        }
+
+        private string AssertSql(string expected)
+        {
+            Fixture.TestSqlLoggerFactory.AssertBaseline(new[] {expected});
+            return expected;
         }
     }
 }

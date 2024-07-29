@@ -11,6 +11,8 @@
 
         public class ManyToManyTrackingSingleStoreFixture : ManyToManyTrackingSingleStoreFixtureBase
         {
+            protected override string StoreName
+                => "ManyToManyTrackingSingleStoreTest";
         }
     }
 }

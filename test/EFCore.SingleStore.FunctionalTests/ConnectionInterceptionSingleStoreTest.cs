@@ -30,6 +30,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 => base.InjectInterceptors(serviceCollection.AddEntityFrameworkSingleStore(), injectedInterceptors);
         }
 
+        protected override DbContextOptionsBuilder ConfigureProvider(DbContextOptionsBuilder optionsBuilder)
+            => optionsBuilder.UseSingleStore();
+
         protected override BadUniverseContext CreateBadUniverse(DbContextOptionsBuilder optionsBuilder)
             => new BadUniverseContext(optionsBuilder.UseSingleStore(new FakeDbConnection()).Options);
 

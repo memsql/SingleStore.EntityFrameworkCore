@@ -70,7 +70,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         public override Task Include_collection_with_multiple_conditional_order_by(bool async)
         {
-            // The order of `Orders` can be different, becaues it is not explicitly sorted.
+            // The order of `Orders` can be different, because it is not explicitly sorted.
             // This is the case on MariaDB.
             return AssertQuery(
                 async,
@@ -87,7 +87,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
         public override Task Include_duplicate_collection_result_operator(bool async)
         {
-            // The order of `Orders` can be different, becaues it is not explicitly sorted.
+            // The order of `Orders` can be different, because it is not explicitly sorted.
             // This is the case on MariaDB.
             return AssertQuery(
                 async,
@@ -106,7 +106,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
         public override Task Include_duplicate_collection_result_operator2(bool async)
         {
-            // The order of `Orders` can be different, becaues it is not explicitly sorted.
+            // The order of `Orders` can be different, because it is not explicitly sorted.
             // The order of the end result can be different as well.
             // This is the case on MariaDB.
             return AssertQuery(

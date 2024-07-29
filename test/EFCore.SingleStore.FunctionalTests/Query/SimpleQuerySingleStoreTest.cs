@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Tests;
+using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 
 // ReSharper disable InconsistentNaming
@@ -44,6 +46,18 @@ LIMIT 2");
             var contextFactory = await InitializeAsync<Context23981>();
             using var context = contextFactory.CreateContext();
             var bad = context.Set<NameSpace1.TestQuery>().FromSqlRaw(@"SELECT cast(null as signed) AS MyValue").ToList(); // <-- MySQL uses `signed` instead of `int` in CAST() expressions
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterReferenceInMultiLevelSubquery))]
+        public override Task Group_by_multiple_aggregate_joining_different_tables(bool async)
+        {
+            return base.Group_by_multiple_aggregate_joining_different_tables(async);
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterReferenceInMultiLevelSubquery))]
+        public override Task Group_by_multiple_aggregate_joining_different_tables_with_query_filter(bool async)
+        {
+            return base.Group_by_multiple_aggregate_joining_different_tables_with_query_filter(async);
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]

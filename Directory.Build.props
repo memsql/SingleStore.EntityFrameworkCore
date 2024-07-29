@@ -21,7 +21,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefaultNetCoreTargetFramework>net6.0</DefaultNetCoreTargetFramework>
+    <SingleStoreTargetFrameworks>net6.0;net7.0</SingleStoreTargetFrameworks>
+    <SingleStoreTestTargetFramework>net7.0</SingleStoreTestTargetFramework>
+    <EfCoreTargetFramework>net6.0</EfCoreTargetFramework>
+    <EfCoreTestTargetFramework>net7.0</EfCoreTestTargetFramework>
   </PropertyGroup>
 
    <PropertyGroup>

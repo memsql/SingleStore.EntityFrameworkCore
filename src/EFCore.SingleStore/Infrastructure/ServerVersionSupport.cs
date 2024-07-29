@@ -87,5 +87,8 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure
         public virtual bool SingleStoreBugLimit0Offset0ExistsWorkaround => false;
         public virtual bool TextTypeSizeIsInCharacters => false;
         public virtual bool ConnectionAttributes => false;
+        public virtual bool DescendingIndexes => false;
+        public virtual bool Returning => false;
+        public virtual bool CommonTableExpressions => false;
     }
 }

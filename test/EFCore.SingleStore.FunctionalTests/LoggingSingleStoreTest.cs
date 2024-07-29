@@ -3,7 +3,9 @@ using System.Reflection;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
+using EntityFrameworkCore.SingleStore.Diagnostics.Internal;
 using EntityFrameworkCore.SingleStore.Tests;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
@@ -21,6 +23,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             => new DbContextOptionsBuilder()
                 .UseInternalServiceProvider(services.AddEntityFrameworkSingleStore().BuildServiceProvider(validateScopes: true))
                 .UseSingleStore("Database=DummyDatabase", relationalAction);
+
+        protected override TestLogger CreateTestLogger()
+            => new TestLogger<SingleStoreLoggingDefinitions>();
 
         protected override string ProviderName => "EntityFrameworkCore.SingleStore";
 

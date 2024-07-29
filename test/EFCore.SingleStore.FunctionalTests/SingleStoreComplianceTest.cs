@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Update;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
@@ -19,6 +20,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             // TODO: Reenable LoggingSingleStoreTest once its issue has been fixed in EF Core upstream.
             typeof(LoggingTestBase),
             typeof(LoggingRelationalTestBase<,>),
+
+            // We have our own JSON support for now
+            typeof(JsonUpdateTestBase<>),
+            typeof(JsonQueryTestBase<>),
+            typeof(JsonQueryAdHocTestBase),
 
             typeof(FieldMappingTestBase<>),
             typeof(GraphUpdatesTestBase<>),

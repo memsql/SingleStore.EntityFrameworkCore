@@ -6,6 +6,7 @@
 
 Milestone | Status               | Release Date
 ----------|----------------------|-------------
+7.0.0| released             | August 2024
 6.0.2| general availability | April 2024
 ## Getting Started
 

@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SingleStoreConnector;
+using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -25,6 +26,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());
+
+        protected override TestHelpers TestHelpers
+            => SingleStoreTestHelpers.Instance;
 
         public override IModel Non_public_annotations_are_enabled()
         {
@@ -140,53 +144,86 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             base.ConcurrencyCheckAttribute_throws_if_value_in_database_changed();
 
             AssertSql(
-                @"SELECT `s`.`Unique_No`, `s`.`MaxLengthProperty`, `s`.`Name`, `s`.`RowVersion`, `s`.`AdditionalDetails_Name`, `s`.`AdditionalDetails_Value`, `s`.`Details_Name`, `s`.`Details_Value`
+                """
+SELECT `s`.`Unique_No`, `s`.`MaxLengthProperty`, `s`.`Name`, `s`.`RowVersion`, `s`.`AdditionalDetails_Name`, `s`.`AdditionalDetails_Value`, `s`.`Details_Name`, `s`.`Details_Value`
 FROM `Sample` AS `s`
 WHERE `s`.`Unique_No` = 1
-LIMIT 1",
+LIMIT 1
+""",
                 //
-                @"SELECT `s`.`Unique_No`, `s`.`MaxLengthProperty`, `s`.`Name`, `s`.`RowVersion`, `s`.`AdditionalDetails_Name`, `s`.`AdditionalDetails_Value`, `s`.`Details_Name`, `s`.`Details_Value`
+                """
+SELECT `s`.`Unique_No`, `s`.`MaxLengthProperty`, `s`.`Name`, `s`.`RowVersion`, `s`.`AdditionalDetails_Name`, `s`.`AdditionalDetails_Value`, `s`.`Details_Name`, `s`.`Details_Value`
 FROM `Sample` AS `s`
 WHERE `s`.`Unique_No` = 1
-LIMIT 1",
+LIMIT 1
+""",
                 //
-                @"@p2='1'
+                """
+@p2='1'
 @p0='ModifiedData' (Nullable = false) (Size = 4000)
 @p1='00000000-0000-0000-0003-000000000001'
 @p3='00000001-0000-0000-0000-000000000001'
 
+SET AUTOCOMMIT = 1;
 UPDATE `Sample` SET `Name` = @p0, `RowVersion` = @p1
 WHERE `Unique_No` = @p2 AND `RowVersion` = @p3;
-SELECT ROW_COUNT();",
+SELECT ROW_COUNT();
+""",
                 //
-                @"@p2='1'
+                """
+@p2='1'
 @p0='ChangedData' (Nullable = false) (Size = 4000)
 @p1='00000000-0000-0000-0002-000000000001'
 @p3='00000001-0000-0000-0000-000000000001'
 
+SET AUTOCOMMIT = 1;
 UPDATE `Sample` SET `Name` = @p0, `RowVersion` = @p1
 WHERE `Unique_No` = @p2 AND `RowVersion` = @p3;
-SELECT ROW_COUNT();");
+SELECT ROW_COUNT();
+""");
         }
 
         public override void DatabaseGeneratedAttribute_autogenerates_values_when_set_to_identity()
         {
             base.DatabaseGeneratedAttribute_autogenerates_values_when_set_to_identity();
 
-            AssertSql(
-                @"@p0=NULL (Size = 10)
-@p1='Third' (Nullable = false) (Size = 4000)
-@p2='00000000-0000-0000-0000-000000000003'
-@p3='Third Additional Name' (Size = 4000)
-@p4='0' (Nullable = true)
-@p5='Third Name' (Size = 4000)
-@p6='0' (Nullable = true)
+            if (AppConfig.ServerVersion.Supports.Returning)
+            {
+                AssertSql(
+                    """
+                    @p0=NULL (Size = 10)
+                    @p1='Third' (Nullable = false) (Size = 4000)
+                    @p2='00000000-0000-0000-0000-000000000003'
+                    @p3='Third Additional Name' (Size = 4000)
+                    @p4='0' (Nullable = true)
+                    @p5='Third Name' (Size = 4000)
+                    @p6='0' (Nullable = true)
 
-INSERT INTO `Sample` (`MaxLengthProperty`, `Name`, `RowVersion`, `AdditionalDetails_Name`, `AdditionalDetails_Value`, `Details_Name`, `Details_Value`)
-VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
-SELECT `Unique_No`
-FROM `Sample`
-WHERE ROW_COUNT() = 1 AND `Unique_No` = LAST_INSERT_ID();");
+                    SET AUTOCOMMIT = 1;
+                    INSERT INTO `Sample` (`MaxLengthProperty`, `Name`, `RowVersion`, `AdditionalDetails_Name`, `AdditionalDetails_Value`, `Details_Name`, `Details_Value`)
+                    VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6)
+                    RETURNING `Unique_No`;
+                    """);
+            }
+            else
+            {
+                AssertSql(
+                    """
+                    @p0=NULL (Size = 10)
+                    @p1='Third' (Nullable = false) (Size = 4000)
+                    @p2='00000000-0000-0000-0000-000000000003'
+                    @p3='Third Additional Name' (Size = 4000)
+                    @p4='0' (Nullable = true)
+                    @p5='Third Name' (Size = 4000)
+                    @p6='0' (Nullable = true)
+
+                    INSERT INTO `Sample` (`MaxLengthProperty`, `Name`, `RowVersion`, `AdditionalDetails_Name`, `AdditionalDetails_Value`, `Details_Name`, `Details_Value`)
+                    VALUES (@p0, @p1, @p2, @p3, @p4, @p5, @p6);
+                    SELECT `Unique_No`
+                    FROM `Sample`
+                    WHERE ROW_COUNT() = 1 AND `Unique_No` = LAST_INSERT_ID();
+                    """);
+            }
         }
 
         [ConditionalFact]

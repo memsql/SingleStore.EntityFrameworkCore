@@ -17,9 +17,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             => (SingleStoreFixture)base.Fixture;
 
         protected override DbContextOptionsBuilder CreateTestOptions(
-            DbContextOptionsBuilder optionsBuilder, bool withConnectionString = false)
+            DbContextOptionsBuilder optionsBuilder,
+            bool withConnectionString = false,
+            bool withNullConnectionString = false)
             => withConnectionString
-                ? optionsBuilder.UseSingleStore(DummyConnectionString)
+                ? withNullConnectionString
+                    ? optionsBuilder.UseSingleStore((string)null)
+                    : optionsBuilder.UseSinglestore(DummyConnectionString)
                 : optionsBuilder.UseSingleStore();
 
         protected override TwoDatabasesWithDataContext CreateBackingContext(string databaseName)

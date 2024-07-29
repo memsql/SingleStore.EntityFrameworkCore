@@ -1,9 +1,9 @@
-﻿using System.Threading.Tasks;
-using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
-using EntityFrameworkCore.SingleStore.Storage;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,6 +24,17 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         protected override bool CanExecuteQueryString
             => true;
+
+        public override async Task Client_eval_Union_FirstOrDefault(bool async)
+        {
+            // Client evaluation in projection. Issue #16243.
+            Assert.Equal(
+                RelationalStrings.SetOperationsNotAllowedAfterClientEvaluation,
+                (await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => base.Client_eval_Union_FirstOrDefault(async))).Message);
+
+            AssertSql();
+        }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.ExceptIntercept))]
         public override async Task Intersect(bool async)
