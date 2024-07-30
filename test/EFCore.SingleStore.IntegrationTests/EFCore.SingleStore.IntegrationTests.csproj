@@ -24,6 +24,7 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
     <PackageReference Include="Newtonsoft.Json" />
+    <PackageReference Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(LocalEFCoreRepository)' == ''">
@@ -73,6 +74,7 @@
 
   <ItemGroup>
     <None Remove="TestResults\**" />
+    <None Include="config.json" />
   </ItemGroup>
 
   <Target Name="CheckConfigFile" BeforeTargets="Build">
