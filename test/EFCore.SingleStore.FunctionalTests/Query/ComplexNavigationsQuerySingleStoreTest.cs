@@ -56,15 +56,15 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         }
 
         [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
-        public override void Member_pushdown_chain_3_levels_deep()
+        public override Task Member_pushdown_chain_3_levels_deep(bool async)
         {
-            base.Member_pushdown_chain_3_levels_deep();
+            return base.Member_pushdown_chain_3_levels_deep(async);
         }
 
         [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
-        public override void Member_pushdown_with_collection_navigation_in_the_middle()
+        public override Task Member_pushdown_with_collection_navigation_in_the_middle(bool async)
         {
-            base.Member_pushdown_with_collection_navigation_in_the_middle();
+            return base.Member_pushdown_with_collection_navigation_in_the_middle(async);
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]

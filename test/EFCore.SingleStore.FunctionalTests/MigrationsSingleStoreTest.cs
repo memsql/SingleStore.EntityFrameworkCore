@@ -121,7 +121,7 @@ SELECT ROW_COUNT();",
                 @"ALTER TABLE `People` MODIFY COLUMN `Sum` int NOT NULL;");
         }
 
-        [ConditionalFact(Skip = "Requested ALTER TABLE cannot be performed online because it modifies column from NULL to NOT NULL. SingleStore only supports online ALTER TABLE.")]]
+        [ConditionalFact(Skip = "Requested ALTER TABLE cannot be performed online because it modifies column from NULL to NOT NULL. SingleStore only supports online ALTER TABLE.")]
         public virtual async Task Alter_string_column_make_required_generates_update_statement_instead_of_default_value()
         {
             await Test(

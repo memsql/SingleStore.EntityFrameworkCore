@@ -2,15 +2,15 @@ using System.Data.Common;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using MySqlConnector;
+using SingleStoreConnector;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Pomelo.EntityFrameworkCore.MySql.FunctionalTests.Query;
+namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
-public class NorthwindSqlQueryMySqlTest : NorthwindSqlQueryTestBase<NorthwindQueryMySqlFixture<NoopModelCustomizer>>
+public class NorthwindSqlQuerySingleStoreTest : NorthwindSqlQueryTestBase<NorthwindQuerySingleStoreFixture<NoopModelCustomizer>>
 {
-    public NorthwindSqlQueryMySqlTest(NorthwindQueryMySqlFixture<NoopModelCustomizer> fixture, ITestOutputHelper testOutputHelper)
+    public NorthwindSqlQuerySingleStoreTest(NorthwindQuerySingleStoreFixture<NoopModelCustomizer> fixture, ITestOutputHelper testOutputHelper)
         : base(fixture)
     {
         Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
@@ -74,7 +74,7 @@ public class NorthwindSqlQueryMySqlTest : NorthwindSqlQueryTestBase<NorthwindQue
     }
 
     protected override DbParameter CreateDbParameter(string name, object value)
-        => new MySqlParameter { ParameterName = name, Value = value };
+        => new SingleStoreParameter { ParameterName = name, Value = value };
 
     private void AssertSql(params string[] expected)
         => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);

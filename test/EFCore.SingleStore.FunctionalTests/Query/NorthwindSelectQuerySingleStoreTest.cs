@@ -81,33 +81,33 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         }
 
         [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level2()
+        public override Task Select_nested_collection_multi_level2(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
         [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level3()
+        public override Task Select_nested_collection_multi_level3(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
         [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level4()
+        public override Task Select_nested_collection_multi_level4(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
         [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level5()
+        public override Task Select_nested_collection_multi_level5(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
         [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level6()
+        public override Task Select_nested_collection_multi_level6(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
         [ConditionalTheory(Skip = "Feature 'Subselect in window clause' is not supported by SingleStore.")]

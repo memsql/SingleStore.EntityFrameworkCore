@@ -63,7 +63,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             AssertSql(
                 $@"@__p_0='3'
 SELECT AVG(CAST((
-    SELECT AVG({MySqlTestHelpers.CastAsDouble(@"5 + (
+    SELECT AVG({SingleStoreTestHelpers.CastAsDouble(@"5 + (
         SELECT MAX(`o0`.`ProductID`)
         FROM `Order Details` AS `o0`
         WHERE `o`.`OrderID` = `o0`.`OrderID`)")})
@@ -89,7 +89,7 @@ FROM (
                 $@"@__p_0='3'
 SELECT AVG(CAST((
     SELECT AVG(5.0 + (
-        SELECT AVG({MySqlTestHelpers.CastAsDouble(@"`o0`.`ProductID`")})
+        SELECT AVG({SingleStoreTestHelpers.CastAsDouble(@"`o0`.`ProductID`")})
         FROM `Order Details` AS `o0`
         WHERE `o`.`OrderID` = `o0`.`OrderID`))
     FROM `Orders` AS `o`

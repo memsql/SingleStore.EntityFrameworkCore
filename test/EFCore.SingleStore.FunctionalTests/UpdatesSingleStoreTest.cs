@@ -3,6 +3,11 @@ using System.Linq;
 using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestModels.UpdatesModel;
+using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
+using EntityFrameworkCore.SingleStore.ValueGeneration.Internal;
 using Xunit;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -11,7 +16,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
-    public partial class UpdatesSingleStoreTest : UpdatesRelationalTestBase<UpdatesSingleStoreFixture>
+    public class UpdatesSingleStoreTest : UpdatesRelationalTestBase<UpdatesSingleStoreTest.UpdatesSingleStoreFixture>
     {
         public UpdatesSingleStoreTest(UpdatesSingleStoreFixture fixture)
             : base(fixture)
@@ -43,6 +48,59 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 return;
             }
             base.Can_add_and_remove_self_refs();
+        }
+
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Returning))]
+        public override void Save_with_shared_foreign_key()
+        {
+            base.Save_with_shared_foreign_key();
+        }
+
+        public class UpdatesSingleStoreFixture : UpdatesRelationalFixture
+        {
+            protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
+
+            protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
+            {
+                base.OnModelCreating(modelBuilder, context);
+
+                // Necessary for test `Save_with_shared_foreign_key` to run correctly.
+                if (AppConfig.ServerVersion.Supports.DefaultExpression ||
+                    AppConfig.ServerVersion.Supports.AlternativeDefaultExpression)
+                {
+                    modelBuilder.Entity<ProductBase>()
+                        .Property(p => p.Id).HasDefaultValueSql("(UUID())");
+                }
+
+                Models.Issue1300.Setup(modelBuilder, context);
+            }
+
+            public static class Models
+            {
+                public static class Issue1300
+                {
+                    public static void Setup(ModelBuilder modelBuilder, DbContext context)
+                    {
+                        modelBuilder.Entity<Flavor>(
+                            entity =>
+                            {
+                                entity.HasKey(e => new {e.FlavorId, e.DiscoveryDate});
+                                entity.Property(e => e.FlavorId)
+                                    .ValueGeneratedOnAdd();
+                                entity.Property(e => e.DiscoveryDate)
+                                    .ValueGeneratedOnAdd();
+                            });
+                    }
+
+                    public class Flavor
+                    {
+                        public int FlavorId { get; set; }
+                        public DateTime DiscoveryDate { get; set; }
+                    }
+                }
+            }
         }
     }
 }

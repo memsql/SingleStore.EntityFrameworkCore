@@ -344,7 +344,7 @@ WHERE (`o`.`UnitPrice` < 7.0) AND (10 < `o`.`ProductID`)");
             await base.Select_math_round_int(async);
 
             AssertSql(
-                $@"SELECT ROUND({CastAsDouble("`o`.`OrderID`")}) AS `A`
+                $@"SELECT ROUND({SingleStoreTestHelpers.CastAsDouble("`o`.`OrderID`")}) AS `A`
 FROM `Orders` AS `o`
 WHERE `o`.`OrderID` < 10250");
         }

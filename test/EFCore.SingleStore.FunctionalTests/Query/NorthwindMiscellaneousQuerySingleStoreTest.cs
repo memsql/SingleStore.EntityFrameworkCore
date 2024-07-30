@@ -299,9 +299,9 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
-        public override void OrderBy_any()
+        public override Task OrderBy_any(bool async)
         {
-            base.OrderBy_any();
+            return base.OrderBy_any(async);
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
@@ -326,21 +326,21 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
         }
 
         [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
-        public override void Select_Where_Subquery_Deep_First()
+        public override Task Select_Where_Subquery_Deep_First(bool async)
         {
-            base.Select_Where_Subquery_Deep_First();
+            return base.Select_Where_Subquery_Deep_First(async);
         }
 
         [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
-        public override void Select_Where_Subquery_Deep_Single()
+        public override Task Select_Where_Subquery_Deep_Single(bool async)
         {
-            base.Select_Where_Subquery_Deep_Single();
+            return base.Select_Where_Subquery_Deep_Single(async);
         }
 
         [ConditionalFact(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
-        public override void Select_Where_Subquery_Equality()
+        public override Task Select_Where_Subquery_Equality(bool async)
         {
-            base.Select_Where_Subquery_Equality();
+            return base.Select_Where_Subquery_Equality(async);
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]

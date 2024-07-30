@@ -15,7 +15,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         {
         }
 
-                protected virtual int DefaultStoredProcedureResult
+        protected virtual int DefaultStoredProcedureResult
             => 0;
 
         protected virtual int DefaultSqlResult
@@ -244,52 +244,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                     $@"SELECT COUNT(*) FROM `Customers` WHERE `City` = {city} AND `ContactTitle` = {contactTitle}");
 
             Assert.Equal(DefaultSqlResult, actual);
-        }
-
-        [ConditionalFact]
-        public override void Executes_stored_procedure()
-        {
-            using var context = CreateContext();
-            Assert.Equal(0, context.Database.ExecuteSqlRaw(TenMostExpensiveProductsSproc));
-        }
-
-        [ConditionalFact]
-        public override void Executes_stored_procedure_with_parameter()
-        {
-            using var context = CreateContext();
-            var parameter = CreateDbParameter("@CustomerID", "ALFKI");
-
-            Assert.Equal(0, context.Database.ExecuteSqlRaw(CustomerOrderHistorySproc, parameter));
-        }
-
-        [ConditionalFact]
-        public override void Executes_stored_procedure_with_generated_parameter()
-        {
-            using var context = CreateContext();
-            Assert.Equal(0, context.Database.ExecuteSqlRaw(CustomerOrderHistoryWithGeneratedParameterSproc, "ALFKI"));
-        }
-
-        [ConditionalFact]
-        public override async Task Executes_stored_procedure_async()
-        {
-            using var context = CreateContext();
-            Assert.Equal(0, await context.Database.ExecuteSqlRawAsync(TenMostExpensiveProductsSproc));
-        }
-
-        [ConditionalFact]
-        public override async Task Executes_stored_procedure_with_parameter_async()
-        {
-            using var context = CreateContext();
-            var parameter = CreateDbParameter("@CustomerID", "ALFKI");
-
-            Assert.Equal(0, await context.Database.ExecuteSqlRawAsync(CustomerOrderHistorySproc, parameter));
-        }
-
-        [ConditionalFact]
-        public override async Task Executes_stored_procedure_with_generated_parameter_async()
-        {
-            using var context = CreateContext();
-            Assert.Equal(0, await context.Database.ExecuteSqlRawAsync(CustomerOrderHistoryWithGeneratedParameterSproc, "ALFKI"));
         }
 
         protected override DbParameter CreateDbParameter(string name, object value)

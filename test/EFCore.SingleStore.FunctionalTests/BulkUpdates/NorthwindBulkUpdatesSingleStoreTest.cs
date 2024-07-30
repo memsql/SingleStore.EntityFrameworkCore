@@ -9,7 +9,7 @@ using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
-namespace Pomelo.EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
+namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
 public class NorthwindBulkUpdatesSingleStoreTest : NorthwindBulkUpdatesTestBase<NorthwindBulkUpdatesSingleStoreFixture<NoopModelCustomizer>>
 {

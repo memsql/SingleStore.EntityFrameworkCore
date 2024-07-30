@@ -23,7 +23,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             => withConnectionString
                 ? withNullConnectionString
                     ? optionsBuilder.UseSingleStore((string)null)
-                    : optionsBuilder.UseSinglestore(DummyConnectionString)
+                    : optionsBuilder.UseSingleStore(DummyConnectionString)
                 : optionsBuilder.UseSingleStore();
 
         protected override TwoDatabasesWithDataContext CreateBackingContext(string databaseName)

@@ -2,7 +2,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Xunit.Abstractions;
 
-namespace Pomelo.EntityFrameworkCore.SingleStore.FunctionalTests.Query
+namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
     public class CompositeKeysSplitQuerySingleStoreTest : CompositeKeysSplitQueryRelationalTestBase<CompositeKeysQuerySingleStoreFixture>
     {

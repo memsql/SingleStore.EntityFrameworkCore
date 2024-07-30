@@ -22,7 +22,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override async Task KeylessEntity_with_nav_defining_query(bool async)
         {
             // FromSql mapping. Issue #21627.
-            await Assert.ThrowsAsync<MySqlException>(() => base.KeylessEntity_with_nav_defining_query(async));
+            await Assert.ThrowsAsync<SingleStoreException>(() => base.KeylessEntity_with_nav_defining_query(async));
 
             AssertSql(
                 @"SELECT `c`.`CompanyName`, `c`.`OrderCount`, `c`.`SearchTerm`

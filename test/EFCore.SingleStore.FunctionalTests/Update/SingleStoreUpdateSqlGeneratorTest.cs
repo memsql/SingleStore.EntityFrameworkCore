@@ -175,7 +175,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Update
             var command = CreateInsertCommand();
 
             var sqlGenerator = (ISingleStoreUpdateSqlGenerator)CreateSqlGenerator();
-            var grouping = sqlGenerator.AppendBulkInsertOperation(stringBuilder, new[] { command, command }, 0, out _));
+            var grouping = sqlGenerator.AppendBulkInsertOperation(stringBuilder, new[] { command, command }, 0, out _);
 
             if (AppConfig.ServerVersion.Supports.Returning)
             {
@@ -226,7 +226,7 @@ VALUES (@p0, @p1, @p2, @p3),
 (@p0, @p1, @p2, @p3);
 ",
                 stringBuilder.ToString());
-            Assert.Equal(ResultSetMapping.NoResult, grouping);
+            Assert.Equal(ResultSetMapping.NoResults, grouping);
         }
 
         [ConditionalFact]
@@ -288,7 +288,7 @@ VALUES (),
             AssertBaseline(
                 expectedText,
                 stringBuilder.ToString());
-            Assert.Equal(ResultSetMapping.NoResult, grouping);
+            Assert.Equal(ResultSetMapping.NoResults, grouping);
         }
 
         protected override void AppendDeleteOperation_creates_full_delete_command_text_verification(StringBuilder stringBuilder)

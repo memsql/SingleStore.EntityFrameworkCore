@@ -122,7 +122,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
                 modelBuilder.Entity<NonStoreGenDependent>().Property(e => e.HasTemp).HasDefaultValue(777);
 
-                modelBuilder.Entity<CompositePrincipal>().Property(e => e.Id).UseMySqlIdentityColumn();
+                // modelBuilder.Entity<CompositePrincipal>().Property(e => e.Id).UseSingleStoreIdentityColumn();
 
                 // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
                 // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column

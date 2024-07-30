@@ -127,6 +127,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                     command.CommandText = "SET @@session.time_zone = '+00:00'";
                     command.ExecuteNonQuery();
                 }
+            }
         }
     }
 }

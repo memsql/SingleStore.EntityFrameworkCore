@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SingleStoreConnector;
-using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
