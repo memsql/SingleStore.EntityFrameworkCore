@@ -2,7 +2,7 @@ version: 2.1
 parameters:
   dotnet-version:
     type: string
-    default: "6.0.200"
+    default: "7.0.404"
 
 orbs:
   win: circleci/windows@2.4.0
@@ -12,16 +12,16 @@ commands:
     description: Setup Linux environment
     steps:
       - run:
-          name: Install .NET Core 6.0
+          name: Install .NET Core 7.0
           command: |
-            wget https://packages.microsoft.com/config/ubuntu/21.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+            wget https://packages.microsoft.com/config/ubuntu/22.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
             sudo dpkg -i packages-microsoft-prod.deb
             rm packages-microsoft-prod.deb
             sudo apt-get update
             sudo apt-get install -y apt-transport-https
             sudo apt-get update
             sudo apt-get install -y mariadb-client-core-10.3
-            sudo apt-get install -y dotnet-sdk-6.0
+            sudo apt-get install -y dotnet-sdk-7.0
             dotnet --info
       - run:
           name: Install Powershell
@@ -56,7 +56,7 @@ commands:
           name: "Run << parameters.test-block >> "
           command: |
             cd test/<< parameters.test-block >>
-            dotnet test -f net6.0 -c Release --no-build
+            dotnet test -f net7.0 -c Release --no-build
             cd ../../
   run-tests-win:
     description: Run tests on Windows
@@ -151,7 +151,7 @@ jobs:
             choco install dotnet-sdk --version=<< pipeline.parameters.dotnet-version >>
             dotnet.exe build SingleStore.EFCore.sln -c Release
       - run-tests-win:
-          target_framework: net6.0
+          target_framework: net7.0
           func_test_block_path: << parameters.func_test_block_path >>
       - run:
           name: Terminate test cluster
