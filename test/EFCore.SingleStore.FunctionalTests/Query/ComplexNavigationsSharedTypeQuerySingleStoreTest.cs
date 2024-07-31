@@ -27,6 +27,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             // Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Scalar subselect where outer table is not a sharded table' is not supported by SingleStore")]
+        public override Task Composite_key_join_on_groupby_aggregate_projecting_only_grouping_key(bool async)
+        {
+            return base.Composite_key_join_on_groupby_aggregate_projecting_only_grouping_key(async);
+        }
+
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterReferenceInMultiLevelSubquery))]
         public override Task Contains_with_subquery_optional_navigation_and_constant_item(bool async)
         {
@@ -52,6 +58,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                     select (from l3 in ss.Set<Level3>()
                         select l3).Distinct().OrderBy(e => e.Id).Skip(1).FirstOrDefault().Name); // Apply OrderBy before Skip
         }
+
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
+        public override Task Element_selector_with_coalesce_repeated_in_aggregate(bool async)
+        {
+            return base.Element_selector_with_coalesce_repeated_in_aggregate(async);
+        }
+
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Collection_FirstOrDefault_property_accesses_in_projection(bool async)
         {
@@ -122,6 +135,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override Task SelectMany_subquery_with_custom_projection(bool async)
         {
             return base.SelectMany_subquery_with_custom_projection(async);
+        }
+
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
+        public override Task Simple_level1_level2_GroupBy_Having_Count(bool async)
+        {
+            return base.Simple_level1_level2_GroupBy_Having_Count(async);
         }
 
         [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]

@@ -325,19 +325,19 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                     .Select(o => new Order {OrderDate = o.OrderDate.Value.AddMilliseconds(-1000000000000)}));
         }
 
-        [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
         public override Task Select_Where_Subquery_Deep_First(bool async)
         {
             return base.Select_Where_Subquery_Deep_First(async);
         }
 
-        [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
         public override Task Select_Where_Subquery_Deep_Single(bool async)
         {
             return base.Select_Where_Subquery_Deep_Single(async);
         }
 
-        [ConditionalFact(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
         public override Task Select_Where_Subquery_Equality(bool async)
         {
             return base.Select_Where_Subquery_Equality(async);
@@ -589,7 +589,7 @@ ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
         {
             Assert.Equal(
                 CoreStrings.ClientProjectionCapturingConstantInMethodInstance(
-                    "Pomelo.EntityFrameworkCore.MySql.FunctionalTests.Query.NorthwindMiscellaneousQueryMySqlTest",
+                    "EntityFrameworkCore.SingleStore.FunctionalTests.Query.NorthwindMiscellaneousQuerySingleStoreTest",
                     "InstanceMethod"),
                 (await Assert.ThrowsAsync<InvalidOperationException>(
                     () => base.Client_code_using_instance_method_throws(async))).Message);
@@ -601,7 +601,7 @@ ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
         {
             Assert.Equal(
                 CoreStrings.ClientProjectionCapturingConstantInMethodArgument(
-                    "Pomelo.EntityFrameworkCore.MySql.FunctionalTests.Query.NorthwindMiscellaneousQueryMySqlTest",
+                    "EntityFrameworkCore.SingleStore.FunctionalTests.Query.NorthwindMiscellaneousQuerySingleStoreTest",
                     "StaticMethod"),
                 (await Assert.ThrowsAsync<InvalidOperationException>(
                     () => base.Client_code_using_instance_in_static_method(async))).Message);
@@ -613,7 +613,7 @@ ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
         {
             Assert.Equal(
                 CoreStrings.ClientProjectionCapturingConstantInTree(
-                    "Pomelo.EntityFrameworkCore.MySql.FunctionalTests.Query.NorthwindMiscellaneousQueryMySqlTest"),
+                    "EntityFrameworkCore.SingleStore.FunctionalTests.Query.NorthwindMiscellaneousQuerySingleStoreTest"),
                 (await Assert.ThrowsAsync<InvalidOperationException>(
                     () => base.Client_code_using_instance_in_anonymous_type(async))).Message);
 
@@ -625,7 +625,7 @@ ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
             await AssertTranslationFailedWithDetails(
                 () => base.Client_code_unknown_method(async),
                 CoreStrings.QueryUnableToTranslateMethod(
-                    "Microsoft.EntityFrameworkCore.Query.NorthwindMiscellaneousQueryTestBase<Pomelo.EntityFrameworkCore.MySql.FunctionalTests.Query.NorthwindQueryMySqlFixture<Microsoft.EntityFrameworkCore.TestUtilities.NoopModelCustomizer>>",
+                    "Microsoft.EntityFrameworkCore.Query.NorthwindMiscellaneousQueryTestBase<EntityFrameworkCore.SingleStore.FunctionalTests.Query.NorthwindQuerySingleStoreFixture<Microsoft.EntityFrameworkCore.TestUtilities.NoopModelCustomizer>>",
                     nameof(UnknownMethod)));
 
             AssertSql();

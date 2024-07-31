@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using Microsoft.EntityFrameworkCore.TestModels.MusicStore;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -751,6 +752,7 @@ ORDER BY `t`.`FirstName`, `t0`.`Id`
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Whats_new_2021_sample_7(bool async)
     {
         await base.Whats_new_2021_sample_7(async);
@@ -798,6 +800,7 @@ GROUP BY `p`.`Category`
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Whats_new_2021_sample_9(bool async)
     {
         await base.Whats_new_2021_sample_9(async);
@@ -826,6 +829,7 @@ GROUP BY `p`.`Category`
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Whats_new_2021_sample_4(bool async)
     {
         await base.Whats_new_2021_sample_4(async);
@@ -923,6 +927,40 @@ ORDER BY `t`.`LastName` DESC, `t0`.`Id`, `t2`.`LastName`, `t2`.`Id`
         protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
         {
             base.OnModelCreating(modelBuilder, context);
+
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<ArubaOwner>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<CustomerForLinq>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<NumberForLinq>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Person>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<ProductForLinq>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<OrderForLinq>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Feet>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Shoes>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
 
             // modelBuilder.Entity<OrderForLinq>().Property(o => o.OrderDate).HasColumnType("timestamp");
         }

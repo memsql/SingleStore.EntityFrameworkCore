@@ -52,6 +52,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Multiple_collection_navigation_with_FirstOrDefault_chained_projecting_scalar(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
         public override async Task Average_over_max_subquery_is_client_eval(bool async)
         {
             await AssertAverage(
@@ -77,6 +78,7 @@ FROM (
 ) AS `t`");
         }
 
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
         public override async Task Average_over_nested_subquery_is_client_eval(bool async)
         {
             await AssertAverage(
@@ -100,6 +102,72 @@ FROM (
     ORDER BY `c`.`CustomerID`
     LIMIT @__p_0
 ) AS `t`");
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Average_over_subquery_is_client_eval(bool async)
+        {
+            return base.Average_over_max_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Max_over_nested_subquery_is_client_eval(bool async)
+        {
+            return base.Max_over_nested_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Max_over_subquery_is_client_eval(bool async)
+        {
+            return base.Max_over_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Max_over_sum_subquery_is_client_eval(bool async)
+        {
+            return base.Max_over_sum_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Min_over_max_subquery_is_client_eval(bool async)
+        {
+            return base.Min_over_max_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Min_over_nested_subquery_is_client_eval(bool async)
+        {
+            return base.Min_over_nested_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Min_over_subquery_is_client_eval(bool async)
+        {
+            return base.Min_over_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_on_float_column_in_subquery(bool async)
+        {
+            return base.Sum_on_float_column_in_subquery(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_over_min_subquery_is_client_eval(bool async)
+        {
+            return base.Sum_over_min_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_over_nested_subquery_is_client_eval(bool async)
+        {
+            return base.Sum_over_nested_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_over_subquery_is_client_eval(bool async)
+        {
+            return base.Sum_over_subquery_is_client_eval(async);
         }
 
         public override async Task Contains_with_local_anonymous_type_array_closure(bool async)

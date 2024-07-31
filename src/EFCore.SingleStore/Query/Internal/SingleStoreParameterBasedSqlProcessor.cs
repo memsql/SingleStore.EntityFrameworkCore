@@ -49,10 +49,10 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                 queryExpression = new SingleStoreBoolOptimizingExpressionVisitor(Dependencies.SqlExpressionFactory).Visit(queryExpression);
             }
 
-            queryExpression = (SelectExpression)new SingleStoreHavingExpressionVisitor(_sqlExpressionFactory).Visit(queryExpression);
+            queryExpression = new SingleStoreHavingExpressionVisitor(_sqlExpressionFactory).Visit(queryExpression);
 
             // Run the compatibility checks as late in the query pipeline (before the actual SQL translation happens) as reasonable.
-            queryExpression = (SelectExpression)new SingleStoreCompatibilityExpressionVisitor(_options).Visit(queryExpression);
+            queryExpression = new SingleStoreCompatibilityExpressionVisitor(_options).Visit(queryExpression);
 
             return queryExpression;
         }

@@ -417,15 +417,22 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Select_subquery_projecting_single_constant_string(async);
         }
 
-        [ConditionalTheory(Skip = "Another LATERAL JOIN bug in MySQL. Grouping leads to unexpected result set.")]
-        [MemberData(nameof(IsAsyncData))]
-        public override Task
-            Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(
-                bool async)
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Set_operator_with_navigation_in_projection_groupby_aggregate(bool async)
         {
-            return base
-                .Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(
-                    async);
+            return base.Set_operator_with_navigation_in_projection_groupby_aggregate(async);
+        }
+
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
+        public override Task Where_contains_on_navigation_with_composite_keys(bool async)
+        {
+            return base.Where_contains_on_navigation_with_composite_keys(async);
+        }
+
+        [ConditionalTheory(Skip = "Another LATERAL JOIN bug in MySQL. Grouping leads to unexpected result set.")]
+        public override Task Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(bool async)
+        {
+            return base.Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(async);
         }
     }
 }

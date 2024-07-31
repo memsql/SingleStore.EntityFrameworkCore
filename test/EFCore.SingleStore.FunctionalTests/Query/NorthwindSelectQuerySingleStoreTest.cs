@@ -80,31 +80,31 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Projection_AsEnumerable_projection(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Select_nested_collection_multi_level2(bool async)
         {
             return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Select_nested_collection_multi_level3(bool async)
         {
             return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Select_nested_collection_multi_level4(bool async)
         {
             return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Select_nested_collection_multi_level5(bool async)
         {
             return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Select_nested_collection_multi_level6(bool async)
         {
             return base.Select_nested_collection_multi_level2(async);

@@ -26,6 +26,28 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             base.OnModelCreating(modelBuilder, context);
 
             modelBuilder.Entity<Weapon>().HasIndex(e => e.IsAutomatic);
+
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<LocustHighCommand>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Mission>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Squad>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Weapon>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Faction>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
         }
 
         public new ISetSource GetExpectedData()

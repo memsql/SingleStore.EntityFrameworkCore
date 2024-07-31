@@ -24,6 +24,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             => true;
 
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task GroupBy_complex_key_aggregate_2(bool async)
+        {
+            return base.GroupBy_complex_key_aggregate_2(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task GroupBy_aggregate_Contains(bool async)
         {
             return base.GroupBy_aggregate_Contains(async);

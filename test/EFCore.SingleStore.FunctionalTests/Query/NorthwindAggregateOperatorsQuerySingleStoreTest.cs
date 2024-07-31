@@ -20,6 +20,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
         public override Task Average_over_max_subquery_is_client_eval(bool async)
             => AssertAverage(
                 async,
@@ -27,6 +28,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 selector: c => (decimal)c.Orders.Average(o => 5 + o.OrderDetails.Max(od => od.ProductID)),
                 asserter: (a, b) => Assert.Equal(a, b, 12)); // added flouting point precision tolerance
 
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
         public override Task Average_over_nested_subquery_is_client_eval(bool async)
             => AssertAverage(
                 async,
@@ -73,6 +75,72 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override Task Multiple_collection_navigation_with_FirstOrDefault_chained_projecting_scalar(bool async)
         {
             return base.Multiple_collection_navigation_with_FirstOrDefault_chained_projecting_scalar(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Average_over_subquery_is_client_eval(bool async)
+        {
+            return base.Average_over_max_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Max_over_nested_subquery_is_client_eval(bool async)
+        {
+            return base.Max_over_nested_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Max_over_subquery_is_client_eval(bool async)
+        {
+            return base.Max_over_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Max_over_sum_subquery_is_client_eval(bool async)
+        {
+            return base.Max_over_sum_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Min_over_max_subquery_is_client_eval(bool async)
+        {
+            return base.Min_over_max_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Min_over_nested_subquery_is_client_eval(bool async)
+        {
+            return base.Min_over_nested_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Min_over_subquery_is_client_eval(bool async)
+        {
+            return base.Min_over_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_on_float_column_in_subquery(bool async)
+        {
+            return base.Sum_on_float_column_in_subquery(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_over_min_subquery_is_client_eval(bool async)
+        {
+            return base.Sum_over_min_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_over_nested_subquery_is_client_eval(bool async)
+        {
+            return base.Sum_over_nested_subquery_is_client_eval(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_over_subquery_is_client_eval(bool async)
+        {
+            return base.Sum_over_subquery_is_client_eval(async);
         }
 
         protected override bool CanExecuteQueryString

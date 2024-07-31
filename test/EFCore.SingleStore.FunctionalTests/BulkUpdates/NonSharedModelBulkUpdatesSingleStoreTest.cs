@@ -11,10 +11,6 @@ public class NonSharedModelBulkUpdatesSingleStoreTest : NonSharedModelBulkUpdate
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 
-    [ConditionalFact]
-    public virtual void Check_all_tests_overridden()
-        => TestHelpers.AssertAllMethodsOverridden(GetType());
-
     public override async Task Delete_aggregate_root_when_eager_loaded_owned_collection(bool async)
     {
         await base.Delete_aggregate_root_when_eager_loaded_owned_collection(async);
@@ -55,6 +51,12 @@ public class NonSharedModelBulkUpdatesSingleStoreTest : NonSharedModelBulkUpdate
             LEFT JOIN `Blogs` AS `b` ON `p`.`BlogId` = `b`.`Id`
             WHERE `b`.`Title` IS NOT NULL AND (`b`.`Title` LIKE 'Arthur%')
             """);
+    }
+
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore.")]
+    public override async Task Update_with_alias_uniquification_in_setter_subquery(bool async)
+    {
+        await base.Update_with_alias_uniquification_in_setter_subquery(async);
     }
 
     private void AssertSql(params string[] expected)

@@ -25,7 +25,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         protected override bool CanExecuteQueryString
             => true;
 
-                [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Collection_FirstOrDefault_property_accesses_in_projection(bool async)
         {
             return base.Collection_FirstOrDefault_property_accesses_in_projection(async);
@@ -55,13 +55,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Distinct_take_without_orderby(async);
         }
 
-        [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
+        public override Task Element_selector_with_coalesce_repeated_in_aggregate(bool async)
+        {
+            return base.Element_selector_with_coalesce_repeated_in_aggregate(async);
+        }
+
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
         public override Task Member_pushdown_chain_3_levels_deep(bool async)
         {
             return base.Member_pushdown_chain_3_levels_deep(async);
         }
 
-        [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
         public override Task Member_pushdown_with_collection_navigation_in_the_middle(bool async)
         {
             return base.Member_pushdown_with_collection_navigation_in_the_middle(async);
@@ -113,6 +119,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override Task SelectMany_subquery_with_custom_projection(bool async)
         {
             return base.SelectMany_subquery_with_custom_projection(async);
+        }
+
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
+        public override Task Simple_level1_level2_GroupBy_Having_Count(bool async)
+        {
+            return base.Simple_level1_level2_GroupBy_Having_Count(async);
         }
 
         [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]

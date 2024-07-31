@@ -159,7 +159,7 @@ namespace Microsoft.EntityFrameworkCore
                 catch (Exception e)
                 {
                     throw new InvalidOperationException(
-                        @"The connection string of a connection used by with EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=true;UseAffectedRows=false"".",
+                        @"The connection string of a connection used by EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=true;UseAffectedRows=false"".",
                         e);
                 }
             }

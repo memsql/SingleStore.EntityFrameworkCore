@@ -302,6 +302,7 @@ WHERE `o`.`OrderID` < 10300
 """);
     }
 
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Delete_SelectMany(bool async)
     {
         await base.Delete_SelectMany(async);
@@ -722,6 +723,7 @@ WHERE `c`.`CustomerID` LIKE 'F%'
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'UPDATE...LIMIT must be constrained to a single partition' is not supported by SingleStore.")]
     public override async Task Update_Where_Skip_set_constant(bool async)
     {
         await base.Update_Where_Skip_set_constant(async);
@@ -902,6 +904,7 @@ WHERE `c`.`CustomerID` = (
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: nested scalar subselects.")]
     public override async Task Update_Where_GroupBy_First_set_constant(bool async)
     {
         await base.Update_Where_GroupBy_First_set_constant(async);

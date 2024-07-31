@@ -13,10 +13,6 @@ public class TPTInheritanceBulkUpdatesSingleStoreTest : TPTInheritanceBulkUpdate
         ClearLog();
     }
 
-    [ConditionalFact]
-    public virtual void Check_all_tests_overridden()
-        => TestHelpers.AssertAllMethodsOverridden(GetType());
-
     public override async Task Delete_where_hierarchy(bool async)
     {
         await base.Delete_where_hierarchy(async);

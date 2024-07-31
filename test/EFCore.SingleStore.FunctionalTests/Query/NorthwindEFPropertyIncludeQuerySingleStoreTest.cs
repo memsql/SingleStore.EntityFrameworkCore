@@ -109,6 +109,7 @@ WHERE (`o`.`OrderID` % 23) = 13
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Include_collection_order_by_collection_column(bool async)
     {
         await base.Include_collection_order_by_collection_column(async);
@@ -152,6 +153,7 @@ ORDER BY `o`.`OrderID`, `o0`.`OrderID`
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore's ORDER BY behavior inconsistent with MySQL")]
     public override async Task Include_collection_skip_take_no_order_by(bool async)
     {
         await base.Include_collection_skip_take_no_order_by(async);
@@ -338,6 +340,7 @@ ORDER BY `t`.`CustomerID`, `t0`.`OrderID`, `t0`.`OrderID0`
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore's ORDER BY behavior inconsistent with MySQL")]
     public override async Task Include_collection_take_no_order_by(bool async)
     {
         await base.Include_collection_take_no_order_by(async);
@@ -396,6 +399,7 @@ ORDER BY `o`.`OrderID`, `o0`.`OrderID`
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Include_duplicate_collection_result_operator2(bool async)
     {
         // The order of `Orders` can be different, because it is not explicitly sorted.
@@ -998,6 +1002,7 @@ ORDER BY `t0`.`CustomerID`, `t1`.`OrderID`, `t1`.`OrderID0`
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
     public override async Task Include_collection_OrderBy_empty_list_contains(bool async)
     {
         await base.Include_collection_OrderBy_empty_list_contains(async);
@@ -1504,6 +1509,7 @@ FROM `Orders` AS `o`
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Include_duplicate_collection_result_operator(bool async)
     {
         // The order of `Orders` can be different, because it is not explicitly sorted.
@@ -1877,6 +1883,7 @@ ORDER BY `t`.`CompanyName` DESC, `t`.`CustomerID`
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
     public override async Task Include_collection_OrderBy_empty_list_does_not_contains(bool async)
     {
         await base.Include_collection_OrderBy_empty_list_does_not_contains(async);
@@ -1955,6 +1962,7 @@ WHERE `o`.`CustomerID` = 'ALFKI'
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Include_collection_order_by_subquery(bool async)
     {
         await base.Include_collection_order_by_subquery(async);
@@ -1999,6 +2007,7 @@ ORDER BY `o`.`OrderID`, `c`.`CustomerID`
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Then_include_collection_order_by_collection_column(bool async)
     {
         await base.Then_include_collection_order_by_collection_column(async);
@@ -2047,6 +2056,7 @@ WHERE (`o`.`OrderID` % 23) = 13
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore's ORDER BY behavior inconsistent with MySQL")]
     public override async Task Include_collection_skip_no_order_by(bool async)
     {
         await base.Include_collection_skip_no_order_by(async);
