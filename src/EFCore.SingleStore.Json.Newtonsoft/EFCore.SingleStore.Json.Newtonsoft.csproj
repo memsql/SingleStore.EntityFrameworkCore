@@ -35,7 +35,6 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Newtonsoft.Json" />
     <PackageReference Include="SingleStoreConnector" Version="1.1.4" />
-    <PackageReference Include="System.Text.Json" Version="8.0.4" />
   </ItemGroup>
 
   <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->

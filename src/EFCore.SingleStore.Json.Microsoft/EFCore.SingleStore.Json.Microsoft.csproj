@@ -33,7 +33,6 @@
 
   <ItemGroup>
     <PackageReference Include="SingleStoreConnector" Version="1.1.4" />
-    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 
   <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->

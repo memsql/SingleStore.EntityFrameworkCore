@@ -1,6 +1,7 @@
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using System.Collections.Generic;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
@@ -17,48 +18,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
-                modelBuilder.Entity<Employee>(
-                    b =>
-                    {
-                        b.Property(e => e.EmployeeId).ValueGeneratedNever();
-                        b.Property<int>("Shadow1");
-                        b.Property<string>("Shadow2");
-                    });
+                // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+                // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+                modelBuilder.Entity<VirtualTeam>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
 
-                modelBuilder.Entity<CurrentEmployee>(b => b.Property<int>("Shadow3"));
-
-                modelBuilder.Entity<PastEmployee>(b => b.Property<string>("Shadow4"));
-
-                modelBuilder.Entity<Building>()
-                    .HasOne<MailRoom>(nameof(Building.PrincipalMailRoom))
-                    .WithMany()
-                    .HasForeignKey(b => b.PrincipalMailRoomId);
-
-                modelBuilder.Entity<MailRoom>()
-                    .HasOne<Building>(nameof(MailRoom.Building))
-                    .WithMany(nameof(Building.MailRooms))
-                    .HasForeignKey(m => m.BuildingId);
-
-                modelBuilder.Entity<Office>().HasKey(
-                    o => new { o.Number, o.BuildingId });
-
-                modelBuilder.Ignore<UnMappedOffice>();
-
-                modelBuilder.Entity<BuildingDetail>(
-                    b =>
-                    {
-                        b.HasKey(d => d.BuildingId);
-                        b.HasOne(d => d.Building).WithOne().HasPrincipalKey<Building>(e => e.BuildingId);
-                    });
-
-                modelBuilder.Entity<Building>(
-                    b =>
-                    {
-                        b.Ignore(e => e.NotInModel);
-                        b.Property<int>("Shadow1");
-                        b.Property<string>("Shadow2");
-                    });
-
+                base.OnModelCreating(modelBuilder, context);
             }
         }
     }
