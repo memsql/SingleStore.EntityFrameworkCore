@@ -59,6 +59,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.GroupBy_Shadow(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task GroupBy_with_aggregate_through_navigation_property(bool async)
+        {
+            return base.GroupBy_with_aggregate_through_navigation_property(async);
+        }
+
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
         public override Task GroupBy_with_aggregate_containing_complex_where(bool async)
         {

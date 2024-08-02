@@ -429,6 +429,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Where_contains_on_navigation_with_composite_keys(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Filter_on_subquery_projecting_one_value_type_from_empty_collection(bool async)
+        {
+            return base.Filter_on_subquery_projecting_one_value_type_from_empty_collection(async);
+        }
+
         [ConditionalTheory(Skip = "Another LATERAL JOIN bug in MySQL. Grouping leads to unexpected result set.")]
         public override Task Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(bool async)
         {

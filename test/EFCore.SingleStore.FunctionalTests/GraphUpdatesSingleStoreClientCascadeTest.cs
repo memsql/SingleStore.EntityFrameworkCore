@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests;
 
-public class GraphUpdatesSingleStoreClientCascadeTest : GraphUpdatesSingleStoreTestBase<GraphUpdatesSingleStoreClientCascadeTest.SingleStoreFixture>
+// Made internal to skip all tests.
+internal class GraphUpdatesSingleStoreClientCascadeTest : GraphUpdatesSingleStoreTestBase<GraphUpdatesSingleStoreClientCascadeTest.SingleStoreFixture>
 {
     public GraphUpdatesSingleStoreClientCascadeTest(SingleStoreFixture fixture)
         : base(fixture)

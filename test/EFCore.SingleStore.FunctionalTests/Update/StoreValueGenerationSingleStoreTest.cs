@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.TestModels.StoreValueGenerationModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.EntityFrameworkCore.Update;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -611,48 +612,23 @@ WHERE ROW_COUNT() = 1 AND `Id` = LAST_INSERT_ID();
         protected override ITestStoreFactory TestStoreFactory
             => SingleStoreTestStoreFactory.Instance;
 
-        // protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
-        // {
-        //     base.OnModelCreating(modelBuilder, context);
-        //
-        //     foreach (var name in new[]
-        //              {
-        //                  nameof(StoreValueGenerationContext.WithSomeDatabaseGenerated),
-        //                  nameof(StoreValueGenerationContext.WithSomeDatabaseGenerated2),
-        //                  nameof(StoreValueGenerationContext.WithAllDatabaseGenerated),
-        //                  nameof(StoreValueGenerationContext.WithAllDatabaseGenerated2)
-        //              })
-        //     {
-        //         ConfigureComputedColumn(modelBuilder.SharedTypeEntity<StoreValueGenerationData>(name).Property(w => w.Data1));
-        //     }
-        //
-        //     foreach (var name in new[]
-        //              {
-        //                  nameof(StoreValueGenerationContext.WithAllDatabaseGenerated),
-        //                  nameof(StoreValueGenerationContext.WithAllDatabaseGenerated2)
-        //              })
-        //     {
-        //         ConfigureComputedColumn(modelBuilder.SharedTypeEntity<StoreValueGenerationData>(name).Property(w => w.Data2));
-        //     }
-        //
-        //     void ConfigureComputedColumn(PropertyBuilder builder)
-        //     {
-        //         if (TestEnvironment.PostgresVersion >= new Version(12, 0))
-        //         {
-        //             // PG 12+ supports computed columns, but only stored (must be explicitly specified)
-        //             builder.Metadata.SetIsStored(true);
-        //         }
-        //         else
-        //         {
-        //             // Before PG 12, disable computed columns (but leave OnAddOrUpdate)
-        //             builder
-        //                 .HasComputedColumnSql(null)
-        //                 .HasDefaultValue(100)
-        //                 .Metadata
-        //                 .ValueGenerated = ValueGenerated.OnAddOrUpdate;
-        //         }
-        //     }
-        // }
+        protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
+        {
+            base.OnModelCreating(modelBuilder, context);
+
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+            {
+                if (entityType.ClrType == typeof(StoreValueGenerationData))
+                {
+                    modelBuilder.Entity(entityType.Name, b =>
+                    {
+                        b.Property("Id").HasColumnType("bigint");
+                    });
+                }
+            }
+        }
 
         public override void CleanData()
         {

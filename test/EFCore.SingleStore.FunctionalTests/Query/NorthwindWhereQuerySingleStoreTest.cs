@@ -31,6 +31,18 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Where_contains_on_navigation(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task FirstOrDefault_over_scalar_projection_compared_to_not_null(bool async)
+        {
+            return base.FirstOrDefault_over_scalar_projection_compared_to_not_null(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task FirstOrDefault_over_scalar_projection_compared_to_null(bool async)
+        {
+            return base.FirstOrDefault_over_scalar_projection_compared_to_null(async);
+        }
+
         [ConditionalTheory]
         public override async Task Where_datetime_now(bool async)
         {

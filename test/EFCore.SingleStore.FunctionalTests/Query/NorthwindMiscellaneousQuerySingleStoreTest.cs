@@ -423,6 +423,24 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
             return base.Where_query_composition_entity_equality_one_element_SingleOrDefault(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Subquery_is_not_null_translated_correctly(bool async)
+        {
+            return base.Subquery_is_not_null_translated_correctly(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Subquery_is_null_translated_correctly(bool async)
+        {
+            return base.Subquery_is_not_null_translated_correctly(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Dependent_to_principal_navigation_equal_to_null_for_subquery(bool async)
+        {
+            return base.Dependent_to_principal_navigation_equal_to_null_for_subquery(async);
+        }
+
         public override Task Where_query_composition2(bool async)
         {
             return AssertQuery(

@@ -62,6 +62,18 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Include_collection_OrderBy_list_contains(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
+        public override Task Include_collection_OrderBy_empty_list_contains(bool async)
+        {
+            return base.Include_collection_OrderBy_empty_list_contains(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
+        public override Task Include_collection_OrderBy_empty_list_does_not_contains(bool async)
+        {
+            return base.Include_collection_OrderBy_empty_list_does_not_contains(async);
+        }
+
         public override async Task Include_collection_with_last_no_orderby(bool async)
             => Assert.Equal(
                 RelationalStrings.LastUsedWithoutOrderBy(nameof(Enumerable.Last)),
