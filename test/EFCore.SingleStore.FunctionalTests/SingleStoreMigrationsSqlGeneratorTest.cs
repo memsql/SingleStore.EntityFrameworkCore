@@ -141,8 +141,7 @@ VALUES (0, NULL, NULL),
 
             AssertSql(
                 @"INSERT INTO `People` (`First Name`)
-VALUES ('John'),
-('Daenerys');");
+VALUES ('John');");
         }
 
         public override void InsertDataOperation_required_args_composite()
@@ -160,9 +159,8 @@ VALUES ('John', 'Snow');");
 
             AssertSql(
                 @"INSERT INTO `People` (`First Name`)
-VALUES ('John');
-INSERT INTO `People` (`First Name`)
-VALUES ('Daenerys');");
+VALUES ('John'),
+('Daenerys');");
         }
 
         public override void InsertDataOperation_throws_for_unsupported_column_types()

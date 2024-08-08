@@ -7684,6 +7684,7 @@ ORDER BY COALESCE((
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Correlated_collection_with_complex_OrderBy(bool async)
     {
         await base.Correlated_collection_with_complex_OrderBy(async);

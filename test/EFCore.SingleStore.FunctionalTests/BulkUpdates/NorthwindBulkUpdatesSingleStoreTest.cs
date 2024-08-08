@@ -206,6 +206,7 @@ WHERE EXISTS (
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
     public override async Task Delete_Where_predicate_with_GroupBy_aggregate(bool async)
     {
         await base.Delete_Where_predicate_with_GroupBy_aggregate(async);
@@ -227,6 +228,7 @@ WHERE `o`.`OrderID` < (
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
     public override async Task Delete_Where_predicate_with_GroupBy_aggregate_2(bool async)
     {
         await base.Delete_Where_predicate_with_GroupBy_aggregate_2(async);
@@ -743,6 +745,7 @@ SET `c`.`ContactName` = 'Updated'
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'UPDATE...LIMIT must be constrained to a single partition' is not supported by SingleStore")]
     public override async Task Update_Where_Take_set_constant(bool async)
     {
         await AssertUpdate(
@@ -1004,6 +1007,7 @@ WHERE `c`.`City` = 'Seattle'
 """);
     }
 
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed")]
     public override async Task Update_Where_SelectMany_set_null(bool async)
     {
         await base.Update_Where_SelectMany_set_null(async);

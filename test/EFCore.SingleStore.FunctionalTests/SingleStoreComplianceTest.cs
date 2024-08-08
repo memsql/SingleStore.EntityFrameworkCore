@@ -40,6 +40,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             typeof(ManyToManyFieldsLoadTestBase<>),
             typeof(ManyToManyNoTrackingQueryTestBase<>),
             typeof(ManyToManyQueryTestBase<>),
+            typeof(ManyToManyTrackingRelationalTestBase<>),
             typeof(SpatialQueryTestBase<>),
             typeof(ManyToManyNoTrackingQueryRelationalTestBase<>),
             typeof(ManyToManyQueryRelationalTestBase<>),

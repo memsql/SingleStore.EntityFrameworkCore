@@ -6,8 +6,7 @@ using EntityFrameworkCore.SingleStore.Tests;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Update;
 
-// Made internal to skip all tests
-internal class NonSharedModelUpdatesSingleStoreTest : NonSharedModelUpdatesTestBase
+public class NonSharedModelUpdatesSingleStoreTest : NonSharedModelUpdatesTestBase
 {
     public override async Task Principal_and_dependent_roundtrips_with_cycle_breaking(bool async)
     {

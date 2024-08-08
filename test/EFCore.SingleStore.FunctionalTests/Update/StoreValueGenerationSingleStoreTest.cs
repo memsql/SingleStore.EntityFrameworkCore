@@ -126,23 +126,6 @@ WHERE ROW_COUNT() = 1 AND `Id` = LAST_INSERT_ID();
         }
     }
 
-    public override async Task Modify_with_generated_values(bool async)
-    {
-        await base.Modify_with_generated_values(async);
-
-        AssertSql(
-"""
-@p1='1'
-@p0='1000'
-
-UPDATE `WithSomeDatabaseGenerated` SET `Data2` = @p0
-WHERE `Id` = @p1;
-SELECT `Data1`
-FROM `WithSomeDatabaseGenerated`
-WHERE ROW_COUNT() = 1 AND `Id` = @p1;
-""");
-    }
-
     public override async Task Modify_with_no_generated_values(bool async)
     {
         await base.Modify_with_no_generated_values(async);
@@ -158,36 +141,6 @@ UPDATE `WithNoDatabaseGenerated` SET `Data1` = @p0, `Data2` = @p1
 WHERE `Id` = @p2;
 SELECT ROW_COUNT();
 """);
-    }
-
-    public override async Task Delete(bool async)
-    {
-        await base.Delete(async);
-
-        if (AppConfig.ServerVersion.Supports.Returning)
-        {
-            AssertSql(
-"""
-@p0='1'
-
-SET AUTOCOMMIT = 1;
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p0
-RETURNING 1;
-""");
-        }
-        else
-        {
-            AssertSql(
-"""
-@p0='1'
-
-SET AUTOCOMMIT = 1;
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p0;
-SELECT ROW_COUNT();
-""");
-        }
     }
 
     #endregion Single operation
@@ -290,31 +243,6 @@ WHERE ROW_COUNT() = 1 AND `Id` = LAST_INSERT_ID();
         }
     }
 
-    public override async Task Modify_Modify_with_same_entity_type_and_generated_values(bool async)
-    {
-        await base.Modify_Modify_with_same_entity_type_and_generated_values(async);
-
-        AssertSql(
-"""
-@p1='1'
-@p0='1000'
-@p3='2'
-@p2='1001'
-
-UPDATE `WithSomeDatabaseGenerated` SET `Data2` = @p0
-WHERE `Id` = @p1;
-SELECT `Data1`
-FROM `WithSomeDatabaseGenerated`
-WHERE ROW_COUNT() = 1 AND `Id` = @p1;
-
-UPDATE `WithSomeDatabaseGenerated` SET `Data2` = @p2
-WHERE `Id` = @p3;
-SELECT `Data1`
-FROM `WithSomeDatabaseGenerated`
-WHERE ROW_COUNT() = 1 AND `Id` = @p3;
-""");
-    }
-
     public override async Task Modify_Modify_with_same_entity_type_and_no_generated_values(bool async)
     {
         await base.Modify_Modify_with_same_entity_type_and_no_generated_values(async);
@@ -336,43 +264,6 @@ UPDATE `WithNoDatabaseGenerated` SET `Data1` = @p3, `Data2` = @p4
 WHERE `Id` = @p5;
 SELECT ROW_COUNT();
 """);
-    }
-
-    public override async Task Delete_Delete_with_same_entity_type(bool async)
-    {
-        await base.Delete_Delete_with_same_entity_type(async);
-
-        if (AppConfig.ServerVersion.Supports.Returning)
-        {
-            AssertSql(
-                """
-@p0='1'
-@p1='2'
-
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p0
-RETURNING 1;
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p1
-RETURNING 1;
-""");
-        }
-        else
-        {
-            AssertSql(
-"""
-@p0='1'
-@p1='2'
-
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p0;
-SELECT ROW_COUNT();
-
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p1;
-SELECT ROW_COUNT();
-""");
-        }
     }
 
     #endregion Two operations with same entity type
@@ -475,31 +366,6 @@ WHERE ROW_COUNT() = 1 AND `Id` = LAST_INSERT_ID();
         }
     }
 
-    public override async Task Modify_Modify_with_different_entity_types_and_generated_values(bool async)
-    {
-        await base.Modify_Modify_with_different_entity_types_and_generated_values(async);
-
-        AssertSql(
-"""
-@p1='1'
-@p0='1000'
-@p3='2'
-@p2='1001'
-
-UPDATE `WithSomeDatabaseGenerated` SET `Data2` = @p0
-WHERE `Id` = @p1;
-SELECT `Data1`
-FROM `WithSomeDatabaseGenerated`
-WHERE ROW_COUNT() = 1 AND `Id` = @p1;
-
-UPDATE `WithSomeDatabaseGenerated2` SET `Data2` = @p2
-WHERE `Id` = @p3;
-SELECT `Data1`
-FROM `WithSomeDatabaseGenerated2`
-WHERE ROW_COUNT() = 1 AND `Id` = @p3;
-""");
-    }
-
     public override async Task Modify_Modify_with_different_entity_types_and_no_generated_values(bool async)
     {
         await base.Modify_Modify_with_different_entity_types_and_no_generated_values(async);
@@ -523,87 +389,7 @@ SELECT ROW_COUNT();
 """);
     }
 
-    public override async Task Delete_Delete_with_different_entity_types(bool async)
-    {
-        await base.Delete_Delete_with_different_entity_types(async);
-
-        if (AppConfig.ServerVersion.Supports.Returning)
-        {
-            AssertSql(
-"""
-@p0='1'
-@p1='2'
-
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p0
-RETURNING 1;
-DELETE FROM `WithSomeDatabaseGenerated2`
-WHERE `Id` = @p1
-RETURNING 1;
-""");
-        }
-        else
-        {
-            AssertSql(
-                """
-@p0='1'
-@p1='2'
-
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p0;
-SELECT ROW_COUNT();
-
-DELETE FROM `WithSomeDatabaseGenerated2`
-WHERE `Id` = @p1;
-SELECT ROW_COUNT();
-""");
-        }
-    }
-
     #endregion Two operations with different entity types
-
-    #region Different two operations
-
-    public override async Task Delete_Add_with_same_entity_types(bool async)
-    {
-        await Test(EntityState.Deleted, EntityState.Added, GeneratedValues.Some, async, withSameEntityType: true);
-
-        if (AppConfig.ServerVersion.Supports.Returning)
-        {
-            AssertSql(
-"""
-@p0='1'
-@p1='1001'
-
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p0
-RETURNING 1;
-INSERT INTO `WithSomeDatabaseGenerated` (`Data2`)
-VALUES (@p1)
-RETURNING `Id`, `Data1`;
-""");
-        }
-        else
-        {
-            AssertSql(
-                """
-@p0='1'
-@p1='1001'
-
-DELETE FROM `WithSomeDatabaseGenerated`
-WHERE `Id` = @p0;
-SELECT ROW_COUNT();
-
-INSERT INTO `WithSomeDatabaseGenerated` (`Data2`)
-VALUES (@p1);
-SELECT `Id`, `Data1`
-FROM `WithSomeDatabaseGenerated`
-WHERE ROW_COUNT() = 1 AND `Id` = LAST_INSERT_ID();
-""");
-        }
-    }
-
-    #endregion Different two operations
 
     public class StoreValueGenerationSingleStoreFixture : StoreValueGenerationFixtureBase
     {

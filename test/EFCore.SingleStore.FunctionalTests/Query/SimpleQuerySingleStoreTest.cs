@@ -106,7 +106,7 @@ LIMIT 2");
             Assert.Equal(2, authors.Count);
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         [MemberData(nameof(IsAsyncData))]
         public override async Task GroupBy_Aggregate_over_navigations_repeated(bool async)
         {
@@ -339,7 +339,7 @@ LIMIT 2");
             }
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         [MemberData("IsAsyncData", new object[] {})]
         public override async Task Subquery_first_member_compared_to_null(bool async)
         {

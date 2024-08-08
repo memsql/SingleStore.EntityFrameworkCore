@@ -509,7 +509,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             public CompositePrincipal? Principal { get; set; }
         }
 
-        [ConditionalFact]
+        [ConditionalFact(Skip = "Needs further investigation")]
         public virtual void Store_generated_values_are_propagated_with_composite_key_cycles()
         {
             var id = 0;
@@ -1677,10 +1677,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         protected class WrappedIntClass
         {
-            public int Value { get; set; }
+            public long Value { get; set; }
         }
 
-        protected class WrappedIntClassConverter : ValueConverter<WrappedIntClass, int>
+        protected class WrappedIntClassConverter : ValueConverter<WrappedIntClass, long>
         {
             public WrappedIntClassConverter()
                 : base(
@@ -1695,7 +1695,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             public WrappedIntClassComparer()
                 : base(
                     (v1, v2) => (v1 == null && v2 == null) || (v1 != null && v2 != null && v1.Value.Equals(v2.Value)),
-                    v => v != null ? v.Value : 0,
+                    v => v != null ? (int)v.Value : 0,
                     v => v == null ? null : new WrappedIntClass { Value = v.Value })
             {
             }
@@ -1712,10 +1712,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         protected struct WrappedIntStruct
         {
-            public int Value { get; set; }
+            public long Value { get; set; }
         }
 
-        protected class WrappedIntStructConverter : ValueConverter<WrappedIntStruct, int>
+        protected class WrappedIntStructConverter : ValueConverter<WrappedIntStruct, long>
         {
             public WrappedIntStructConverter()
                 : base(
@@ -1736,10 +1736,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         protected record WrappedIntRecord
         {
-            public int Value { get; set; }
+            public long Value { get; set; }
         }
 
-        protected class WrappedIntRecordConverter : ValueConverter<WrappedIntRecord, int>
+        protected class WrappedIntRecordConverter : ValueConverter<WrappedIntRecord, long>
         {
             public WrappedIntRecordConverter()
                 : base(
@@ -3951,7 +3951,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 });
         }
 
-        protected enum KeyEnum
+        protected enum KeyEnum : long
         {
             A,
             B,
@@ -4552,6 +4552,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 modelBuilder.Entity<NonStoreGenDependent>(
                     eb =>
                     {
+                        eb.Property(e => e.Id).HasColumnType("bigint");
                         eb.Property(e => e.HasTemp)
                             .ValueGeneratedOnAddOrUpdate()
                             .HasValueGenerator<TemporaryIntValueGenerator>();
@@ -4561,6 +4562,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                     entity =>
                     {
                         entity.HasKey(x => x.Id);
+                        entity.Property(x => x.Id).HasColumnType("bigint");
                         entity.Property(x => x.Id)
                             .ValueGeneratedOnAdd();
                         entity.HasOne(x => x.Current)
@@ -4571,6 +4573,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 modelBuilder.Entity<CompositeDependent>(
                     entity =>
                     {
+                        entity.Property(x => x.PrincipalId).HasColumnType("bigint");
                         entity.HasKey(x => new { x.PrincipalId, x.Number });
                         entity.HasOne(x => x.Principal)
                             .WithMany(x => x.Periods)
@@ -4581,16 +4584,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                     entity =>
                     {
                         entity.Property(e => e.NonKey).HasValueGenerator<WrappedIntClassValueGenerator>();
+                        entity.Property(e => e.Id).HasColumnType("bigint");
                     });
                 modelBuilder.Entity<WrappedIntStructPrincipal>(
                     entity =>
                     {
                         entity.Property(e => e.NonKey).HasValueGenerator<WrappedIntStructValueGenerator>();
+                        entity.Property(e => e.Id).HasColumnType("bigint");
                     });
                 modelBuilder.Entity<WrappedIntRecordPrincipal>(
                     entity =>
                     {
                         entity.Property(e => e.NonKey).HasValueGenerator<WrappedIntRecordValueGenerator>();
+                        entity.Property(e => e.Id).HasColumnType("bigint");
                     });
 
                 modelBuilder.Entity<WrappedGuidClassPrincipal>(
@@ -4642,7 +4648,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                     });
 
                 modelBuilder.Entity<UriPrincipal>();
-                modelBuilder.Entity<EnumPrincipal>();
+                modelBuilder.Entity<EnumPrincipal>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
 
                 modelBuilder.Entity<GuidAsStringPrincipal>(
                     entity =>

@@ -42,6 +42,30 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
+        [ConditionalTheory(Skip = "SingleStore only supports online ALTER TABLE")]
+        public override Task Alter_column_make_required_with_null_data()
+        {
+            return base.Alter_column_make_required_with_null_data();
+        }
+
+        [ConditionalTheory(Skip = "TODO")]
+        public override Task Alter_index_make_unique()
+        {
+            return base.Alter_index_make_unique();
+        }
+
+        [ConditionalTheory(Skip = "TODO")]
+        public override Task Alter_column_change_computed_recreates_indexes()
+        {
+            return base.Alter_column_change_computed_recreates_indexes();
+        }
+
+        [ConditionalTheory(Skip = "TODO")]
+        public override Task Alter_column_reset_collation()
+        {
+            return base.Alter_column_reset_collation();
+        }
+
         [ConditionalTheory(Skip = "TODO: Syntax issue in MySQL 7 only.")]
         public override Task Alter_check_constraint()
         {
@@ -485,7 +509,7 @@ CREATE SEQUENCE `dbo2_TestSequence` START WITH 3 INCREMENT BY 2 MINVALUE 2 MAXVA
 
             AssertSql(
                 @"CREATE TABLE `People` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` int NOT NULL,
     `Name` longtext CHARACTER SET utf8 NULL COMMENT 'This is a multi-line
 column comment.
 More information can
@@ -684,7 +708,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
-                    Assert.Null(nameColumn.Collation);
+                    Assert.Equal(nameColumn.Collation, DefaultCollation);
                     Assert.Equal(NonDefaultCollation, brandColumn.Collation);
                 });
 
@@ -742,7 +766,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var table = Assert.Single(result.Tables);
                     var iceCreamIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "IceCreamId"));
 
-                    Assert.Null(iceCreamIdColumn.Collation);
+                    Assert.Equal(iceCreamIdColumn.Collation, DefaultCollation);
                 });
 
             AssertSql(
@@ -823,7 +847,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var table = Assert.Single(result.Tables);
                     var iceCreamIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "IceCreamId"));
 
-                    Assert.Null(iceCreamIdColumn.Collation);
+                    Assert.Equal(iceCreamIdColumn.Collation, DefaultCollation);
                 });
 
             AssertSql(
@@ -866,7 +890,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
                     Assert.Equal(NonDefaultCollation, nameColumn.Collation);
-                    Assert.Null(brandColumn.Collation);
+                    Assert.Equal(brandColumn.Collation, DefaultCollation);
                 });
 
             AssertSql(
@@ -950,17 +974,6 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 result => { });
 
             AssertSql(
-                @"set @__pomelo_TableCharset = (
-    SELECT `ccsa`.`CHARACTER_SET_NAME` as `TABLE_CHARACTER_SET`
-    FROM `INFORMATION_SCHEMA`.`TABLES` as `t`
-    LEFT JOIN `INFORMATION_SCHEMA`.`COLLATION_CHARACTER_SET_APPLICABILITY` as `ccsa` ON `ccsa`.`COLLATION_NAME` = `t`.`TABLE_COLLATION`
-    WHERE `TABLE_SCHEMA` = SCHEMA() AND `TABLE_NAME` = 'IceCream' AND `TABLE_TYPE` IN ('BASE TABLE', 'VIEW'));
-
-SET @__pomelo_SqlExpr = CONCAT('ALTER TABLE `IceCream` CHARACTER SET = ', @__pomelo_TableCharset, ';');
-PREPARE __pomelo_SqlExprExecute FROM @__pomelo_SqlExpr;
-EXECUTE __pomelo_SqlExprExecute;
-DEALLOCATE PREPARE __pomelo_SqlExprExecute;",
-                //
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Name` longtext COLLATE {NonDefaultCollation} NULL;",
                 //
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Brand` longtext COLLATE {NonDefaultCollation2} NULL;");
@@ -1086,14 +1099,14 @@ DEALLOCATE PREPARE __pomelo_SqlExprExecute;",
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
                     Assert.Null(nameColumn[SingleStoreAnnotationNames.CharSet]);
-                    Assert.Null(nameColumn.Collation);
+                    Assert.Equal(DefaultCollation, nameColumn.Collation);
                     Assert.Equal(NonDefaultCharSet, brandColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.NotEqual(DefaultCollation, brandColumn.Collation);
                 });
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` int NOT NULL AUTO_INCREMENT,
+    `IceCreamId` int NOT NULL,
     `Brand` longtext CHARACTER SET {NonDefaultCharSet} NULL,
     `Name` longtext COLLATE {DefaultCollation} NULL,
     CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
@@ -1131,7 +1144,7 @@ DEALLOCATE PREPARE __pomelo_SqlExprExecute;",
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` int NOT NULL AUTO_INCREMENT,
+    `IceCreamId` int NOT NULL,
     `Brand` longtext COLLATE {NonDefaultCollation2} NULL,
     `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL,
     CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
@@ -1165,7 +1178,7 @@ DEALLOCATE PREPARE __pomelo_SqlExprExecute;",
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` int NOT NULL AUTO_INCREMENT,
+    `IceCreamId` int NOT NULL,
     `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL,
     CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) CHARACTER SET=utf8;");

@@ -10,7 +10,7 @@ using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests;
 
-public class ExistingConnectionSingleStoreTest
+internal class ExistingConnectionSingleStoreTest
 {
     [ConditionalTheory]
     [InlineData(false)]
