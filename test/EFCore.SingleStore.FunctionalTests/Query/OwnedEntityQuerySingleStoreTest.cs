@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
@@ -40,6 +41,102 @@ LEFT JOIN (
     ) AS `t2`
     WHERE `t2`.`row` <= 1
 ) AS `t1` ON `e`.`Id` = `t1`.`Entity20277Id`");
+        }
+
+        [ConditionalTheory]
+        [MemberData("IsAsyncData", new object[] {})]
+        public override async Task Owned_entity_with_all_null_properties_entity_equality_when_not_containing_another_owned_entity(
+            bool async)
+        {
+            var contextFactory = (await this.InitializeAsync<MyContext28247>(seed: c => c.Seed(), onModelCreating: modelBuilder =>
+            {
+                // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+                // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+                modelBuilder.Entity<RotRutCase>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+            }));
+
+            using (MyContext28247 context = contextFactory.CreateContext())
+            {
+                IQueryable<Rot> source = context.RotRutCases.AsNoTracking<RotRutCase>().Select<RotRutCase, Rot>((Expression<Func<RotRutCase, Rot>>) (e => e.Rot)).Where<Rot>((Expression<Func<Rot, bool>>) (e => e != default (object)));
+
+                List<Rot> collection;
+                if (async)
+                    collection = await source.ToListAsync<Rot>();
+                else
+                    collection = source.ToList<Rot>();
+                Assert.Collection<Rot>((IEnumerable<Rot>) collection, (Action<Rot>) (t =>
+                {
+                    Assert.Equal<int?>(new int?(1), t.ServiceType);
+                    Assert.Equal("1", t.ApartmentNo);
+                }));
+            }
+        }
+
+        [ConditionalTheory]
+        [MemberData("IsAsyncData", new object[] {})]
+        public override async Task Owned_entity_with_all_null_properties_property_access_when_not_containing_another_owned_entity(
+            bool async)
+        {
+            var contextFactory = (await this.InitializeAsync<MyContext28247>(seed: c => c.Seed(), onModelCreating: modelBuilder =>
+            {
+                // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+                // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+                modelBuilder.Entity<RotRutCase>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+            }));
+
+            using (MyContext28247 context = contextFactory.CreateContext())
+            {
+                IQueryable<string> source = context.RotRutCases.AsNoTracking<OwnedEntityQueryRelationalTestBase.RotRutCase>().Select<OwnedEntityQueryRelationalTestBase.RotRutCase, string>((Expression<Func<OwnedEntityQueryRelationalTestBase.RotRutCase, string>>) (e => e.Rot.ApartmentNo));
+                List<string> collection;
+                if (async)
+                    collection = await source.ToListAsync<string>();
+                else
+                    collection = source.ToList<string>();
+                Assert.Collection<string>((IEnumerable<string>) collection, (Action<string>) (t => Assert.Equal("1", t)), (Action<string>) (t => Assert.Null((object) t)));
+            }
+        }
+
+        [ConditionalTheory]
+        [MemberData("IsAsyncData", new object[] {})]
+        public override async Task Owned_entity_with_all_null_properties_materializes_when_not_containing_another_owned_entity(
+            bool async)
+        {
+            var contextFactory = await this.InitializeAsync<OwnedEntityQueryRelationalTestBase.MyContext28247>(seed: c => c.Seed(), onModelCreating: modelBuilder =>
+            {
+                // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+                // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+                modelBuilder.Entity<RotRutCase>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+            });
+
+            using (MyContext28247 context = contextFactory.CreateContext())
+            {
+                IOrderedQueryable<OwnedEntityQueryRelationalTestBase.RotRutCase> source = context.RotRutCases.OrderBy<OwnedEntityQueryRelationalTestBase.RotRutCase, string>((Expression<Func<OwnedEntityQueryRelationalTestBase.RotRutCase, string>>) (e => e.Buyer));
+                List<OwnedEntityQueryRelationalTestBase.RotRutCase> collection;
+                if (async)
+                    collection = await source.ToListAsync<OwnedEntityQueryRelationalTestBase.RotRutCase>();
+                else
+                    collection = source.ToList<OwnedEntityQueryRelationalTestBase.RotRutCase>();
+                Assert.Collection<OwnedEntityQueryRelationalTestBase.RotRutCase>((IEnumerable<OwnedEntityQueryRelationalTestBase.RotRutCase>) collection, (Action<OwnedEntityQueryRelationalTestBase.RotRutCase>) (t =>
+                {
+                    Assert.Equal("Buyer1", t.Buyer);
+                    Assert.NotNull((object) t.Rot);
+                    Assert.Equal<int?>(new int?(1), t.Rot.ServiceType);
+                    Assert.Equal("1", t.Rot.ApartmentNo);
+                    Assert.NotNull((object) t.Rut);
+                    Assert.Equal<int?>(new int?(1), t.Rut.Value);
+                }), (Action<OwnedEntityQueryRelationalTestBase.RotRutCase>) (t =>
+                {
+                    Assert.Equal("Buyer2", t.Buyer);
+                    Assert.Null((object) t.Rot);
+                    Assert.Null((object) t.Rut);
+                }));
+            }
         }
 
         [ConditionalTheory]
@@ -146,6 +243,37 @@ LEFT JOIN (
             var warehouseModel = Assert.Single(result);
             Assert.Equal("W001", warehouseModel.WarehouseCode);
             Assert.True(new[] { "US", "CA" }.SequenceEqual(warehouseModel.DestinationCountryCodes));
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [MemberData("IsAsyncData", new object[] { })]
+        public override async Task Projecting_owned_collection_and_aggregate(bool async)
+        {
+            await base.Projecting_owned_collection_and_aggregate(async);
+        }
+
+        [ConditionalTheory(Skip = "It's impossible to override this test so it could be run against SingleStore")]
+        [MemberData("IsAsyncData", new object[] { })]
+        public override async Task Join_selects_with_duplicating_aliases_and_owned_expansion_uniquifies_correctly(
+            bool async)
+        {
+            await base.Join_selects_with_duplicating_aliases_and_owned_expansion_uniquifies_correctly(async);
+        }
+
+        [ConditionalTheory(Skip = "It's impossible to override this test so it could be run against SingleStore")]
+        [MemberData("IsAsyncData", new object[] { })]
+        public override async Task Owned_entity_with_all_null_properties_in_compared_to_non_null_in_conditional_projection(
+            bool async)
+        {
+            await base.Owned_entity_with_all_null_properties_in_compared_to_non_null_in_conditional_projection(async);
+        }
+
+        [ConditionalTheory(Skip = "It's impossible to override this test so it could be run against SingleStore")]
+        [MemberData("IsAsyncData", new object[] { })]
+        public override async Task Owned_entity_with_all_null_properties_in_compared_to_null_in_conditional_projection(
+            bool async)
+        {
+            await base.Owned_entity_with_all_null_properties_in_compared_to_null_in_conditional_projection(async);
         }
     }
 }

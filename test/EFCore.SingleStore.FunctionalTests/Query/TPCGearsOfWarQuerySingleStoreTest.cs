@@ -345,79 +345,6 @@ ORDER BY `t`.`Id`, `t0`.`Nickname`, `t0`.`SquadId`
 """);
     }
 
-    public override async Task Include_where_list_contains_navigation(bool async)
-    {
-        await base.Include_where_list_contains_navigation(async);
-
-        AssertSql(
-"""
-SELECT `t`.`Id`
-FROM `Tags` AS `t`
-""",
-                //
-                """
-SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`, `t0`.`Id`, `t0`.`GearNickName`, `t0`.`GearSquadId`, `t0`.`IssueDate`, `t0`.`Note`
-FROM (
-    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
-    FROM `Gears` AS `g`
-    UNION ALL
-    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
-    FROM `Officers` AS `o`
-) AS `t`
-LEFT JOIN `Tags` AS `t0` ON (`t`.`Nickname` = `t0`.`GearNickName`) AND (`t`.`SquadId` = `t0`.`GearSquadId`)
-WHERE `t0`.`Id` IS NOT NULL AND `t0`.`Id` IN ('b39a6fba-9026-4d69-828e-fd7068673e57', '70534e05-782c-4052-8720-c2c54481ce5f', 'a8ad98f9-e023-4e2a-9a70-c2728455bd34', 'df36f493-463f-4123-83f9-6b135deeb7ba', '34c8d86e-a4ac-4be5-827f-584dda348a07', 'a7be028a-0cf2-448f-ab55-ce8bc5d8cf69')
-""");
-    }
-
-    public override async Task Include_where_list_contains_navigation2(bool async)
-    {
-        await base.Include_where_list_contains_navigation2(async);
-
-        AssertSql(
-"""
-SELECT `t`.`Id`
-FROM `Tags` AS `t`
-""",
-                //
-                """
-SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`, `t0`.`Id`, `t0`.`GearNickName`, `t0`.`GearSquadId`, `t0`.`IssueDate`, `t0`.`Note`
-FROM (
-    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
-    FROM `Gears` AS `g`
-    UNION ALL
-    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
-    FROM `Officers` AS `o`
-) AS `t`
-INNER JOIN `Cities` AS `c` ON `t`.`CityOfBirthName` = `c`.`Name`
-LEFT JOIN `Tags` AS `t0` ON (`t`.`Nickname` = `t0`.`GearNickName`) AND (`t`.`SquadId` = `t0`.`GearSquadId`)
-WHERE `c`.`Location` IS NOT NULL AND `t0`.`Id` IN ('b39a6fba-9026-4d69-828e-fd7068673e57', '70534e05-782c-4052-8720-c2c54481ce5f', 'a8ad98f9-e023-4e2a-9a70-c2728455bd34', 'df36f493-463f-4123-83f9-6b135deeb7ba', '34c8d86e-a4ac-4be5-827f-584dda348a07', 'a7be028a-0cf2-448f-ab55-ce8bc5d8cf69')
-""");
-    }
-
-    public override async Task Navigation_accessed_twice_outside_and_inside_subquery(bool async)
-    {
-        await base.Navigation_accessed_twice_outside_and_inside_subquery(async);
-
-        AssertSql(
-"""
-SELECT `t`.`Id`
-FROM `Tags` AS `t`
-""",
-                //
-                """
-SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
-FROM (
-    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
-    FROM `Gears` AS `g`
-    UNION ALL
-    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
-    FROM `Officers` AS `o`
-) AS `t`
-LEFT JOIN `Tags` AS `t0` ON (`t`.`Nickname` = `t0`.`GearNickName`) AND (`t`.`SquadId` = `t0`.`GearSquadId`)
-WHERE `t0`.`Id` IS NOT NULL AND `t0`.`Id` IN ('b39a6fba-9026-4d69-828e-fd7068673e57', '70534e05-782c-4052-8720-c2c54481ce5f', 'a8ad98f9-e023-4e2a-9a70-c2728455bd34', 'df36f493-463f-4123-83f9-6b135deeb7ba', '34c8d86e-a4ac-4be5-827f-584dda348a07', 'a7be028a-0cf2-448f-ab55-ce8bc5d8cf69')
-""");
-    }
-
     public override async Task Include_with_join_multi_level(bool async)
     {
         await base.Include_with_join_multi_level(async);
@@ -4014,7 +3941,7 @@ FROM `Missions` AS `m`
 """
 SELECT COUNT(*)
 FROM `Missions` AS `m`
-WHERE `m`.`Timeline` = TIMESTAMP '1902-01-02 08:30:00.123456'
+WHERE `m`.`Timeline` = '1902-01-02 08:30:00.123456'
 """);
     }
 
@@ -9023,7 +8950,7 @@ WHERE (
 
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE ((@__start_0 <= CONVERT(`m`.`Timeline`, date)) AND (`m`.`Timeline` < @__end_1)) AND (`m`.`Timeline` = TIMESTAMP '1902-01-02 08:30:00.123456')
+WHERE ((@__start_0 <= CONVERT(`m`.`Timeline`, date)) AND (`m`.`Timeline` < @__end_1)) AND (`m`.`Timeline` = '1902-01-02 08:30:00.123456')
 """);
     }
 
@@ -11734,7 +11661,7 @@ WHERE (DAYOFWEEK(`m`.`Date`) - 1) = 6
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) year) = DATE '1993-11-10'
+WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) year) = '1993-11-10'
 """);
     }
 
@@ -11746,7 +11673,7 @@ WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) year) = DATE '1993-11-10'
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) month) = DATE '1991-02-10'
+WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) month) = '1991-02-10'
 """);
     }
 
@@ -11758,7 +11685,7 @@ WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) month) = DATE '1991-02-10'
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) day) = DATE '1990-11-13'
+WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) day) = '1990-11-13'
 """);
     }
 
@@ -11818,7 +11745,7 @@ WHERE (EXTRACT(microsecond FROM `m`.`Time`)) DIV (1000) = 500
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Time`, INTERVAL CAST(3.0 AS signed) hour) = TIME '13:15:50.5'
+WHERE (ADDTIME(`m`.`Time`, "03:00:00")) = '13:15:50.5':>time(6)
 """);
     }
 
@@ -11830,7 +11757,7 @@ WHERE DATE_ADD(`m`.`Time`, INTERVAL CAST(3.0 AS signed) hour) = TIME '13:15:50.5
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Time`, INTERVAL CAST(3.0 AS signed) minute) = TIME '10:18:50.5'
+WHERE (ADDTIME(`m`.`Time`, "00:03:00")) = '10:18:50.5':>time(6)
 """);
     }
 
@@ -11842,7 +11769,7 @@ WHERE DATE_ADD(`m`.`Time`, INTERVAL CAST(3.0 AS signed) minute) = TIME '10:18:50
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE (`m`.`Time` + TIME '03:00:00') = TIME '13:15:50.5'
+WHERE (ADDTIME(`m`.`Time`, '03:00:00')) = '13:15:50.5':>time(6)
 """);
     }
 
@@ -11854,7 +11781,7 @@ WHERE (`m`.`Time` + TIME '03:00:00') = TIME '13:15:50.5'
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE (`m`.`Time` >= TIME '10:00:00') & (`m`.`Time` < TIME '11:00:00')
+WHERE (`m`.`Time` >= '10:00:00') & (`m`.`Time` < '11:00:00')
 """);
     }
 
@@ -11866,7 +11793,7 @@ WHERE (`m`.`Time` >= TIME '10:00:00') & (`m`.`Time` < TIME '11:00:00')
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE (`m`.`Time` - TIME '10:00:00') = TIME '00:15:50.5'
+WHERE (ADDTIME(`m`.`Time`, "-10:00:00")) = '00:15:50.5':>time(6)
 """);
     }
 
@@ -12001,7 +11928,7 @@ WHERE (`t`.`HasSoulPatch` = TRUE) AND `t`.`HasSoulPatch` IN (FALSE, TRUE)
 
 SELECT `c`.`Name`, `c`.`Location`, `c`.`Nation`
 FROM `Cities` AS `c`
-WHERE (`c`.`Nation` = @__place_0) OR (`c`.`Location` = @__place_0)
+WHERE ((`c`.`Nation` = @__place_0) OR (`c`.`Location` = @__place_0))
 """);
     }
 

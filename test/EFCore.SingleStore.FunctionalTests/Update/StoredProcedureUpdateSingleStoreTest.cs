@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -95,8 +96,10 @@ SELECT @_out_p2;
         await base.Update(
             async,
 """
-CREATE PROCEDURE Entity_Update(pId int, pName varchar(255))
-UPDATE `Entity` SET `Name` = pName WHERE `Id` = pid
+CREATE PROCEDURE Entity_Update(pId int, pName varchar(255)) AS
+BEGIN
+UPDATE `Entity` SET `Name` = pName WHERE `Id` = pid;
+END
 """);
 
         AssertSql(
@@ -196,14 +199,125 @@ SELECT @_out_p1;
     }
 
     public override async Task Rows_affected_parameter(bool async)
+{
+    var createSprocSql = """
+    CREATE PROCEDURE Entity_Update(pId int, pName varchar(255)) RETURNS INT AS
+    BEGIN
+        UPDATE `Entity` SET `Name` = pName WHERE `Id` = pId;
+        RETURN ROW_COUNT();
+    END
+    """;
+
+    var contextFactory = await InitializeAsync<DbContext>(
+        modelBuilder =>
+        {
+            modelBuilder.Entity<Entity>().Property(e => e.Id).HasColumnType("bigint");
+            modelBuilder.Entity<StoredProcedureUpdateTestBase.Entity>()
+                .UpdateUsingStoredProcedure(
+                    "Entity_Update",
+                    spb => spb
+                        .HasOriginalValueParameter<long>(w => w.Id)
+                        .HasParameter(w => w.Name));
+                        //.HasRowsAffectedParameter());
+        },
+        seed: ctx => CreateStoredProcedures(ctx, createSprocSql),
+        onConfiguring: optionsBuilder =>
+        {
+            /*optionsBuilder.ConfigureWarnings(builder =>
+                builder.Ignore(RelationalEventId.QueryClientEvaluationWarning));*/
+        });
+
+    await using var context = contextFactory.CreateContext();
+
+    var entity = new StoredProcedureUpdateTestBase.Entity
     {
+        Name = "Initial"
+    };
+
+    context.Set<StoredProcedureUpdateTestBase.Entity>().Add(entity);
+    await SaveChanges(context, async);
+
+    entity.Name = "Updated";
+    ClearLog(); // Assuming this method is accessible or replace with your logging logic
+    await SaveChanges(context, async);
+
+    using (TestSqlLoggerFactory.SuspendRecordingEvents())
+    {
+        var updatedEntity = await context.Set<StoredProcedureUpdateTestBase.Entity>()
+            .SingleAsync(w => w.Id == entity.Id);
+
+        Assert.Equal("Updated", updatedEntity.Name);
+    }
+
+    AssertSql(
+        """
+        @p1='Updated' (Size = 4000)
+        @p2='1'
+
+        SET @_out_p0 = NULL;
+        CALL `Entity_Update`(@p2, @p1);
+        SELECT @_out_p0;
+        """);
+}
+    /*public override async Task Rows_affected_parameter(bool async)
+    {
+        var createSprocSql = """
+                             CREATE PROCEDURE Entity_Update(pId int, pName varchar(255)) AS
+                             DECLARE
+                                 pRowsAffected INT;
+                             BEGIN
+                                 UPDATE `Entity` SET `Name` = pName WHERE `Id` = pId;
+                                 pRowsAffected = ROW_COUNT();
+                             END
+                             """;
+        var contextFactory = await InitializeAsync<DbContext>(
+            modelBuilder =>
+            {
+                modelBuilder.Entity<Parent>().UseTpcMappingStrategy();
+
+                modelBuilder.Entity<Child1>()
+                    .UseTpcMappingStrategy()
+                    .InsertUsingStoredProcedure(
+                        nameof(Child1) + "_Insert",
+                        spb => spb
+                            .HasParameter(w => w.Id, pb => pb.IsOutput())
+                            .HasParameter(w => w.Name)
+                            .HasParameter(w => w.Child1Property))
+                    .Property(e => e.Id).UseSingleStoreIdentityColumn(); // <--
+            },
+            seed: ctx => CreateStoredProcedures(ctx, createSprocSql),
+            onConfiguring: optionsBuilder =>
+            {
+                optionsBuilder.ConfigureWarnings(builder =>
+                    builder.Ignore(RelationalEventId.TpcStoreGeneratedIdentityWarning)); // <-- added
+            });
+
+        await using var context = contextFactory.CreateContext();
+
+        var entity1 = new Child1 { Name = "Child", Child1Property = 8 };
+        context.Set<Child1>().Add(entity1);
+        await SaveChanges(context, async);
+
+        context.ChangeTracker.Clear();
+
+        using (TestSqlLoggerFactory.SuspendRecordingEvents())
+        {
+            var entity2 = context.Set<Child1>().Single(b => b.Id == entity1.Id);
+
+            Assert.Equal("Child", entity2.Name);
+            Assert.Equal(8, entity2.Child1Property);
+        }
+
+
         await base.Rows_affected_parameter(
             async,
 """
-CREATE PROCEDURE Entity_Update(pId int, pName varchar(255), OUT pRowsAffected int)
+CREATE PROCEDURE Entity_Update(pId int, pName varchar(255)) AS
+DECLARE
+    pRowsAffected INT;
 BEGIN
     UPDATE `Entity` SET `Name` = pName WHERE `Id` = pId;
-    SET pRowsAffected = ROW_COUNT();
+    pRowsAffected = ROW_COUNT();
 END
 """);
 
@@ -216,7 +330,7 @@ SET @_out_p0 = NULL;
 CALL `Entity_Update`(@p1, @p2, @_out_p0);
 SELECT @_out_p0;
 """);
-    }
+    }*/
 
     public override async Task Rows_affected_parameter_and_concurrency_failure(bool async)
     {

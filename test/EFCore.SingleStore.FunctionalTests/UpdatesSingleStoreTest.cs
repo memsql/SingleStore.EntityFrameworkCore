@@ -64,15 +64,42 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
+                // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+                // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+                modelBuilder.Entity<Category>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<Models.Issue1300.Flavor>()
+                    .Property(e => e.FlavorId)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<Gift>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<Lift>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<Person>()
+                    .Property(e => e.PersonId)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<Profile>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<GiftObscurer>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<LiftObscurer>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<LoginEntityTypeWithAnExtremelyLongAndOverlyConvolutedNameThatIsUsedToVerifyThatTheStoreIdentifierGenerationLengthLimitIsWorkingCorrectly>()
+                    .Property(e => e.ProfileId)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<ProductCategory>()
+                    .Property(e => e.CategoryId)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<LoginEntityTypeWithAnExtremelyLongAndOverlyConvolutedNameThatIsUsedToVerifyThatTheStoreIdentifierGenerationLengthLimitIsWorkingCorrectlyDetails>()
+                    .Property(e => e.ProfileId)
+                    .HasColumnType("bigint");
                 base.OnModelCreating(modelBuilder, context);
-
-                // Necessary for test `Save_with_shared_foreign_key` to run correctly.
-                if (AppConfig.ServerVersion.Supports.DefaultExpression ||
-                    AppConfig.ServerVersion.Supports.AlternativeDefaultExpression)
-                {
-                    modelBuilder.Entity<ProductBase>()
-                        .Property(p => p.Id).HasDefaultValueSql("(UUID())");
-                }
 
                 Models.Issue1300.Setup(modelBuilder, context);
             }
