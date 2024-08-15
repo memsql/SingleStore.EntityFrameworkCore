@@ -708,7 +708,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
-                    Assert.Equal(nameColumn.Collation, DefaultCollation);
+                    Assert.Null(nameColumn.Collation);
                     Assert.Equal(NonDefaultCollation, brandColumn.Collation);
                 });
 
@@ -766,7 +766,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var table = Assert.Single(result.Tables);
                     var iceCreamIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "IceCreamId"));
 
-                    Assert.Equal(iceCreamIdColumn.Collation, DefaultCollation);
+                    Assert.Null(iceCreamIdColumn.Collation);
                 });
 
             AssertSql(
@@ -847,7 +847,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var table = Assert.Single(result.Tables);
                     var iceCreamIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "IceCreamId"));
 
-                    Assert.Equal(iceCreamIdColumn.Collation, DefaultCollation);
+                    Assert.Null(iceCreamIdColumn.Collation);
                 });
 
             AssertSql(
@@ -890,7 +890,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
                     Assert.Equal(NonDefaultCollation, nameColumn.Collation);
-                    Assert.Equal(brandColumn.Collation, DefaultCollation);
+                    Assert.Null(brandColumn.Collation);
                 });
 
             AssertSql(
@@ -1099,7 +1099,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
                     Assert.Null(nameColumn[SingleStoreAnnotationNames.CharSet]);
-                    Assert.Equal(DefaultCollation, nameColumn.Collation);
+                    Assert.Null(nameColumn.Collation);
                     Assert.Equal(NonDefaultCharSet, brandColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.NotEqual(DefaultCollation, brandColumn.Collation);
                 });

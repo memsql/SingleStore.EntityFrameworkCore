@@ -35,7 +35,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Collection_select_nav_prop_all(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Navigation_in_subquery_referencing_outer_query(bool async)
         {
             return base.Navigation_in_subquery_referencing_outer_query(async);

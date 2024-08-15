@@ -72,6 +72,7 @@ WHERE FALSE
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore doesn't support DELETE statement with ORDER BY in it")]
     public override async Task Delete_Where_OrderBy(bool async)
     {
         await base.Delete_Where_OrderBy(async);
@@ -108,6 +109,7 @@ WHERE EXISTS (
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore doesn't support DELETE statement with ORDER BY in it")]
     public override async Task Delete_Where_OrderBy_Take(bool async)
     {
         await base.Delete_Where_OrderBy_Take(async);
@@ -936,20 +938,10 @@ WHERE `c`.`CustomerID` = (
         AssertExecuteUpdateSql();
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
     public override async Task Update_Where_GroupBy_First_set_constant_3(bool async)
     {
-        if (AppConfig.ServerVersion.Type == ServerType.SingleStore)
-        {
-            // Not supported by MySQL:
-            //     Error Code: 1093. You can't specify target table 'c' for update in FROM clause
-            await Assert.ThrowsAsync<SingleStoreException>(
-                () => base.Update_Where_GroupBy_First_set_constant_3(async));
-        }
-        else
-        {
-            // Works as expected in MariaDB.
-            await base.Update_Where_GroupBy_First_set_constant_3(async);
-        }
+        await base.Update_Where_GroupBy_First_set_constant_3(async);
 
         AssertExecuteUpdateSql(
 """
@@ -1392,6 +1384,7 @@ SET `o`.`OrderDate` = NULL
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Update_Where_Join_set_property_from_joined_single_result_table(bool async)
     {
         await base.Update_Where_Join_set_property_from_joined_single_result_table(async);
@@ -1426,6 +1419,7 @@ WHERE `c`.`CustomerID` LIKE 'F%'
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Update_Where_Join_set_property_from_joined_single_result_scalar(bool async)
     {
         await base.Update_Where_Join_set_property_from_joined_single_result_scalar(async);
