@@ -44,7 +44,6 @@ LEFT JOIN (
         }
 
         [ConditionalTheory]
-        [MemberData("IsAsyncData", new object[] {})]
         public override async Task Owned_entity_with_all_null_properties_entity_equality_when_not_containing_another_owned_entity(
             bool async)
         {
@@ -75,7 +74,6 @@ LEFT JOIN (
         }
 
         [ConditionalTheory]
-        [MemberData("IsAsyncData", new object[] {})]
         public override async Task Owned_entity_with_all_null_properties_property_access_when_not_containing_another_owned_entity(
             bool async)
         {
@@ -101,7 +99,6 @@ LEFT JOIN (
         }
 
         [ConditionalTheory]
-        [MemberData("IsAsyncData", new object[] {})]
         public override async Task Owned_entity_with_all_null_properties_materializes_when_not_containing_another_owned_entity(
             bool async)
         {
@@ -140,7 +137,6 @@ LEFT JOIN (
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(IsAsyncData))]
         public override async Task Owned_reference_mapped_to_different_table_nested_updated_correctly_after_subquery_pushdown(bool async)
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
@@ -167,7 +163,6 @@ LEFT JOIN (
         }
 
         [ConditionalTheory]
-        [MemberData(nameof(IsAsyncData))]
         public override async Task Owned_reference_mapped_to_different_table_updated_correctly_after_subquery_pushdown(bool async)
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of

@@ -1394,6 +1394,7 @@ ORDER BY `t`.`OrderID`, `t0`.`OrderID`, `t0`.`OrderID0`, `t0`.`ProductID`, `o3`.
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Include_collection_OrderBy_list_contains(bool async)
     {
         await base.Include_collection_OrderBy_list_contains(async);

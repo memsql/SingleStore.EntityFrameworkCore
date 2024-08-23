@@ -24,7 +24,7 @@ public class SingleStoreModificationCommand : ModificationCommand
     {
     }
 
-    public override void PropagateResults(RelationalDataReader relationalReader)
+    /*public override void PropagateResults(RelationalDataReader relationalReader)
     {
         // The default implementation of PropagateResults skips (output) parameters, since for e.g. SQL Server these aren't yet populated
         // when consuming the result set (propagating output columns is done later, after the reader is closed).
@@ -65,5 +65,5 @@ public class SingleStoreModificationCommand : ModificationCommand
             columnModification.Value =
                 columnModification.Property.GetReaderFieldValue(relationalReader, readerIndex, _detailedErrorsEnabled);
         }
-    }
+    }*/
 }

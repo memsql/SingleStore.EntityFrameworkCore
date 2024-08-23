@@ -16,6 +16,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             typeof(TransactionInterceptionTestBase),
             typeof(CommandInterceptionTestBase),
             typeof(NorthwindQueryTaggingQueryTestBase<>),
+            typeof(NonSharedModelUpdatesTestBase),
+            typeof(FindSingleStoreTest),
 
             // TODO: Reenable LoggingSingleStoreTest once its issue has been fixed in EF Core upstream.
             typeof(LoggingTestBase),

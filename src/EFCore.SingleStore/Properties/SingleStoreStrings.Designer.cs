@@ -169,6 +169,14 @@ namespace EntityFrameworkCore.SingleStore.Internal
                 GetString("StoredProcedureReturnValueNotSupported", nameof(entityType), nameof(sproc)),
                 entityType, sproc);
 
+        /// <summary>
+        ///     The entity type '{entityType}' is mapped to the stored procedure '{sproc}', which is configured with a return value. MySQL stored procedures do not support return values; use an output parameter instead.
+        /// </summary>
+        public static string StoredProcedureOutputParametersNotSupported(object entityType, object sproc)
+            => string.Format(
+                GetString("StoredProcedureOutputParametersNotSupported", nameof(entityType), nameof(sproc)),
+                entityType, sproc);
+
         private static string GetString(string name, params string[] formatterNames)
         {
             var value = _resourceManager.GetString(name);

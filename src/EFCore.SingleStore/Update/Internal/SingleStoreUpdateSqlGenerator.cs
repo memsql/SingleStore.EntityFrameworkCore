@@ -174,7 +174,8 @@ namespace EntityFrameworkCore.SingleStore.Update.Internal
             int commandPosition,
             out bool requiresTransaction)
         {
-            Check.DebugAssert(command.StoreStoredProcedure is not null, "command.StoreStoredProcedure is not null");
+            return base.AppendStoredProcedureCall(commandStringBuilder, command, commandPosition, out requiresTransaction);
+            /*Check.DebugAssert(command.StoreStoredProcedure is not null, "command.StoreStoredProcedure is not null");
 
             var storedProcedure = command.StoreStoredProcedure;
 
@@ -318,7 +319,7 @@ namespace EntityFrameworkCore.SingleStore.Update.Internal
 
             requiresTransaction = true;
 
-            return resultSetMapping;
+            return resultSetMapping;*/
         }
 
         /// <summary>

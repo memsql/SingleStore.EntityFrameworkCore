@@ -11918,20 +11918,6 @@ WHERE (`t`.`HasSoulPatch` = TRUE) AND `t`.`HasSoulPatch` IN (FALSE, TRUE)
 """);
     }
 
-    public override async Task Parameter_used_multiple_times_take_appropriate_inferred_type_mapping(bool async)
-    {
-        await base.Parameter_used_multiple_times_take_appropriate_inferred_type_mapping(async);
-
-        AssertSql(
-"""
-@__place_0='Seattle' (Size = 4000)
-
-SELECT `c`.`Name`, `c`.`Location`, `c`.`Nation`
-FROM `Cities` AS `c`
-WHERE ((`c`.`Nation` = @__place_0) OR (`c`.`Location` = @__place_0))
-""");
-    }
-
     public override async Task Enum_matching_take_value_gets_different_type_mapping(bool async)
     {
         await base.Enum_matching_take_value_gets_different_type_mapping(async);

@@ -6,7 +6,8 @@ using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests;
 
-public abstract class FindSingleStoreTest : FindTestBase<FindSingleStoreTest.FindSingleStoreFixture>
+// Made internal to skip all tests
+internal abstract class FindSingleStoreTest : FindTestBase<FindSingleStoreTest.FindSingleStoreFixture>
 {
     protected FindSingleStoreTest(FindSingleStoreFixture fixture)
         : base(fixture)

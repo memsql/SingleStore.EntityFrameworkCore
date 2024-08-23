@@ -240,4 +240,7 @@
   <data name="StoredProcedureReturnValueNotSupported" xml:space="preserve">
     <value>The entity type '{entityType}' is mapped to the stored procedure '{sproc}', which is configured with a return value. MySQL stored procedures do not support return values; use an output parameter instead.</value>
   </data>
+  <data name="StoredProcedureOutputParametersNotSupported" xml:space="preserve">
+    <value>The entity type '{entityType}' is mapped to the stored procedure '{sproc}', which is configured with an output parameter. SingleStore stored procedures do not support output parameters; use result columns or return values instead.</value>
+  </data>
 </root>
