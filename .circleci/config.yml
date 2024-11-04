@@ -20,7 +20,9 @@ commands:
             sudo apt-get update
             sudo apt-get install -y apt-transport-https
             sudo apt-get update
-            sudo apt-get install -y mariadb-client-core-10.3
+            sudo apt-get install -y mariadb-client-core-10.6
+            sudo apt-get install -y mariadb-client-10.6
+            sudo apt remove 'dotnet*' && sudo apt remove 'aspnetcore*' && sudo rm /etc/apt/sources.list.d/microsoft-prod.list && sudo apt update
             sudo apt-get install -y dotnet-sdk-7.0
             dotnet --info
       - run:
@@ -95,7 +97,7 @@ jobs:
       singlestore_image:
         type: string
     machine:
-      image: ubuntu-2004:202104-01
+      image: ubuntu-2204:2024.05.1
       docker_layer_caching: true
     environment:
       SINGLESTORE_IMAGE: << parameters.singlestore_image >>
@@ -194,12 +196,27 @@ workflows:
             parameters:
               singlestore_image:
                 - singlestore/cluster-in-a-box:alma-8.5.6-b51bc5471a-4.0.17-1.17.8
+      - test-ubuntu:
+          name: Test 8.7 cluster-in-a-box
+          matrix:
+            parameters:
+              singlestore_image:
+                - singlestore/cluster-in-a-box:alma-8.7.12-483e5f8acb-4.1.0-1.17.15
       - test-windows:
           name: Test first block of functional tests S2MS on Windows
           func_test_block_path:  .\.circleci\run-functional-tests1.ps1
       - test-windows:
           name: Test second block of functional tests S2MS on Windows
           func_test_block_path:  .\.circleci\run-functional-tests2.ps1
+      - test-windows:
+          name: Test third block of functional tests S2MS on Windows
+          func_test_block_path:  .\.circleci\run-functional-tests3.ps1
+      - test-windows:
+          name: Test fourth block of functional tests S2MS on Windows
+          func_test_block_path:  .\.circleci\run-functional-tests4.ps1
+      - test-windows:
+          name: Test fifth block of functional tests S2MS on Windows
+          func_test_block_path:  .\.circleci\run-functional-tests5.ps1
 
 
   publish:
