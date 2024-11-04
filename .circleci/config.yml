@@ -20,6 +20,7 @@ commands:
             sudo apt-get update
             sudo apt-get install -y apt-transport-https
             sudo apt-get update
+            sudo apt install snapd
             sudo apt-get install -y mariadb-client-core-10.6
             sudo apt-get install -y mariadb-client-10.6
             sudo apt remove 'dotnet*' && sudo apt remove 'aspnetcore*' && sudo rm /etc/apt/sources.list.d/microsoft-prod.list && sudo apt update
