@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 using Xunit.Abstractions;
 

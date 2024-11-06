@@ -99,6 +99,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateThrowBeforeThrowAfter), "Rabbit")]
         public virtual void Before_save_throw_ignores_value_if_not_set(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -130,6 +137,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateUseBeforeThrowAfter))]
         public virtual void Before_save_use_always_uses_value_if_set(string propertyName)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -161,6 +175,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateUseBeforeThrowAfter), null)]
         public virtual void Before_save_use_ignores_value_if_not_set(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -190,6 +211,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateIgnoreBeforeThrowAfter), "Rabbit")]
         public virtual void Before_save_ignore_ignores_value_if_not_set(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -219,6 +247,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateIgnoreBeforeThrowAfter), "Rabbit")]
         public virtual void Before_save_ignore_ignores_value_even_if_set(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -271,6 +306,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateThrowBeforeThrowAfter), "Rabbit")]
         public virtual void After_save_throw_ignores_value_if_not_modified(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -310,6 +352,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateThrowBeforeIgnoreAfter), "Rabbit")]
         public virtual void After_save_ignore_ignores_value_if_not_modified(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -349,6 +398,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateThrowBeforeIgnoreAfter), "Rabbit")]
         public virtual void After_save_ignore_ignores_value_even_if_modified(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -390,6 +446,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateThrowBeforeUseAfter), "Rabbit")]
         public virtual void After_save_use_ignores_value_if_not_modified(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -429,6 +492,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [InlineData(nameof(Anais.OnUpdateThrowBeforeUseAfter), "Daisy")]
         public virtual void After_save_use_uses_value_if_modified(string propertyName, string expectedValue)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -477,6 +547,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Identity_property_on_Added_entity_with_temporary_value_gets_value_from_store()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -589,7 +666,15 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         [ConditionalFact] // Issue #19137
         public void Clearing_optional_FK_does_not_leave_temporary_value()
-            => ExecuteWithStrategyInTransaction(
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            ExecuteWithStrategyInTransaction(
                 context =>
                 {
                     var product = new OptionalProduct();
@@ -707,6 +792,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                     Assert.Equal(1, categoryEntry.Property(e => e.Id).CurrentValue);
                     Assert.False(categoryEntry.Property(e => e.Id).IsTemporary);
                 });
+        }
 
         protected class OptionalProduct
         {
@@ -723,6 +809,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Identity_property_on_Added_entity_with_temporary_value_gets_value_from_store_even_if_same()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -743,6 +836,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Identity_property_on_Added_entity_with_default_value_gets_value_from_store()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -773,6 +873,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Identity_property_on_Added_entity_can_have_value_set_explicitly()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -791,6 +898,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Identity_property_on_Modified_entity_with_read_only_after_save_throws_if_value_is_in_modified_state()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -819,6 +933,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Identity_property_on_Modified_entity_is_included_in_update_when_modified()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -848,6 +969,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Identity_property_on_Modified_entity_is_not_included_in_update_when_not_modified()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -880,6 +1008,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Always_identity_property_on_Added_entity_with_temporary_value_gets_value_from_store()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -899,6 +1034,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Always_identity_property_on_Added_entity_with_default_value_gets_value_from_store()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -929,6 +1071,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Always_identity_property_on_Modified_entity_with_read_only_after_save_throws_if_value_is_in_modified_state()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -957,6 +1106,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Always_identity_property_on_Modified_entity_is_not_included_in_the_update_when_not_modified()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -988,6 +1144,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Computed_property_on_Added_entity_with_temporary_value_gets_value_from_store()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1007,6 +1170,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Computed_property_on_Added_entity_with_default_value_gets_value_from_store()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1037,6 +1207,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Computed_property_on_Added_entity_can_have_value_set_explicitly()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1055,6 +1232,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Computed_property_on_Modified_entity_with_read_only_after_save_throws_if_value_is_in_modified_state()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1083,6 +1267,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Computed_property_on_Modified_entity_is_included_in_update_when_modified()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1112,6 +1303,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Computed_property_on_Modified_entity_is_read_from_store_when_not_modified()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1144,6 +1342,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Always_computed_property_on_Added_entity_with_temporary_value_gets_value_from_store()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1163,6 +1368,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Always_computed_property_on_Added_entity_with_default_value_gets_value_from_store()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1180,7 +1392,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         [ConditionalFact]
         public virtual void Always_computed_property_on_Added_entity_with_read_only_before_save_throws_if_explicit_values_set()
-            => ExecuteWithStrategyInTransaction(
+        {
+            ExecuteWithStrategyInTransaction(
                 context =>
                 {
                     context.Add(new Gumball { AlwaysComputedReadOnlyBeforeSave = "Masami" });
@@ -1189,10 +1402,18 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                         CoreStrings.PropertyReadOnlyBeforeSave("AlwaysComputedReadOnlyBeforeSave", "Gumball"),
                         Assert.Throws<InvalidOperationException>(() => context.SaveChanges()).Message);
                 });
+        }
 
         [ConditionalFact]
         public virtual void Always_computed_property_on_Modified_entity_with_read_only_after_save_throws_if_value_is_in_modified_state()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1221,6 +1442,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Always_computed_property_on_Modified_entity_is_read_from_store_when_not_modified()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
 
             ExecuteWithStrategyInTransaction(
@@ -1253,6 +1481,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Fields_used_correctly_for_store_generated_values()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id = 0;
             ExecuteWithStrategyInTransaction(
                 context =>
@@ -1940,6 +2175,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [ConditionalFact]
         public virtual void Insert_update_and_delete_with_wrapped_int_key()
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var id1 = 0;
             var id2 = 0;
             var id3 = 0;

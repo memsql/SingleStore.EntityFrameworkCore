@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.EntityFrameworkCore.Update;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Tests;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Update;
@@ -50,10 +51,108 @@ public class StoreValueGenerationSingleStoreTest : StoreValueGenerationTestBase<
         bool withDatabaseGenerated)
         => 1;
 
+    [ConditionalTheory]
+    public override Task Modify_with_generated_values(bool async)
+    {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.Modify_with_generated_values(async);
+    }
+
+    [ConditionalTheory]
+    public override Task Modify_Modify_with_same_entity_type_and_generated_values(bool async)
+    {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.Modify_Modify_with_same_entity_type_and_generated_values(async);
+    }
+
+    [ConditionalTheory]
+    public override Task Modify_Modify_with_different_entity_types_and_generated_values(bool async)
+    {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.Modify_Modify_with_different_entity_types_and_generated_values(async);
+    }
+
+    [ConditionalTheory]
+    public override Task Delete_Delete_with_same_entity_type(bool async)
+    {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.Delete_Delete_with_same_entity_type(async);
+    }
+
+    [ConditionalTheory]
+    public override Task Delete_Delete_with_different_entity_types(bool async)
+    {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.Delete_Delete_with_different_entity_types(async);
+    }
+
+    [ConditionalTheory]
+    public override Task Delete_Add_with_same_entity_types(bool async)
+    {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.Delete_Add_with_same_entity_types(async);
+    }
+
+    [ConditionalTheory]
+    public override Task Delete(bool async)
+    {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return Task.CompletedTask;
+        }
+
+        return base.Delete(async);
+    }
+
     #region Single operation
 
     public override async Task Add_with_generated_values(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Add_with_generated_values(async);
 
         if (AppConfig.ServerVersion.Supports.Returning)
@@ -101,6 +200,13 @@ VALUES (@p0, @p1, @p2);
 
     public override async Task Add_with_all_generated_values(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Add_with_all_generated_values(async);
 
         if (AppConfig.ServerVersion.Supports.Returning)
@@ -149,6 +255,13 @@ SELECT ROW_COUNT();
 
     public override async Task Add_Add_with_same_entity_type_and_generated_values(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Add_Add_with_same_entity_type_and_generated_values(async);
 
         if (AppConfig.ServerVersion.Supports.Returning)
@@ -210,6 +323,13 @@ VALUES (@p0, @p1, @p2),
 
     public override async Task Add_Add_with_same_entity_type_and_all_generated_values(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Add_Add_with_same_entity_type_and_all_generated_values(async);
 
         if (AppConfig.ServerVersion.Supports.Returning)
@@ -272,6 +392,13 @@ SELECT ROW_COUNT();
 
     public override async Task Add_Add_with_different_entity_types_and_generated_values(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Add_Add_with_different_entity_types_and_generated_values(async);
 
         if (AppConfig.ServerVersion.Supports.Returning)
@@ -333,6 +460,13 @@ VALUES (@p3, @p4, @p5);
 
     public override async Task Add_Add_with_different_entity_types_and_all_generated_values(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Add_Add_with_different_entity_types_and_all_generated_values(async);
 
         if (AppConfig.ServerVersion.Supports.Returning)

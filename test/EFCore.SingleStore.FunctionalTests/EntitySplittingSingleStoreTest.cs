@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.Logging;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -32,4 +33,19 @@ public class EntitySplittingSingleStoreTest : EntitySplittingTestBase
 
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
+
+
+    [ConditionalFact]
+    public override async Task Can_roundtrip()
+    {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
+        await base.Can_roundtrip();
+    }
+
 }

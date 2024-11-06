@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestModels.UpdatesModel;
@@ -47,9 +48,100 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             {
                 return;
             }
+
             base.Can_add_and_remove_self_refs();
         }
 
+        [ConditionalFact]
+        public override void Can_use_shared_columns_with_conversion()
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+		    // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            base.Can_use_shared_columns_with_conversion();
+        }
+
+        [ConditionalFact]
+        public override void Can_change_enums_with_conversion()
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            base.Can_change_enums_with_conversion();
+        }
+
+        [ConditionalTheory]
+        public override async Task Can_change_type_of__dependent_by_replacing_with_new_dependent(bool async)
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            await base.Can_change_type_of__dependent_by_replacing_with_new_dependent(async);
+        }
+
+        [ConditionalTheory]
+        public override async Task Can_change_type_of_pk_to_pk_dependent_by_replacing_with_new_dependent(bool async)
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            await base.Can_change_type_of_pk_to_pk_dependent_by_replacing_with_new_dependent(async);
+        }
+
+        [ConditionalFact]
+        public override void Save_replaced_principal()
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            base.Save_replaced_principal();
+        }
+
+        [ConditionalTheory]
+        public new Task SaveChanges_false_processes_all_tracked_entities_without_calling_AcceptAllChanges(bool async)
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return Task.CompletedTask;
+            }
+
+            return base.SaveChanges_false_processes_all_tracked_entities_without_calling_AcceptAllChanges(async);
+        }
+
+        [ConditionalTheory]
+        public new Task SaveChanges_processes_all_tracked_entities(bool async)
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return Task.CompletedTask;
+            }
+
+            return base.SaveChanges_processes_all_tracked_entities(async);
+        }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Returning))]

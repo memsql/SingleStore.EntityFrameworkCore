@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
@@ -52,6 +53,13 @@ WHERE (
 
     public override async Task Delete_where_using_hierarchy_derived(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Delete_where_using_hierarchy_derived(async);
 
         AssertSql(
@@ -105,6 +113,13 @@ WHERE (
 
     public override async Task Update_where_hierarchy(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Update_where_hierarchy(async);
 
         AssertExecuteUpdateSql();
@@ -126,6 +141,13 @@ WHERE (
 
     public override async Task Update_where_using_hierarchy(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Update_where_using_hierarchy(async);
 
         AssertExecuteUpdateSql(

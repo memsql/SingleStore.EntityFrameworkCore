@@ -281,6 +281,13 @@ LIMIT 2");
         [MemberData("IsAsyncData", new object[] {})]
         public override async Task SelectMany_where_Select(bool async)
         {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
             var contextFactory = await this.InitializeAsync<SimpleQueryTestBase.Context26744>(
                     seed: (Action<SimpleQueryTestBase.Context26744>)(c => c.Seed()),
                     onModelCreating: modelBuilder =>
