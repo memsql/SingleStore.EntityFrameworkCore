@@ -771,7 +771,13 @@ LIMIT @__p_0
 
     public override async Task Update_Where_Skip_Take_set_constant(bool async)
     {
-        await base.Update_Where_Skip_Take_set_constant(async);
+        await AssertUpdate(
+            async,
+            ss => ss.Set<Customer>().Where(c => c.CustomerID.StartsWith("F")).OrderBy(c => c.CustomerID).Skip(2).Take(4),
+            e => e,
+            s => s.SetProperty(c => c.ContactName, "Updated"),
+            rowsAffectedCount: 4,
+            (b, a) => Assert.All(a, c => Assert.Equal("Updated", c.ContactName)));
 
         AssertExecuteUpdateSql(
 """
@@ -783,6 +789,7 @@ INNER JOIN (
     SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
     FROM `Customers` AS `c0`
     WHERE `c0`.`CustomerID` LIKE 'F%'
+    ORDER BY `c0`.`CustomerID`
     LIMIT @__p_1 OFFSET @__p_0
 ) AS `t` ON `c`.`CustomerID` = `t`.`CustomerID`
 SET `c`.`ContactName` = 'Updated'

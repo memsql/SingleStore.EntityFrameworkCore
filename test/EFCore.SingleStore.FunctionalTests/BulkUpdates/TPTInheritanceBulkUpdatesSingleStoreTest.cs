@@ -132,6 +132,13 @@ WHERE (
 
     public override async Task Update_where_using_hierarchy_derived(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         await base.Update_where_using_hierarchy_derived(async);
 
         AssertExecuteUpdateSql(

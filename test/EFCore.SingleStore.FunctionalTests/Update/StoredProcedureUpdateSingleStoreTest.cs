@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.EntityFrameworkCore.Update;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Internal;
+using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Update;
@@ -41,6 +42,13 @@ public class StoredProcedureUpdateSingleStoreTest : StoredProcedureUpdateTestBas
 
     public override async Task Insert_with_result_column(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE Entity_Insert(pName VARCHAR(255))
                              AS
@@ -93,6 +101,13 @@ public class StoredProcedureUpdateSingleStoreTest : StoredProcedureUpdateTestBas
 
     public override async Task Insert_with_two_result_columns(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE EntityWithAdditionalProperty_Insert(pName VARCHAR(255))
                              AS
@@ -160,6 +175,13 @@ public class StoredProcedureUpdateSingleStoreTest : StoredProcedureUpdateTestBas
 
     public override async Task Update(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
 CREATE PROCEDURE Entity_Update(pId int, pName varchar(255)) AS
 BEGIN
@@ -223,6 +245,13 @@ CALL `Entity_Update`(@p0, @p1);
 
     public override async Task Update_partial(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
 CREATE PROCEDURE EntityWithAdditionalProperty_Update(pId int, pName varchar(255), pAdditionalProperty int) AS
 BEGIN
@@ -316,6 +345,13 @@ CALL `EntityWithAdditionalProperty_Update`(@p0, @p1, @p2);
 
     public override async Task Delete(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE Entity_Delete(pId int) AS
                              BEGIN
@@ -382,6 +418,13 @@ CALL `Entity_Delete`(@p0);
 
     public override async Task Delete_and_insert(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE Entity_Insert(pName varchar(255)) AS
                              BEGIN
@@ -496,6 +539,13 @@ CALL `Entity_Insert`(@p1);
 
     public override async Task Rows_affected_result_column(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE Entity_Update(pId int, pName varchar(255)) AS
                              BEGIN
@@ -623,6 +673,13 @@ CALL `Entity_Insert`(@p1);
 
     public override async Task Rows_affected_return_value(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE Entity_Update(pId INT, pName VARCHAR(255))
                              RETURNS INT AS
@@ -689,8 +746,16 @@ CALL `Entity_Insert`(@p1);
             """);
     }
 
+    //no exception
     public override async Task Rows_affected_return_value_and_concurrency_failure(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE Entity_Update(pId INT, pName VARCHAR(255))
                              RETURNS INT AS
@@ -765,49 +830,16 @@ CALL `Entity_Insert`(@p1);
 
     public override async Task Store_generated_concurrency_token_as_two_parameters(bool async)
     {
-        await base.Store_generated_concurrency_token_as_two_parameters(
-            async,
-"""
-CREATE PROCEDURE Entity_Update(pId int, pConcurrencyTokenIn timestamp(6), pName varchar(255), OUT pConcurrencyTokenOut timestamp(6), OUT pRowsAffected int)
-BEGIN
-    UPDATE `Entity` SET `Name` = pName WHERE `Id` = pId AND `ConcurrencyToken` = pConcurrencyTokenIn;
-    SET pRowsAffected = ROW_COUNT();
-    SELECT `ConcurrencyToken` INTO pConcurrencyTokenOut FROM `Entity` WHERE `Id` = pId;
-END
-""");
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => base.Store_generated_concurrency_token_as_in_out_parameter(async, createSprocSql: ""));
 
-        Assert.StartsWith(
-"""
-@p2='1'
-@p3='
-""",
-            TestSqlLoggerFactory.Sql);
-
-        Assert.EndsWith(
-            """
-' (Nullable = true) (DbType = DateTime)
-@p4='Updated' (Size = 4000)
-
-SET @_out_p0 = NULL;
-SET @_out_p1 = NULL;
-CALL `Entity_Update`(@p2, @p3, @p4, @_out_p0, @_out_p1);
-SELECT @_out_p0, @_out_p1;
-""",
-            TestSqlLoggerFactory.Sql);
-
-//         AssertSql(
-//             """
-// @p2='1'
-// @p3='2022-11-14T14:02:25.0912340' (Nullable = true) (DbType = DateTime)
-// @p4='Updated' (Size = 4000)
-//
-// SET @_out_p0 = NULL;
-// SET @_out_p1 = NULL;
-// CALL `Entity_Update`(@p2, @p3, @p4, @_out_p0, @_out_p1);
-// SELECT @_out_p0, @_out_p1;
-// """);
+        Assert.Equal(
+            SingleStoreStrings.StoredProcedureOutputParametersNotSupported(
+                nameof(Entity), nameof(Entity) + "_Update"), exception.Message);
     }
 
+    //no exception
     public override async Task User_managed_concurrency_token(bool async)
     {
         var createSprocSql = """
@@ -902,6 +934,13 @@ SELECT @_out_p0;
 
     public override async Task Original_and_current_value_on_non_concurrency_token(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE Entity_Update(pId int, pNameCurrent varchar(255), pNameOriginal varchar(255)) AS
                              BEGIN
@@ -992,118 +1031,36 @@ CALL `Entity_Update`(@p0, @p1, @p2);
     {
         var exception =
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => base.Rows_affected_result_column(async, createSprocSql: ""));
+                () => base.Tph(async, createSprocSql: ""));
 
-        Assert.Equal(SingleStoreStrings.StoredProcedureResultColumnsNotSupported(nameof(Entity), nameof(Entity) + "_Update"), exception.Message);
+        Assert.Equal(SingleStoreStrings.StoredProcedureOutputParametersNotSupported(nameof(Parent), nameof(Tph) + "_Insert"), exception.Message);
     }
 
     public override async Task Tpt(bool async)
     {
         var exception =
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => base.Rows_affected_result_column(async, createSprocSql: ""));
+                () => base.Tpt(async, createSprocSql: ""));
 
-        Assert.Equal(SingleStoreStrings.StoredProcedureResultColumnsNotSupported(nameof(Entity), nameof(Entity) + "_Update"), exception.Message);
+        Assert.Equal(SingleStoreStrings.StoredProcedureOutputParametersNotSupported(nameof(Parent), nameof(Parent) + "_Insert"), exception.Message);
     }
 
     public override async Task Tpt_mixed_sproc_and_non_sproc(bool async)
     {
-        await base.Tpt_mixed_sproc_and_non_sproc(
-            async,
-"""
-CREATE PROCEDURE Parent_Insert(OUT pId int, pName varchar(255))
-BEGIN
-    INSERT INTO `Parent` (`Name`) VALUES (pName);
-    SET pId = LAST_INSERT_ID();
-END
-""");
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => base.Tpt_mixed_sproc_and_non_sproc(async, createSprocSql: ""));
 
-        AssertSql(
-"""
-@p1='Child' (Size = 4000)
-
-SET @_out_p0 = NULL;
-CALL `Parent_Insert`(@_out_p0, @p1);
-SELECT @_out_p0;
-""",
-                //
-                """
-@p2='1'
-@p3='8'
-
-SET AUTOCOMMIT = 1;
-INSERT INTO `Child1` (`Id`, `Child1Property`)
-VALUES (@p2, @p3);
-""");
+        Assert.Equal(SingleStoreStrings.StoredProcedureOutputParametersNotSupported(nameof(Parent), nameof(Parent) + "_Insert"), exception.Message);
     }
 
     public override async Task Tpc(bool async)
     {
-        var createSprocSql = """
-                             CREATE PROCEDURE CustomChild1_Insert(pName varchar(255), pChild1Property int) AS
-                             BEGIN
-                                 INSERT INTO `CustomChild1` (`Name`, `Child1Property`)
-                                 VALUES (pName, pChild1Property);
-                                 ECHO SELECT LAST_INSERT_ID() AS Id;
-                             END
-                             """;
+        var exception =
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                () => base.Tpc(async, createSprocSql: ""));
 
-        var contextFactory = await InitializeAsync<DbContext>(
-            modelBuilder =>
-            {
-                modelBuilder.Entity<CustomParent>()
-                    .UseTpcMappingStrategy();
-
-                modelBuilder.Entity<CustomChild1>()
-                    .UseTpcMappingStrategy()
-                    .InsertUsingStoredProcedure(
-                        nameof(CustomChild1) + "_Insert",
-                        spb => spb
-                            .HasParameter(e => e.Name)
-                            .HasParameter(e => e.Child1Property)
-                            .HasResultColumn(e => e.Id));
-
-                modelBuilder.Entity<CustomChild1>()
-                    .Property(e => e.Id)
-                    .ValueGeneratedOnAdd();
-            },
-            seed: ctx => CreateStoredProcedures(ctx, createSprocSql),
-            onConfiguring: optionsBuilder =>
-            {
-                optionsBuilder.ConfigureWarnings(builder =>
-                    builder.Ignore(RelationalEventId.TpcStoreGeneratedIdentityWarning)); // Ignore specific EF Core warnings
-            });
-
-        await using var context = contextFactory.CreateContext();
-
-        var entity = new CustomChild1
-        {
-            Name = "Child",
-            Child1Property = 8
-        };
-
-        context.Set<CustomChild1>().Add(entity);
-        await SaveChanges(context, async);
-
-        context.ChangeTracker.Clear();
-
-        using (TestSqlLoggerFactory.SuspendRecordingEvents())
-        {
-            var loadedEntity = await context.Set<CustomChild1>().SingleAsync(e => e.Id == entity.Id);
-
-            Assert.Equal("Child", loadedEntity.Name);
-            Assert.Equal(8, loadedEntity.Child1Property);
-        }
-
-        AssertSql(
-"""
-@p1='Child' (Size = 4000)
-@p2='8'
-
-SET @_out_p0 = NULL;
-CALL `Child1_Insert`(@_out_p0, @p1, @p2);
-SELECT @_out_p0;
-""");
+        Assert.Equal(SingleStoreStrings.StoredProcedureOutputParametersNotSupported(nameof(Parent), nameof(Parent) + "_Insert"), exception.Message);
     }
 
     public override async Task Non_sproc_followed_by_sproc_commands_in_the_same_batch(bool async)
@@ -1236,41 +1193,4 @@ SELECT @_out_p0;
 
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
-
-    protected class CustomEntity
-    {
-        public long Id { get; set; }
-
-        public string Name { get; set; }
-    }
-
-    protected class CustomEntityWithAdditionalProperty
-    {
-        public int Id { get; set; }
-
-        public string Name { get; set; }
-
-        public int AdditionalProperty { get; set; }
-    }
-
-    protected class CustomChild1 : CustomParent
-    {
-        public int Child1Property { get; set; }
-    }
-
-    protected class CustomChild2 : CustomParent
-    {
-        public int Child2InputProperty { get; set; }
-
-        public int Child2OutputParameterProperty { get; set; }
-
-        public int Child2ResultColumnProperty { get; set; }
-    }
-
-    protected class CustomParent
-    {
-        public long Id { get; set; }
-
-        public string Name { get; set; }
-    }
 }

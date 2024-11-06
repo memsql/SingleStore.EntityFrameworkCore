@@ -65,7 +65,7 @@ namespace Microsoft.EntityFrameworkCore
             public override bool GeneratedColumns => true;
             public override bool NullableGeneratedColumns => true;
             public override bool ParenthesisEnclosedGeneratedColumnExpressions => GeneratedColumns;
-            public override bool DefaultCharSetUtf8Mb4 => false;
+            public override bool DefaultCharSetUtf8Mb4 => ServerVersion.Version >= new Version(8, 7, 0);
             public override bool DefaultExpression => true;
             public override bool AlternativeDefaultExpression => false;
             public override bool Sequences => false;
