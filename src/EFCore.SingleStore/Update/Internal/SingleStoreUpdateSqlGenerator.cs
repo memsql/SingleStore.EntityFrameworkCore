@@ -174,7 +174,89 @@ namespace EntityFrameworkCore.SingleStore.Update.Internal
             int commandPosition,
             out bool requiresTransaction)
         {
-            return base.AppendStoredProcedureCall(commandStringBuilder, command, commandPosition, out requiresTransaction);
+            Check.DebugAssert(command.StoreStoredProcedure is not null, "command.StoredProcedure is not null");
+
+            var storedProcedure = command.StoreStoredProcedure;
+
+            var resultSetMapping = ResultSetMapping.NoResults;
+
+            foreach (var resultColumn in storedProcedure.ResultColumns)
+            {
+                resultSetMapping = ResultSetMapping.LastInResultSet;
+
+                if (resultColumn == command.RowsAffectedColumn)
+                {
+                    resultSetMapping |= ResultSetMapping.ResultSetWithRowsAffectedOnly;
+                }
+                else
+                {
+                    resultSetMapping = ResultSetMapping.LastInResultSet;
+                    break;
+                }
+            }
+
+            Check.DebugAssert(
+                storedProcedure.Parameters.Any() || storedProcedure.ResultColumns.Any(),
+                "Stored procedure call with neither parameters nor result columns");
+
+            if (storedProcedure.ReturnValue != null)
+            {
+                commandStringBuilder.Append("ECHO ");
+            }
+            else
+            {
+                commandStringBuilder.Append("CALL ");
+            }
+
+            SqlGenerationHelper.DelimitIdentifier(commandStringBuilder, storedProcedure.Name, storedProcedure.Schema);
+
+            commandStringBuilder.Append('(');
+
+            var first = true;
+
+            // Only positional parameter style supported for now, see #28439
+
+            // Note: the column modifications are already ordered according to the sproc parameter ordering
+            // (see ModificationCommand.GenerateColumnModifications)
+            for (var i = 0; i < command.ColumnModifications.Count; i++)
+            {
+                var columnModification = command.ColumnModifications[i];
+
+                if (columnModification.Column is not IStoreStoredProcedureParameter parameter)
+                {
+                    continue;
+                }
+
+                if (first)
+                {
+                    first = false;
+                }
+                else
+                {
+                    commandStringBuilder.Append(", ");
+                }
+
+                Check.DebugAssert(columnModification.UseParameter, "Column modification matched a parameter, but UseParameter is false");
+
+                SqlGenerationHelper.GenerateParameterNamePlaceholder(
+                    commandStringBuilder, columnModification.UseOriginalValueParameter
+                        ? columnModification.OriginalParameterName!
+                        : columnModification.ParameterName!);
+
+                if (parameter.Direction.HasFlag(ParameterDirection.Output))
+                {
+                    resultSetMapping |= ResultSetMapping.HasOutputParameters;
+                }
+            }
+
+            commandStringBuilder.Append(')');
+
+            commandStringBuilder.AppendLine(SqlGenerationHelper.StatementTerminator);
+
+            requiresTransaction = true;
+
+            return resultSetMapping;
+            //return base.AppendStoredProcedureCall(commandStringBuilder, command, commandPosition, out requiresTransaction);
             /*Check.DebugAssert(command.StoreStoredProcedure is not null, "command.StoreStoredProcedure is not null");
 
             var storedProcedure = command.StoreStoredProcedure;

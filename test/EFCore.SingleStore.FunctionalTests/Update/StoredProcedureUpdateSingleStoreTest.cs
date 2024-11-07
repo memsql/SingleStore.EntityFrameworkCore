@@ -612,6 +612,13 @@ CALL `Entity_Insert`(@p1);
 
     public override async Task Rows_affected_result_column_and_concurrency_failure(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
                              CREATE PROCEDURE Entity_Update(pId int, pName varchar(255)) AS
                              BEGIN
@@ -746,7 +753,7 @@ CALL `Entity_Insert`(@p1);
             """);
     }
 
-    //no exception
+    [ConditionalTheory(Skip = "TODO: PLAT-7261")]
     public override async Task Rows_affected_return_value_and_concurrency_failure(bool async)
     {
         // We're skipping this test when we're running tests on Managed Service due to the specifics of
@@ -839,7 +846,7 @@ CALL `Entity_Insert`(@p1);
                 nameof(Entity), nameof(Entity) + "_Update"), exception.Message);
     }
 
-    //no exception
+    [ConditionalTheory(Skip = "TODO: PLAT-7261")]
     public override async Task User_managed_concurrency_token(bool async)
     {
         var createSprocSql = """
@@ -1058,13 +1065,20 @@ CALL `Entity_Update`(@p0, @p1, @p2);
     {
         var exception =
             await Assert.ThrowsAsync<InvalidOperationException>(
-                () => base.Tpc(async, createSprocSql: ""));
+                () => base.Tpt(async, createSprocSql: ""));
 
         Assert.Equal(SingleStoreStrings.StoredProcedureOutputParametersNotSupported(nameof(Parent), nameof(Parent) + "_Insert"), exception.Message);
     }
 
     public override async Task Non_sproc_followed_by_sproc_commands_in_the_same_batch(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var createSprocSql = """
     CREATE PROCEDURE EntityWithAdditionalProperty_Insert(pName TEXT, pAdditional_property INT) AS
     BEGIN

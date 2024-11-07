@@ -212,12 +212,6 @@ workflows:
       - test-windows:
           name: Test third block of functional tests S2MS on Windows
           func_test_block_path:  .\.circleci\run-functional-tests3.ps1
-      - test-windows:
-          name: Test fourth block of functional tests S2MS on Windows
-          func_test_block_path:  .\.circleci\run-functional-tests4.ps1
-      - test-windows:
-          name: Test fifth block of functional tests S2MS on Windows
-          func_test_block_path:  .\.circleci\run-functional-tests5.ps1
 
 
   publish:

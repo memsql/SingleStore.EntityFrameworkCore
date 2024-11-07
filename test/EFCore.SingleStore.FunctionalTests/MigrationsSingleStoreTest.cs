@@ -766,7 +766,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var table = Assert.Single(result.Tables);
                     var iceCreamIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "IceCreamId"));
 
-                    Assert.Null(iceCreamIdColumn.Collation);
+                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? "utf8_general_ci" : null, iceCreamIdColumn.Collation);
                 });
 
             AssertSql(
@@ -1082,7 +1082,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 common => { },
                 source => { },
                 target => target
-                    .UseCollation(DefaultCollation)
+                    .UseCollation(NonDefaultCollation2)
                     .Entity(
                         "IceCream",
                         e =>
@@ -1099,8 +1099,8 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
                     Assert.Null(nameColumn[SingleStoreAnnotationNames.CharSet]);
-                    Assert.Null(nameColumn.Collation);
-                    Assert.Equal(NonDefaultCharSet, brandColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.Equal(NonDefaultCollation2, nameColumn.Collation);
+                    Assert.Null(brandColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.NotEqual(DefaultCollation, brandColumn.Collation);
                 });
 
@@ -1150,6 +1150,24 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
     CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) CHARACTER SET={NonDefaultCharSet};");
         }
+
+        [ConditionalFact]
+        public override Task Add_column_with_collation()
+            => Test(
+                builder => builder.Entity("People").Property<int>("Id"),
+                builder => { },
+                builder => builder.Entity("People").Property<string>("Name")
+                    .UseCollation(NonDefaultCollation),
+                model =>
+                {
+                    var table = Assert.Single(model.Tables);
+                    Assert.Equal(2, table.Columns.Count);
+                    var nameColumn = Assert.Single(table.Columns, c => c.Name == "Name");
+                    if (AssertCollations)
+                    {
+                        Assert.Equal(NonDefaultCollation, nameColumn.Collation);
+                    }
+                });
 
         [ConditionalFact]
         public virtual async Task Create_table_longtext_column_with_string_length_and_legacy_charset_definition_in_column_type()
@@ -1380,12 +1398,12 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 : ((SingleStoreTestStore)Fixture.TestStore).ServerVersion.Value.DefaultUtf8CsCollation;
 
         protected virtual string NonDefaultCollation2
-            => "utf8mb4_spanish2_ci";
+            => "utf8_latvian_ci";
 
         protected virtual string DefaultCharSet => ((SingleStoreTestStore)Fixture.TestStore).DatabaseCharSet;
-        protected virtual string NonDefaultCharSet => "utf8mb4";
+        protected virtual string NonDefaultCharSet => DefaultCharSet == "utf8"? "utf8mb4" : "utf8";
         protected virtual string NonDefaultCharSet2 => "binary";
-
+        protected virtual ServerVersion S2ServerVersion => ((SingleStoreTestStore)Fixture.TestStore).ServerVersion.Value;
         protected virtual TestHelpers TestHelpers => SingleStoreTestHelpers.Instance;
 
         protected virtual Task Test(

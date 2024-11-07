@@ -193,7 +193,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Can_include_prey(async);
         }
 
-        [ConditionalTheory]
+        [ConditionalFact]
         public override void Can_insert_update_delete()
         {
             // Skipping this test when running on Managed Service due to the specifics of
