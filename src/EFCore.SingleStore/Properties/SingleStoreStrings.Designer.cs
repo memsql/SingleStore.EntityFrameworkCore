@@ -170,7 +170,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
                 entityType, sproc);
 
         /// <summary>
-        ///     The entity type '{entityType}' is mapped to the stored procedure '{sproc}', which is configured with a return value. MySQL stored procedures do not support return values; use an output parameter instead.
+        ///     The entity type '{entityType}' is mapped to the stored procedure '{sproc}', which is configured with a return value. SingleStore stored procedures do not support return values; use an output parameter instead.
         /// </summary>
         public static string StoredProcedureOutputParametersNotSupported(object entityType, object sproc)
             => string.Format(
