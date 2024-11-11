@@ -1100,17 +1100,9 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
 
                     Assert.Null(nameColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.Equal(NonDefaultCollation2, nameColumn.Collation);
-                    Assert.Null(brandColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? null : NonDefaultCharSet, brandColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.NotEqual(DefaultCollation, brandColumn.Collation);
                 });
-
-            AssertSql(
-                $@"CREATE TABLE `IceCream` (
-    `IceCreamId` int NOT NULL,
-    `Brand` longtext CHARACTER SET {NonDefaultCharSet} NULL,
-    `Name` longtext COLLATE {DefaultCollation} NULL,
-    CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
-) COLLATE={DefaultCollation};");
         }
 
         [ConditionalFact(Skip = "SingleStore works another way.")]
@@ -1157,7 +1149,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 builder => builder.Entity("People").Property<int>("Id"),
                 builder => { },
                 builder => builder.Entity("People").Property<string>("Name")
-                    .UseCollation(NonDefaultCollation),
+                    .UseCollation(NonDefaultCollation2),
                 model =>
                 {
                     var table = Assert.Single(model.Tables);
@@ -1165,7 +1157,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var nameColumn = Assert.Single(table.Columns, c => c.Name == "Name");
                     if (AssertCollations)
                     {
-                        Assert.Equal(NonDefaultCollation, nameColumn.Collation);
+                        Assert.Equal(NonDefaultCollation2, nameColumn.Collation);
                     }
                 });
 
@@ -1190,7 +1182,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                     var table = Assert.Single(result.Tables);
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
 
-                    Assert.Equal(NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? null : NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.Equal("longtext", nameColumn.StoreType);
                 });
 

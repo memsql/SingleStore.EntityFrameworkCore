@@ -199,14 +199,7 @@ namespace EntityFrameworkCore.SingleStore.Update.Internal
                 storedProcedure.Parameters.Any() || storedProcedure.ResultColumns.Any(),
                 "Stored procedure call with neither parameters nor result columns");
 
-            if (storedProcedure.ReturnValue != null)
-            {
-                commandStringBuilder.Append("ECHO ");
-            }
-            else
-            {
-                commandStringBuilder.Append("CALL ");
-            }
+            commandStringBuilder.Append("CALL ");
 
             SqlGenerationHelper.DelimitIdentifier(commandStringBuilder, storedProcedure.Name, storedProcedure.Schema);
 

@@ -118,6 +118,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
         public new Task SaveChanges_false_processes_all_tracked_entities_without_calling_AcceptAllChanges(bool async)
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
