@@ -1,5 +1,7 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.ComplexNavigationsModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
@@ -8,6 +10,7 @@ using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
@@ -22,6 +25,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         {
             Fixture.TestSqlLoggerFactory.Clear();
             // Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Scalar subselect where outer table is not a sharded table' is not supported by SingleStore")]
+        public override Task Composite_key_join_on_groupby_aggregate_projecting_only_grouping_key(bool async)
+        {
+            return base.Composite_key_join_on_groupby_aggregate_projecting_only_grouping_key(async);
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterReferenceInMultiLevelSubquery))]
@@ -48,6 +57,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                     where l1.Id < 3
                     select (from l3 in ss.Set<Level3>()
                         select l3).Distinct().OrderBy(e => e.Id).Skip(1).FirstOrDefault().Name); // Apply OrderBy before Skip
+        }
+
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
+        public override Task Element_selector_with_coalesce_repeated_in_aggregate(bool async)
+        {
+            return base.Element_selector_with_coalesce_repeated_in_aggregate(async);
         }
 
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
@@ -122,10 +137,51 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.SelectMany_subquery_with_custom_projection(async);
         }
 
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
+        public override Task Simple_level1_level2_GroupBy_Having_Count(bool async)
+        {
+            return base.Simple_level1_level2_GroupBy_Having_Count(async);
+        }
+
         [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
         public override Task Sum_with_filter_with_include_selector_cast_using_as(bool async)
         {
             return base.Sum_with_filter_with_include_selector_cast_using_as(async);
+        }
+
+        [ConditionalTheory(Skip = "https://github.com/dotnet/efcore/issues/26104")]
+        public override Task GroupBy_aggregate_where_required_relationship(bool async)
+            => base.GroupBy_aggregate_where_required_relationship(async);
+
+        [ConditionalTheory(Skip = "https://github.com/dotnet/efcore/issues/26104")]
+        public override Task GroupBy_aggregate_where_required_relationship_2(bool async)
+            => base.GroupBy_aggregate_where_required_relationship_2(async);
+
+        public override async Task GroupJoin_client_method_in_OrderBy(bool async)
+        {
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                async () => await base.GroupJoin_client_method_in_OrderBy(async));
+
+            AssertSql();
+        }
+
+        public override async Task Join_with_result_selector_returning_queryable_throws_validation_error(bool async)
+        {
+            // Expression cannot be used for return type. Issue #23302.
+            await Assert.ThrowsAsync<ArgumentException>(
+                () => base.Join_with_result_selector_returning_queryable_throws_validation_error(async));
+
+            AssertSql();
+        }
+
+        [ConditionalTheory(Skip = "Does not throw an EqualException, but still does not work.")]
+        public override async Task Nested_SelectMany_correlated_with_join_table_correctly_translated_to_apply(bool async)
+        {
+            // DefaultIfEmpty on child collection. Issue #19095.
+            await Assert.ThrowsAsync<EqualException>(
+                async () => await base.Nested_SelectMany_correlated_with_join_table_correctly_translated_to_apply(async));
+
+            AssertSql();
         }
 
         private void AssertSql(params string[] expected)

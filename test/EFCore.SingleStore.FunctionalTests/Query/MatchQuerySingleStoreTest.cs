@@ -221,8 +221,8 @@ WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('Herb* -Second')");
 
                         // We force a case-insensitive collation here, because there exists a bug, where MySQL and MariaDB will handle
                         // FULLTEXT searches for `..._bin` collations incorrectly.
-                        herb.Property(h => h.Name).UseCollation(AppConfig.ServerVersion.DefaultUtf8CiCollation);
-                        herb.Property(h => h.Garden).UseCollation(AppConfig.ServerVersion.DefaultUtf8CiCollation);
+                        // herb.Property(h => h.Name).UseCollation(AppConfig.ServerVersion.DefaultUtf8CiCollation);
+                        // herb.Property(h => h.Garden).UseCollation(AppConfig.ServerVersion.DefaultUtf8CiCollation);
                     });
             }
 
@@ -244,13 +244,11 @@ WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('Herb* -Second')");
             public ISetSource GetExpectedData()
                 => new MatchQueryData();
 
-            public IReadOnlyDictionary<Type, object> GetEntitySorters()
-                => new Dictionary<Type, Func<object, object>>
-                {
-                    { typeof(Herb), e => ((Herb)e)?.Id },
-                }.ToDictionary(e => e.Key, e => (object)e.Value);
+            public IReadOnlyDictionary<Type, object> EntitySorters
+                => new Dictionary<Type, Func<object, object>> { { typeof(Herb), e => ((Herb)e)?.Id }, }.ToDictionary(e => e.Key,
+                    e => (object)e.Value);
 
-            public IReadOnlyDictionary<Type, object> GetEntityAsserters()
+            public IReadOnlyDictionary<Type, object> EntityAsserters
                 => new Dictionary<Type, Action<object, object>>
                 {
                     {

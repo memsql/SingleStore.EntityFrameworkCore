@@ -16,7 +16,7 @@ namespace Microsoft.EntityFrameworkCore
     public class SingleStoreServerVersion : ServerVersion
     {
         public static readonly string SingleStoreTypeIdentifier = nameof(ServerType.SingleStore).ToLowerInvariant();
-        public static readonly ServerVersion LatestSupportedServerVersion = new SingleStoreServerVersion(new Version(8, 0, 0));
+        public static readonly ServerVersion LatestSupportedServerVersion = new SingleStoreServerVersion(new Version(8, 7, 0));
 
         public override ServerVersionSupport Supports { get; }
 
@@ -65,7 +65,7 @@ namespace Microsoft.EntityFrameworkCore
             public override bool GeneratedColumns => true;
             public override bool NullableGeneratedColumns => true;
             public override bool ParenthesisEnclosedGeneratedColumnExpressions => GeneratedColumns;
-            public override bool DefaultCharSetUtf8Mb4 => false;
+            public override bool DefaultCharSetUtf8Mb4 => ServerVersion.Version >= new Version(8, 7, 0);
             public override bool DefaultExpression => true;
             public override bool AlternativeDefaultExpression => false;
             public override bool Sequences => false;
@@ -88,6 +88,8 @@ namespace Microsoft.EntityFrameworkCore
             public override bool SingleStoreBugLimit0Offset0ExistsWorkaround => true;
             public override bool TextTypeSizeIsInCharacters => ServerVersion.Version >= new Version(7, 8, 0);
             public override bool ConnectionAttributes => ServerVersion.Version >= new Version(8, 1, 0);
+            public override bool DescendingIndexes => false;
+            public override bool CommonTableExpressions => false;
         }
     }
 }

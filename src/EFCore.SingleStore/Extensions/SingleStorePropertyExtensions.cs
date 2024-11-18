@@ -3,10 +3,12 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using EntityFrameworkCore.SingleStore.Internal;
 using EntityFrameworkCore.SingleStore.Metadata.Internal;
@@ -29,45 +31,168 @@ namespace Microsoft.EntityFrameworkCore
         ///     </para>
         /// </summary>
         /// <returns> The strategy, or <see cref="SingleStoreValueGenerationStrategy.None"/> if none was set. </returns>
-        public static SingleStoreValueGenerationStrategy? GetValueGenerationStrategy([NotNull] this IReadOnlyProperty property, StoreObjectIdentifier storeObject = default)
+        public static SingleStoreValueGenerationStrategy GetValueGenerationStrategy([NotNull] this IReadOnlyProperty property)
         {
-            var annotation = property[SingleStoreAnnotationNames.ValueGenerationStrategy];
-            if (annotation != null)
+            // Allow users to use the underlying type value instead of the enum itself.
+            // Workaround for: https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql/issues/1205
+            if (property[SingleStoreAnnotationNames.ValueGenerationStrategy] is { } annotationValue &&
+                ObjectToEnumConverter.GetEnumValue<SingleStoreValueGenerationStrategy>(annotationValue) is { } enumValue)
             {
-                // Allow users to use the underlying type value instead of the enum itself.
-                // Workaround for: https://github.com/PomeloFoundation/EntityFrameworkCore.SingleStore/issues/1205
-                //return ObjectToEnumConverter.GetEnumValue<SingleStoreValueGenerationStrategy>(annotation);
-                return ObjectToEnumConverter.GetEnumValue<SingleStoreValueGenerationStrategy>(annotation);
+                return enumValue;
             }
 
-            if (property.GetContainingForeignKeys().Any(fk => !fk.IsBaseLinking()) ||
-                property.TryGetDefaultValue(storeObject, out _) ||
-                property.GetDefaultValueSql() != null ||
-                property.GetComputedColumnSql() != null)
+            if (property.ValueGenerated == ValueGenerated.OnAdd)
             {
-                return null;
+                if (property.IsForeignKey()
+                    || property.TryGetDefaultValue(out _)
+                    || property.GetDefaultValueSql() != null
+                    || property.GetComputedColumnSql() != null)
+                {
+                    return SingleStoreValueGenerationStrategy.None;
+                }
+
+                if (IsCompatibleIdentityColumn(property))
+                {
+                    return SingleStoreValueGenerationStrategy.IdentityColumn;
+                }
+
+                return GetDefaultValueGenerationStrategy(property);
             }
 
-            if (storeObject != default &&
-                property.ValueGenerated == ValueGenerated.Never)
+            if (property.ValueGenerated == ValueGenerated.OnAddOrUpdate)
             {
-                return property.FindSharedStoreObjectRootProperty(storeObject)
-                    ?.GetValueGenerationStrategy(storeObject);
+                if (IsCompatibleComputedColumn(property))
+                {
+                    return SingleStoreValueGenerationStrategy.ComputedColumn;
+                }
             }
 
-            if (property.ValueGenerated == ValueGenerated.OnAdd &&
-                IsCompatibleIdentityColumn(property))
+            return SingleStoreValueGenerationStrategy.None;
+        }
+
+        public static SingleStoreValueGenerationStrategy GetValueGenerationStrategy(
+            this IReadOnlyProperty property,
+            in StoreObjectIdentifier storeObject)
+            => GetValueGenerationStrategy(property, storeObject, null);
+
+        internal static SingleStoreValueGenerationStrategy GetValueGenerationStrategy(
+            this IReadOnlyProperty property,
+            in StoreObjectIdentifier storeObject,
+            [CanBeNull] ITypeMappingSource typeMappingSource)
+        {
+            if (property.FindOverrides(storeObject)?.FindAnnotation(SingleStoreAnnotationNames.ValueGenerationStrategy) is { } @override)
+            {
+                return ObjectToEnumConverter.GetEnumValue<SingleStoreValueGenerationStrategy>(@override.Value) ?? SingleStoreValueGenerationStrategy.None;
+            }
+
+            var annotation = property.FindAnnotation(SingleStoreAnnotationNames.ValueGenerationStrategy);
+            if (annotation?.Value is { } annotationValue
+                && ObjectToEnumConverter.GetEnumValue<SingleStoreValueGenerationStrategy>(annotationValue) is { } enumValue
+                && StoreObjectIdentifier.Create(property.DeclaringEntityType, storeObject.StoreObjectType) == storeObject)
+            {
+                return enumValue;
+            }
+
+            var table = storeObject;
+            var sharedTableRootProperty = property.FindSharedStoreObjectRootProperty(storeObject);
+            if (sharedTableRootProperty != null)
+            {
+                return sharedTableRootProperty.GetValueGenerationStrategy(storeObject, typeMappingSource)
+                    == SingleStoreValueGenerationStrategy.IdentityColumn
+                    && table.StoreObjectType == StoreObjectType.Table
+                    && !property.GetContainingForeignKeys().Any(
+                        fk =>
+                            !fk.IsBaseLinking()
+                            || (StoreObjectIdentifier.Create(fk.PrincipalEntityType, StoreObjectType.Table)
+                                    is StoreObjectIdentifier principal
+                                && fk.GetConstraintName(table, principal) != null))
+                        ? SingleStoreValueGenerationStrategy.IdentityColumn
+                        : SingleStoreValueGenerationStrategy.None;
+            }
+
+            if (property.ValueGenerated == ValueGenerated.OnAdd)
+            {
+                if (table.StoreObjectType != StoreObjectType.Table
+                    || property.TryGetDefaultValue(storeObject, out _)
+                    || property.GetDefaultValueSql(storeObject) != null
+                    || property.GetComputedColumnSql(storeObject) != null
+                    || property.GetContainingForeignKeys()
+                        .Any(
+                            fk =>
+                                !fk.IsBaseLinking()
+                                || (StoreObjectIdentifier.Create(fk.PrincipalEntityType, StoreObjectType.Table)
+                                        is StoreObjectIdentifier principal
+                                    && fk.GetConstraintName(table, principal) != null)))
+                {
+                    return SingleStoreValueGenerationStrategy.None;
+                }
+
+                if (IsCompatibleIdentityColumn(property))
+                {
+                    return SingleStoreValueGenerationStrategy.IdentityColumn;
+                }
+
+                var defaultStrategy = GetDefaultValueGenerationStrategy(property, storeObject, typeMappingSource);
+                if (defaultStrategy != SingleStoreValueGenerationStrategy.None)
+                {
+                    if (annotation != null)
+                    {
+                        return (SingleStoreValueGenerationStrategy?)annotation.Value ?? SingleStoreValueGenerationStrategy.None;
+                    }
+                }
+
+                return defaultStrategy;
+            }
+
+            if (property.ValueGenerated == ValueGenerated.OnAddOrUpdate)
+            {
+                if (IsCompatibleComputedColumn(property))
+                {
+                    return SingleStoreValueGenerationStrategy.ComputedColumn;
+                }
+            }
+
+            return SingleStoreValueGenerationStrategy.None;
+        }
+
+        /// <summary>
+        ///     Returns the <see cref="SingleStoreValueGenerationStrategy" /> to use for the property.
+        /// </summary>
+        /// <remarks>
+        ///     If no strategy is set for the property, then the strategy to use will be taken from the <see cref="IModel" />.
+        /// </remarks>
+        /// <param name="overrides">The property overrides.</param>
+        /// <returns>The strategy, or <see cref="SingleStoreValueGenerationStrategy.None" /> if none was set.</returns>
+        public static SingleStoreValueGenerationStrategy? GetValueGenerationStrategy(this IReadOnlyRelationalPropertyOverrides overrides)
+            => overrides.FindAnnotation(SingleStoreAnnotationNames.ValueGenerationStrategy) is { } @override
+                ? ObjectToEnumConverter.GetEnumValue<SingleStoreValueGenerationStrategy>(@override.Value) ??
+                  SingleStoreValueGenerationStrategy.None
+                : null;
+
+        private static SingleStoreValueGenerationStrategy GetDefaultValueGenerationStrategy(IReadOnlyProperty property)
+        {
+            var modelStrategy = property.DeclaringEntityType.Model.GetValueGenerationStrategy();
+
+            if (modelStrategy == SingleStoreValueGenerationStrategy.IdentityColumn &&
+                IsCompatibleAutoIncrementColumn(property))
             {
                 return SingleStoreValueGenerationStrategy.IdentityColumn;
             }
 
-            if (property.ValueGenerated == ValueGenerated.OnAddOrUpdate &&
-                IsCompatibleComputedColumn(property))
-            {
-                return SingleStoreValueGenerationStrategy.ComputedColumn;
-            }
+            return SingleStoreValueGenerationStrategy.None;
+        }
 
-            return null;
+        private static SingleStoreValueGenerationStrategy GetDefaultValueGenerationStrategy(
+            IReadOnlyProperty property,
+            in StoreObjectIdentifier storeObject,
+            [CanBeNull] ITypeMappingSource typeMappingSource)
+        {
+            var modelStrategy = property.DeclaringEntityType.Model.GetValueGenerationStrategy();
+
+            return modelStrategy == SingleStoreValueGenerationStrategy.IdentityColumn
+                   && IsCompatibleAutoIncrementColumn(property, storeObject, typeMappingSource)
+                ? SingleStoreValueGenerationStrategy.IdentityColumn
+                : SingleStoreValueGenerationStrategy.None;
         }
 
         /// <summary>
@@ -76,12 +201,11 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="property"> The property. </param>
         /// <param name="value"> The strategy to use. </param>
         public static void SetValueGenerationStrategy(
-            [NotNull] this IMutableProperty property, SingleStoreValueGenerationStrategy? value)
-        {
-            CheckValueGenerationStrategy(property, value);
-
-            property.SetOrRemoveAnnotation(SingleStoreAnnotationNames.ValueGenerationStrategy, value);
-        }
+            [NotNull] this IMutableProperty property,
+            SingleStoreValueGenerationStrategy? value)
+            => property.SetOrRemoveAnnotation(
+                SingleStoreAnnotationNames.ValueGenerationStrategy,
+                CheckValueGenerationStrategy(property, value));
 
         /// <summary>
         ///     Sets the <see cref="SingleStoreValueGenerationStrategy" /> to use for the property.
@@ -89,45 +213,128 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="property"> The property. </param>
         /// <param name="value"> The strategy to use. </param>
         /// <param name="fromDataAnnotation">Indicates whether the configuration was specified using a data annotation.</param>
-        public static SingleStoreValueGenerationStrategy? SetValueGenerationStrategy([NotNull] this IConventionProperty property, SingleStoreValueGenerationStrategy? value, bool fromDataAnnotation = false)
-        {
-            CheckValueGenerationStrategy(property, value);
-
-            property.SetOrRemoveAnnotation(SingleStoreAnnotationNames.ValueGenerationStrategy, value, fromDataAnnotation);
-
-            return value;
-        }
+        public static SingleStoreValueGenerationStrategy? SetValueGenerationStrategy(
+            [NotNull] this IConventionProperty property,
+            SingleStoreValueGenerationStrategy? value,
+            bool fromDataAnnotation = false)
+            => (SingleStoreValueGenerationStrategy?)property.SetOrRemoveAnnotation(
+                    SingleStoreAnnotationNames.ValueGenerationStrategy,
+                    CheckValueGenerationStrategy(property, value),
+                    fromDataAnnotation)
+                ?.Value;
 
         /// <summary>
-        /// Returns the <see cref="ConfigurationSource" /> for the <see cref="SingleStoreValueGenerationStrategy" />.
+        ///     Sets the <see cref="SingleStoreValueGenerationStrategy" /> to use for the property for a particular table.
+        /// </summary>
+        /// <param name="property">The property.</param>
+        /// <param name="value">The strategy to use.</param>
+        /// <param name="storeObject">The identifier of the table containing the column.</param>
+        public static void SetValueGenerationStrategy(
+            this IMutableProperty property,
+            SingleStoreValueGenerationStrategy? value,
+            in StoreObjectIdentifier storeObject)
+            => property.GetOrCreateOverrides(storeObject)
+                .SetValueGenerationStrategy(value);
+
+        /// <summary>
+        ///     Sets the <see cref="SingleStoreValueGenerationStrategy" /> to use for the property for a particular table.
+        /// </summary>
+        /// <param name="property">The property.</param>
+        /// <param name="value">The strategy to use.</param>
+        /// <param name="storeObject">The identifier of the table containing the column.</param>
+        /// <param name="fromDataAnnotation">Indicates whether the configuration was specified using a data annotation.</param>
+        /// <returns>The configured value.</returns>
+        public static SingleStoreValueGenerationStrategy? SetValueGenerationStrategy(
+            this IConventionProperty property,
+            SingleStoreValueGenerationStrategy? value,
+            in StoreObjectIdentifier storeObject,
+            bool fromDataAnnotation = false)
+            => property.GetOrCreateOverrides(storeObject, fromDataAnnotation)
+                .SetValueGenerationStrategy(value, fromDataAnnotation);
+
+        /// <summary>
+        ///     Sets the <see cref="SingleStoreValueGenerationStrategy" /> to use for the property for a particular table.
+        /// </summary>
+        /// <param name="overrides">The property overrides.</param>
+        /// <param name="value">The strategy to use.</param>
+        public static void SetValueGenerationStrategy(
+            this IMutableRelationalPropertyOverrides overrides,
+            SingleStoreValueGenerationStrategy? value)
+            => overrides.SetOrRemoveAnnotation(
+                SingleStoreAnnotationNames.ValueGenerationStrategy,
+                CheckValueGenerationStrategy(overrides.Property, value));
+
+        /// <summary>
+        ///     Sets the <see cref="SingleStoreValueGenerationStrategy" /> to use for the property for a particular table.
+        /// </summary>
+        /// <param name="overrides">The property overrides.</param>
+        /// <param name="value">The strategy to use.</param>
+        /// <param name="fromDataAnnotation">Indicates whether the configuration was specified using a data annotation.</param>
+        /// <returns>The configured value.</returns>
+        public static SingleStoreValueGenerationStrategy? SetValueGenerationStrategy(
+            this IConventionRelationalPropertyOverrides overrides,
+            SingleStoreValueGenerationStrategy? value,
+            bool fromDataAnnotation = false)
+            => (SingleStoreValueGenerationStrategy?)overrides.SetOrRemoveAnnotation(
+                SingleStoreAnnotationNames.ValueGenerationStrategy,
+                CheckValueGenerationStrategy(overrides.Property, value),
+                fromDataAnnotation)?.Value;
+
+        /// <summary>
+        ///     Returns the <see cref="ConfigurationSource" /> for the <see cref="SingleStoreValueGenerationStrategy" />.
         /// </summary>
         /// <param name="property">The property.</param>
         /// <returns>The <see cref="ConfigurationSource" /> for the <see cref="SingleStoreValueGenerationStrategy" />.</returns>
-        public static ConfigurationSource? GetValueGenerationStrategyConfigurationSource(this IConventionProperty property)
+        public static ConfigurationSource? GetValueGenerationStrategyConfigurationSource(
+            this IConventionProperty property)
             => property.FindAnnotation(SingleStoreAnnotationNames.ValueGenerationStrategy)?.GetConfigurationSource();
 
-        private static void CheckValueGenerationStrategy(IReadOnlyProperty property, SingleStoreValueGenerationStrategy? value)
+        /// <summary>
+        ///     Returns the <see cref="ConfigurationSource" /> for the <see cref="SingleStoreValueGenerationStrategy" /> for a particular table.
+        /// </summary>
+        /// <param name="property">The property.</param>
+        /// <param name="storeObject">The identifier of the table containing the column.</param>
+        /// <returns>The <see cref="ConfigurationSource" /> for the <see cref="SingleStoreValueGenerationStrategy" />.</returns>
+        public static ConfigurationSource? GetValueGenerationStrategyConfigurationSource(
+            this IConventionProperty property,
+            in StoreObjectIdentifier storeObject)
+            => property.FindOverrides(storeObject)?.GetValueGenerationStrategyConfigurationSource();
+
+        /// <summary>
+        ///     Returns the <see cref="ConfigurationSource" /> for the <see cref="SingleStoreValueGenerationStrategy" /> for a particular table.
+        /// </summary>
+        /// <param name="overrides">The property overrides.</param>
+        /// <returns>The <see cref="ConfigurationSource" /> for the <see cref="SingleStoreValueGenerationStrategy" />.</returns>
+        public static ConfigurationSource? GetValueGenerationStrategyConfigurationSource(
+            this IConventionRelationalPropertyOverrides overrides)
+            => overrides.FindAnnotation(SingleStoreAnnotationNames.ValueGenerationStrategy)?.GetConfigurationSource();
+
+        private static SingleStoreValueGenerationStrategy? CheckValueGenerationStrategy(IReadOnlyProperty property, SingleStoreValueGenerationStrategy? value)
         {
-            if (value != null)
+            if (value == null)
             {
-                var propertyType = property.ClrType;
-
-                if (value == SingleStoreValueGenerationStrategy.IdentityColumn
-                    && !IsCompatibleIdentityColumn(property))
-                {
-                    throw new ArgumentException(
-                            SingleStoreStrings.IdentityBadType(
-                                property.Name, property.DeclaringEntityType.DisplayName(), propertyType.ShortDisplayName()));
-                }
-
-                if (value == SingleStoreValueGenerationStrategy.ComputedColumn
-                    && !IsCompatibleComputedColumn(property))
-                {
-                    throw new ArgumentException(
-                            SingleStoreStrings.ComputedBadType(
-                                property.Name, property.DeclaringEntityType.DisplayName(), propertyType.ShortDisplayName()));
-                }
+                return null;
             }
+
+            var propertyType = property.ClrType;
+
+            if (value == SingleStoreValueGenerationStrategy.IdentityColumn
+                && !IsCompatibleIdentityColumn(property))
+            {
+                throw new ArgumentException(
+                    SingleStoreStrings.IdentityBadType(
+                        property.Name, property.DeclaringEntityType.DisplayName(), propertyType.ShortDisplayName()));
+            }
+
+            if (value == SingleStoreValueGenerationStrategy.ComputedColumn
+                && !IsCompatibleComputedColumn(property))
+            {
+                throw new ArgumentException(
+                    SingleStoreStrings.ComputedBadType(
+                        property.Name, property.DeclaringEntityType.DisplayName(), propertyType.ShortDisplayName()));
+            }
+
+            return value;
         }
 
         /// <summary>
@@ -138,6 +345,13 @@ namespace Microsoft.EntityFrameworkCore
         public static bool IsCompatibleIdentityColumn(IReadOnlyProperty property)
             => IsCompatibleAutoIncrementColumn(property) ||
                IsCompatibleCurrentTimestampColumn(property);
+
+        private static bool IsCompatibleIdentityColumn(
+            IReadOnlyProperty property,
+            in StoreObjectIdentifier storeObject,
+            [CanBeNull] ITypeMappingSource typeMappingSource)
+            => IsCompatibleAutoIncrementColumn(property, storeObject, typeMappingSource) ||
+               IsCompatibleCurrentTimestampColumn(property, storeObject, typeMappingSource);
 
         /// <summary>
         ///     Returns a value indicating whether the property is compatible with an `AUTO_INCREMENT` column.
@@ -152,6 +366,23 @@ namespace Microsoft.EntityFrameworkCore
                    type == typeof(decimal);
         }
 
+        private static bool IsCompatibleAutoIncrementColumn(
+            IReadOnlyProperty property,
+            in StoreObjectIdentifier storeObject,
+            [CanBeNull] ITypeMappingSource typeMappingSource)
+        {
+            if (storeObject.StoreObjectType != StoreObjectType.Table)
+            {
+                return false;
+            }
+
+            var valueConverter = GetConverter(property, storeObject, typeMappingSource);
+            var type = (valueConverter?.ProviderClrType ?? property.ClrType).UnwrapNullableType();
+
+            return (type.IsInteger()
+                    || type == typeof(decimal));
+        }
+
         /// <summary>
         ///     Returns a value indicating whether the property is compatible with a `CURRENT_TIMESTAMP` column default.
         /// </summary>
@@ -161,6 +392,23 @@ namespace Microsoft.EntityFrameworkCore
         {
             var valueConverter = GetConverter(property);
             var type = (valueConverter?.ProviderClrType ?? property.ClrType).UnwrapNullableType();
+            return type == typeof(DateTime) ||
+                   type == typeof(DateTimeOffset);
+        }
+
+        private static bool IsCompatibleCurrentTimestampColumn(
+            IReadOnlyProperty property,
+            in StoreObjectIdentifier storeObject,
+            [CanBeNull] ITypeMappingSource typeMappingSource)
+        {
+            if (storeObject.StoreObjectType != StoreObjectType.Table)
+            {
+                return false;
+            }
+
+            var valueConverter = GetConverter(property, storeObject, typeMappingSource);
+            var type = (valueConverter?.ProviderClrType ?? property.ClrType).UnwrapNullableType();
+
             return type == typeof(DateTime) ||
                    type == typeof(DateTimeOffset);
         }
@@ -189,7 +437,16 @@ namespace Microsoft.EntityFrameworkCore
         }
 
         private static ValueConverter GetConverter(IReadOnlyProperty property)
-            => property.FindTypeMapping()?.Converter ?? property.GetValueConverter();
+            => property.GetValueConverter() ??
+               property.FindTypeMapping()?.Converter;
+
+        private static ValueConverter GetConverter(
+            IReadOnlyProperty property,
+            StoreObjectIdentifier storeObject,
+            [CanBeNull] ITypeMappingSource typeMappingSource)
+            => property.GetValueConverter()
+               ?? (property.FindRelationalTypeMapping(storeObject)
+                   ?? typeMappingSource?.FindMapping((IProperty)property))?.Converter;
 
         /// <summary>
         /// Returns the name of the charset used by the column of the property.

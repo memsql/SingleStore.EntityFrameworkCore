@@ -12,7 +12,7 @@ using EntityFrameworkCore.SingleStore.Tests;
 //ReSharper disable once CheckNamespace
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 {
-    public class SingleStoreTestHelpers : TestHelpers
+    public class SingleStoreTestHelpers : RelationalTestHelpers
     {
         protected SingleStoreTestHelpers()
         {
@@ -23,7 +23,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
         public override IServiceCollection AddProviderServices(IServiceCollection services)
             => services.AddEntityFrameworkSingleStore();
 
-        public override void UseProviderOptions(DbContextOptionsBuilder optionsBuilder)
+        public override DbContextOptionsBuilder UseProviderOptions(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder.UseSingleStore("Database=DummyDatabase");
 
         public IServiceProvider CreateContextServices(ServerVersion serverVersion)
@@ -94,5 +94,27 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 
         public int GetIndexedStringPropertyDefaultLength
             => Math.Min(AppConfig.ServerVersion.MaxKeyLength / (CharSet.Utf8Mb4.MaxBytesPerChar * 2), 255);
+
+        public static DateTimeOffset GetExpectedValue(DateTimeOffset value)
+        {
+            const int mySqlMaxMillisecondDecimalPlaces = 6;
+            var decimalPlacesFactor = (decimal)Math.Pow(10, 7 - mySqlMaxMillisecondDecimalPlaces);
+
+            // Change DateTimeOffset values, because MySQL does not preserve offsets and has a maximum of 6 decimal places, in contrast to
+            // .NET which has 7.
+            return new DateTimeOffset(
+                (long)(Math.Truncate(value.UtcTicks / decimalPlacesFactor) * decimalPlacesFactor),
+                TimeSpan.Zero);
+        }
+
+        public static string CastAsDouble(string innerSql)
+            => AppConfig.ServerVersion.Supports.DoubleCast
+                ? $@"CAST({innerSql} AS double)"
+                : $@"(CAST({innerSql} AS decimal(65,30)) + 0e0)";
+
+        public static string SingleStoreBug96947Workaround(string innerSql, string type = "char")
+            => AppConfig.ServerVersion.Supports.SingleStoreBug96947Workaround
+                ? $@"CAST({innerSql} AS {type})"
+                : innerSql;
     }
 }

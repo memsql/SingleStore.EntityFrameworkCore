@@ -27,8 +27,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             _parameterValues = null!;
         }
 
-        public virtual SelectExpression Process(
-            SelectExpression selectExpression,
+        public virtual Expression Process(
+            Expression selectExpression,
             IReadOnlyDictionary<string, object?> parametersValues,
             out bool canCache)
         {
@@ -38,7 +38,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             _parameterValues = parametersValues;
             _canCache = true;
 
-            var result = (SelectExpression)Visit(selectExpression);
+            var result = Visit(selectExpression);
 
             canCache = _canCache;
 

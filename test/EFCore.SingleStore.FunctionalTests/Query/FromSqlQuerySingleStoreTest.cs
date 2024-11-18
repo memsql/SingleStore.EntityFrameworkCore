@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.EntityFrameworkCore.Query;
 using SingleStoreConnector;
+using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
@@ -52,6 +54,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 (async
                     ? await Assert.ThrowsAsync<InvalidOperationException>(() => query.ToListAsync())
                     : Assert.Throws<InvalidOperationException>(() => query.ToList())).Message);
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.CommonTableExpressions))]
+        public override Task FromSqlRaw_composed_with_common_table_expression(bool async)
+        {
+            return base.FromSqlRaw_composed_with_common_table_expression(async);
         }
 
         protected override DbParameter CreateDbParameter(string name, object value)

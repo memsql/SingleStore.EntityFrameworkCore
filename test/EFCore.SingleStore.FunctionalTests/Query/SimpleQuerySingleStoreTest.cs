@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
@@ -7,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Tests;
+using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 
 // ReSharper disable InconsistentNaming
@@ -44,6 +47,18 @@ LIMIT 2");
             var contextFactory = await InitializeAsync<Context23981>();
             using var context = contextFactory.CreateContext();
             var bad = context.Set<NameSpace1.TestQuery>().FromSqlRaw(@"SELECT cast(null as signed) AS MyValue").ToList(); // <-- MySQL uses `signed` instead of `int` in CAST() expressions
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterReferenceInMultiLevelSubquery))]
+        public override Task Group_by_multiple_aggregate_joining_different_tables(bool async)
+        {
+            return base.Group_by_multiple_aggregate_joining_different_tables(async);
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterReferenceInMultiLevelSubquery))]
+        public override Task Group_by_multiple_aggregate_joining_different_tables_with_query_filter(bool async)
+        {
+            return base.Group_by_multiple_aggregate_joining_different_tables_with_query_filter(async);
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
@@ -91,7 +106,7 @@ LIMIT 2");
             Assert.Equal(2, authors.Count);
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         [MemberData(nameof(IsAsyncData))]
         public override async Task GroupBy_Aggregate_over_navigations_repeated(bool async)
         {
@@ -260,6 +275,151 @@ LIMIT 2");
             var users = async
                 ? await query.ToListAsync()
                 : query.ToList();
+        }
+
+        [ConditionalTheory]
+        [MemberData("IsAsyncData", new object[] {})]
+        public override async Task SelectMany_where_Select(bool async)
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            var contextFactory = await this.InitializeAsync<SimpleQueryTestBase.Context26744>(
+                    seed: (Action<SimpleQueryTestBase.Context26744>)(c => c.Seed()),
+                    onModelCreating: modelBuilder =>
+                    {
+                        // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+                        // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+                        modelBuilder.Entity<Child26744>()
+                            .Property(e => e.Id)
+                            .HasColumnType("bigint");
+
+                        modelBuilder.Entity<Parent>()
+                            .Property(e => e.Id)
+                            .HasColumnType("bigint");
+
+                        modelBuilder.Entity<Child1>()
+                            .Property(e => e.Id)
+                            .HasColumnType("bigint");
+
+                        modelBuilder.Entity<Child2>()
+                            .Property(e => e.Id)
+                            .HasColumnType("bigint");
+
+                        modelBuilder.Entity<ChildFilter1>()
+                            .Property(e => e.Id)
+                            .HasColumnType("bigint");
+
+                        modelBuilder.Entity<ChildFilter2>()
+                            .Property(e => e.Id)
+                            .HasColumnType("bigint");
+
+                        modelBuilder.Entity<Parent26744>()
+                            .Property(e => e.Id)
+                            .HasColumnType("bigint");
+                    });
+
+
+            using (Context26744 context = contextFactory.CreateContext())
+            {
+                IQueryable<DateTime?> source = context.Parents
+                    .SelectMany(p => p.Children
+                        .AsQueryable()
+                        .Where(c => c.SomeNullableDateTime == null)
+                        .OrderBy(c => c.SomeInteger)
+                        .Take(1)
+                    )
+                    .Where(c => c.SomeOtherNullableDateTime != null)
+                    .Select(c => c.SomeNullableDateTime);
+
+                List<DateTime?> collection;
+                if (async)
+                    collection = await source.ToListAsync();
+                else
+                    collection = source.ToList();
+
+                Assert.Single(collection);
+            }
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [MemberData("IsAsyncData", new object[] {})]
+        public override async Task Subquery_first_member_compared_to_null(bool async)
+        {
+            var contextFactory = await this.InitializeAsync<SimpleQueryTestBase.Context26744>(
+                seed: (Action<SimpleQueryTestBase.Context26744>)(c => c.Seed()),
+                onModelCreating: modelBuilder =>
+                {
+                    // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+                    // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+                    modelBuilder.Entity<Child26744>()
+                        .Property(e => e.Id)
+                        .HasColumnType("bigint");
+
+                    modelBuilder.Entity<Parent>()
+                        .Property(e => e.Id)
+                        .HasColumnType("bigint");
+
+                    modelBuilder.Entity<Child1>()
+                        .Property(e => e.Id)
+                        .HasColumnType("bigint");
+
+                    modelBuilder.Entity<Child2>()
+                        .Property(e => e.Id)
+                        .HasColumnType("bigint");
+
+                    modelBuilder.Entity<ChildFilter1>()
+                        .Property(e => e.Id)
+                        .HasColumnType("bigint");
+
+                    modelBuilder.Entity<ChildFilter2>()
+                        .Property(e => e.Id)
+                        .HasColumnType("bigint");
+
+                    modelBuilder.Entity<Parent26744>()
+                        .Property(e => e.Id)
+                        .HasColumnType("bigint");
+                });
+
+
+            using (Context26744 context = contextFactory.CreateContext())
+            {
+                IQueryable<DateTime?> source = context.Parents
+                    .Where(p => p.Children
+                                    .Any(c => c.SomeNullableDateTime == null) &&
+                                p.Children
+                                    .Where(c => c.SomeNullableDateTime == null)
+                                    .OrderBy(c => c.SomeInteger)
+                                    .FirstOrDefault().SomeOtherNullableDateTime != null)
+                    .Select(p => p.Children
+                        .Where(c => c.SomeNullableDateTime == null)
+                        .OrderBy(c => c.SomeInteger)
+                        .FirstOrDefault().SomeOtherNullableDateTime);
+
+                List<DateTime?> collection;
+                if (async)
+                    collection = await source.ToListAsync();
+                else
+                    collection = source.ToList();
+
+                Assert.Single(collection);
+            }
+        }
+
+        [ConditionalTheory(Skip = "Can't access internal class to make changes in the contextFactory to be able to run this test")]
+        public override async Task Count_member_over_IReadOnlyCollection_works(bool async)
+        {
+            await base.Count_member_over_IReadOnlyCollection_works(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override async Task Enum_with_value_converter_matching_take_value(bool async)
+        {
+            await base.Enum_with_value_converter_matching_take_value(async);
         }
     }
 }

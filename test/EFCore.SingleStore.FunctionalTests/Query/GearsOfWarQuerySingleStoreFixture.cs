@@ -1,4 +1,3 @@
-using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -27,6 +26,28 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             base.OnModelCreating(modelBuilder, context);
 
             modelBuilder.Entity<Weapon>().HasIndex(e => e.IsAutomatic);
+
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<LocustHighCommand>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Mission>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Squad>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Weapon>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<Faction>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
         }
 
         public new ISetSource GetExpectedData()
@@ -35,22 +56,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
             foreach (var mission in data.Missions)
             {
-                mission.Timeline = GetExpectedValue(mission.Timeline);
+                mission.Timeline = SingleStoreTestHelpers.GetExpectedValue(mission.Timeline);
             }
 
             return data;
-        }
-
-        public static DateTimeOffset GetExpectedValue(DateTimeOffset value)
-        {
-            const int mySqlMaxMillisecondDecimalPlaces = 6;
-            var decimalPlacesFactor = (decimal)Math.Pow(10, 7 - mySqlMaxMillisecondDecimalPlaces);
-
-            // Change DateTimeOffset values, because MySQL does not preserve offsets and has a maximum of 6 decimal places, in contrast to
-            // .NET which has 7.
-            return new DateTimeOffset(
-                (long)(Math.Truncate(value.UtcTicks / decimalPlacesFactor) * decimalPlacesFactor),
-                TimeSpan.Zero);
         }
     }
 }

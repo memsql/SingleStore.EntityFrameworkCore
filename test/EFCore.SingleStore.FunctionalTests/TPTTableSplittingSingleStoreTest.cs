@@ -1,6 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests;
+using Xunit;
 using Xunit.Abstractions;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
@@ -24,6 +27,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             modelBuilder.Entity<MeterReading>()
                 .Property(e => e.Id)
                 .HasColumnType("bigint");
+        }
+
+        [ConditionalFact]
+        public override async Task Warn_when_save_optional_dependent_with_null_values()
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            await base.Warn_when_save_optional_dependent_with_null_values();
         }
     }
 }

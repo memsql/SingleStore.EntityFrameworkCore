@@ -72,7 +72,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             ConnectionString = CreateConnectionString(name, _noBackslashEscapes, guidFormat);
             Connection = new SingleStoreConnection(ConnectionString);
             ServerVersion = new Lazy<ServerVersion>(() => Microsoft.EntityFrameworkCore.ServerVersion.AutoDetect((SingleStoreConnection)Connection));
-            DatabaseCharSet = databaseCharSet ?? "utf8";
+            DatabaseCharSet = databaseCharSet ?? ServerVersion.Value.DefaultCharSet;
             DatabaseCollation = databaseCollation ?? ServerVersion.Value.DefaultUtf8CiCollation;
 
             if (scriptPath != null)

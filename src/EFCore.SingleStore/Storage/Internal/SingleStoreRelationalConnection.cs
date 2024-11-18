@@ -74,7 +74,7 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             set => base.DbConnection = value;
         }
 
-        private SingleStoreConnectionStringBuilder AddConnectionStringOptions(SingleStoreConnectionStringBuilder builder)
+        protected virtual SingleStoreConnectionStringBuilder AddConnectionStringOptions(SingleStoreConnectionStringBuilder builder)
         {
             var program_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
             builder.ConnectionAttributes = $"program_name:SingleStore Entity Framework Core provider, program_version:{program_version}";

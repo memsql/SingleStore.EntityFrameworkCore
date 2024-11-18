@@ -5,7 +5,7 @@
 #nullable enable
 
 using System.Collections.Generic;
-using JetBrains.Annotations;
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Utilities;
@@ -20,7 +20,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
         private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
 
         public SingleStoreParameterBasedSqlProcessor(
-            [NotNull] RelationalParameterBasedSqlProcessorDependencies dependencies,
+            RelationalParameterBasedSqlProcessorDependencies dependencies,
             bool useRelationalNulls,
             ISingleStoreOptions options)
             : base(dependencies, useRelationalNulls)
@@ -29,44 +29,47 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             _options = options;
         }
 
-        public override SelectExpression Optimize(SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
+        public override Expression Optimize(
+            Expression queryExpression,
+            IReadOnlyDictionary<string, object?> parametersValues,
+            out bool canCache)
         {
-            Check.NotNull(selectExpression, nameof(selectExpression));
-            Check.NotNull(parametersValues, nameof(parametersValues));
-
-            selectExpression = base.Optimize(selectExpression, parametersValues, out canCache);
+            queryExpression = base.Optimize(queryExpression, parametersValues, out canCache);
 
             if (_options.ServerVersion.Supports.SingleStoreBugLimit0Offset0ExistsWorkaround)
             {
-                selectExpression = new SkipTakeCollapsingExpressionVisitor(Dependencies.SqlExpressionFactory)
-                    .Process(selectExpression, parametersValues, out var canCache2);
+                queryExpression = new SkipTakeCollapsingExpressionVisitor(Dependencies.SqlExpressionFactory)
+                    .Process(queryExpression, parametersValues, out var canCache2);
 
                 canCache &= canCache2;
             }
 
             if (_options.IndexOptimizedBooleanColumns)
             {
-                selectExpression = (SelectExpression)new SingleStoreBoolOptimizingExpressionVisitor(Dependencies.SqlExpressionFactory).Visit(selectExpression);
+                queryExpression = new SingleStoreBoolOptimizingExpressionVisitor(Dependencies.SqlExpressionFactory).Visit(queryExpression);
             }
 
-            selectExpression = (SelectExpression)new SingleStoreHavingExpressionVisitor(_sqlExpressionFactory).Visit(selectExpression);
+            queryExpression = new SingleStoreHavingExpressionVisitor(_sqlExpressionFactory).Visit(queryExpression);
 
             // Run the compatibility checks as late in the query pipeline (before the actual SQL translation happens) as reasonable.
-            selectExpression = (SelectExpression)new SingleStoreCompatibilityExpressionVisitor(_options).Visit(selectExpression);
+            queryExpression = new SingleStoreCompatibilityExpressionVisitor(_options).Visit(queryExpression);
 
-            return selectExpression;
+            return queryExpression;
         }
 
         /// <inheritdoc />
-        protected override SelectExpression ProcessSqlNullability(
-            SelectExpression selectExpression, IReadOnlyDictionary<string, object?> parametersValues, out bool canCache)
+        protected override Expression ProcessSqlNullability(
+        Expression queryExpression,
+            IReadOnlyDictionary<string, object?> parametersValues,
+        out bool canCache)
         {
-            Check.NotNull(selectExpression, nameof(selectExpression));
+            Check.NotNull(queryExpression, nameof(queryExpression));
             Check.NotNull(parametersValues, nameof(parametersValues));
 
-            selectExpression = new SingleStoreSqlNullabilityProcessor(Dependencies, UseRelationalNulls).Process(selectExpression, parametersValues, out canCache);
+            queryExpression = new SingleStoreSqlNullabilityProcessor(Dependencies, UseRelationalNulls)
+                .Process(queryExpression, parametersValues, out canCache);
 
-            return selectExpression;
+            return queryExpression;
         }
     }
 }

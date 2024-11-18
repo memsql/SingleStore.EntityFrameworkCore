@@ -28,7 +28,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
         public override Task Include_duplicate_collection_result_operator2(bool async)
         {
-            // The order of `Orders` can be different, becaues it is not explicitly sorted.
+            // The order of `Orders` can be different, because it is not explicitly sorted.
             // The order of the end result can be different as well.
             // This is the case on MariaDB.
             return AssertQuery(
@@ -103,7 +103,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
         public override Task Include_duplicate_collection_result_operator(bool async)
         {
-            // The order of `Orders` can be different, becaues it is not explicitly sorted.
+            // The order of `Orders` can be different, because it is not explicitly sorted.
             // The order of the end result can be different as well.
             // This is the case on MariaDB.
             return AssertQuery(
@@ -118,6 +118,18 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                     AssertInclude(e.c2, a.c2, new ExpectedInclude<Customer>(c => c.Orders));
                 },
                 entryCount: 15);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
+        public override Task Include_collection_OrderBy_empty_list_contains(bool async)
+        {
+            return base.Include_collection_OrderBy_empty_list_contains(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
+        public override Task Include_collection_OrderBy_empty_list_does_not_contains(bool async)
+        {
+            return base.Include_collection_OrderBy_empty_list_contains(async);
         }
 
         public override Task Include_collection_with_multiple_conditional_order_by(bool async)

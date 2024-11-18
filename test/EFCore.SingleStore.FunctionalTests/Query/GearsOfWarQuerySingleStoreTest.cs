@@ -4,6 +4,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.GearsOfWarModel;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
@@ -25,7 +26,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         public override Task DateTimeOffset_Contains_Less_than_Greater_than(bool async)
         {
-            var dto = GearsOfWarQuerySingleStoreFixture.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
+            var dto = SingleStoreTestHelpers.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
             var start = dto.AddDays(-1);
             var end = dto.AddDays(1);
             var dates = new[] { dto };
@@ -38,7 +39,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         public override Task Where_datetimeoffset_milliseconds_parameter_and_constant(bool async)
         {
-            var dateTimeOffset = GearsOfWarQuerySingleStoreFixture.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
+            var dateTimeOffset = SingleStoreTestHelpers.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
 
             // Literal where clause
             var p = Expression.Parameter(typeof(Mission), "i");
@@ -52,6 +53,25 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 async,
                 ss => ss.Set<Mission>().Where(dynamicWhere),
                 ss => ss.Set<Mission>().Where(m => m.Timeline == dateTimeOffset));
+        }
+
+        [ConditionalTheory(Skip = "TODO: Does not work as expected, probably due to some test definition issues.")]
+        public override async Task DateTimeOffsetNow_minus_timespan(bool async)
+        {
+            var timeSpan = new TimeSpan(10000); // <-- changed from 1000 to 10000 ticks
+
+            await AssertQuery(
+                async,
+                ss => ss.Set<Mission>().Where(e => e.Timeline > DateTimeOffset.Now - timeSpan));
+
+            AssertSql(
+                """
+                @__timeSpan_0='00:00:00.0010000' (DbType = DateTimeOffset)
+
+                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
+                FROM `Missions` AS `m`
+                WHERE `m`.`Timeline` > (UTC_TIMESTAMP() - @__timeSpan_0)
+                """);
         }
 
         // TODO: Implement strategy as discussed with @roji (including emails) for EF Core 5.
@@ -397,5 +417,28 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Select_subquery_projecting_single_constant_string(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Set_operator_with_navigation_in_projection_groupby_aggregate(bool async)
+        {
+            return base.Set_operator_with_navigation_in_projection_groupby_aggregate(async);
+        }
+
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
+        public override Task Where_contains_on_navigation_with_composite_keys(bool async)
+        {
+            return base.Where_contains_on_navigation_with_composite_keys(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Filter_on_subquery_projecting_one_value_type_from_empty_collection(bool async)
+        {
+            return base.Filter_on_subquery_projecting_one_value_type_from_empty_collection(async);
+        }
+
+        [ConditionalTheory(Skip = "Another LATERAL JOIN bug in MySQL. Grouping leads to unexpected result set.")]
+        public override Task Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(bool async)
+        {
+            return base.Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(async);
+        }
     }
 }

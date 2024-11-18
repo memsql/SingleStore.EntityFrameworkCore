@@ -1,5 +1,6 @@
-﻿using System.Linq;
+﻿using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
@@ -79,34 +80,34 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Projection_AsEnumerable_projection(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level2()
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Select_nested_collection_multi_level2(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level3()
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Select_nested_collection_multi_level3(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level4()
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Select_nested_collection_multi_level4(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level5()
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Select_nested_collection_multi_level5(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Select_nested_collection_multi_level6()
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Select_nested_collection_multi_level6(bool async)
         {
-            base.Select_nested_collection_multi_level2();
+            return base.Select_nested_collection_multi_level2(async);
         }
 
         [ConditionalTheory(Skip = "Feature 'Subselect in window clause' is not supported by SingleStore.")]
@@ -193,6 +194,28 @@ FROM `Orders` AS `o`");
             AssertSql(
                 @"SELECT (EXTRACT(microsecond FROM `o`.`OrderDate`)) DIV (1000)
 FROM `Orders` AS `o`");
+        }
+
+        public override async Task Correlated_collection_after_distinct_with_complex_projection_not_containing_original_identifier(bool async)
+        {
+            // Identifier set for Distinct. Issue #24440.
+            Assert.Equal(
+                RelationalStrings.InsufficientInformationToIdentifyElementOfCollectionJoin,
+                (await Assert.ThrowsAsync<InvalidOperationException>(
+                    () => base.Correlated_collection_after_distinct_with_complex_projection_not_containing_original_identifier(async)))
+                .Message);
+
+            AssertSql();
+        }
+
+        public override async Task SelectMany_with_collection_being_correlated_subquery_which_references_non_mapped_properties_from_inner_and_outer_entity(bool async)
+        {
+            await AssertUnableToTranslateEFProperty(
+                () => base
+                    .SelectMany_with_collection_being_correlated_subquery_which_references_non_mapped_properties_from_inner_and_outer_entity(
+                        async));
+
+            AssertSql();
         }
 
         [ConditionalTheory(Skip = "issue #573")]

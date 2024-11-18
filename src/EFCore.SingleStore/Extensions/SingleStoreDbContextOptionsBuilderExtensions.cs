@@ -67,25 +67,30 @@ namespace Microsoft.EntityFrameworkCore
         /// <returns> The options builder so that further configuration can be chained. </returns>
         public static DbContextOptionsBuilder UseSingleStore(
             [NotNull] this DbContextOptionsBuilder optionsBuilder,
-            [NotNull] string connectionString,
+            [CanBeNull] string connectionString,
             [CanBeNull] Action<SingleStoreDbContextOptionsBuilder> mySqlOptionsAction = null)
         {
             Check.NotNull(optionsBuilder, nameof(optionsBuilder));
-            Check.NotEmpty(connectionString, nameof(connectionString));
+            Check.NullButNotEmpty(connectionString, nameof(connectionString));
 
             optionsBuilder.AddInterceptors(new MatchInterceptor());
-            var resolvedConnectionString = new NamedConnectionStringResolver(optionsBuilder.Options)
-                .ResolveConnectionString(connectionString);
 
-            var program_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            var csb = new SingleStoreConnectionStringBuilder(resolvedConnectionString)
+            if (connectionString is not null)
             {
-                AllowUserVariables = true,
-                UseAffectedRows = false,
-                ConnectionAttributes = $"program_name:SingleStore Entity Framework Core provider, program_version:{program_version}",
-            };
+                var resolvedConnectionString = new NamedConnectionStringResolver(optionsBuilder.Options)
+                    .ResolveConnectionString(connectionString);
 
-            resolvedConnectionString = csb.ConnectionString;
+                var programVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+                var csb = new SingleStoreConnectionStringBuilder(resolvedConnectionString)
+                {
+                    AllowUserVariables = true,
+                    UseAffectedRows = false,
+                    ConnectionAttributes = $"program_name:SingleStore Entity Framework Core provider, program_version:{programVersion}",
+                };
+
+                connectionString = csb.ConnectionString;
+            }
+
             ServerVersion serverVersion;
 
             try
@@ -103,7 +108,7 @@ namespace Microsoft.EntityFrameworkCore
 
             var extension = (SingleStoreOptionsExtension)GetOrCreateExtension(optionsBuilder)
                 .WithServerVersion(serverVersion)
-                .WithConnectionString(resolvedConnectionString);
+                .WithConnectionString(connectionString);
 
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
             ConfigureWarnings(optionsBuilder);
@@ -138,8 +143,8 @@ namespace Microsoft.EntityFrameworkCore
                 : null;
 
             var csb = new SingleStoreConnectionStringBuilder(resolvedConnectionString);
-            var program_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            csb.ConnectionAttributes = $"program_name:SingleStore Entity Framework Core provider, program_version:{program_version}";
+            var programVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            csb.ConnectionAttributes = $"program_name:SingleStore Entity Framework Core provider, program_version:{programVersion}";
 
             if (!csb.AllowUserVariables ||
                 csb.UseAffectedRows)
@@ -151,10 +156,10 @@ namespace Microsoft.EntityFrameworkCore
 
                     connection.ConnectionString = csb.ConnectionString;
                 }
-                catch (SingleStoreException e)
+                catch (Exception e)
                 {
                     throw new InvalidOperationException(
-                        @"The connection string used with EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=true;UseAffectedRows=false"".",
+                        @"The connection string of a connection used by EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=true;UseAffectedRows=false"".",
                         e);
                 }
             }

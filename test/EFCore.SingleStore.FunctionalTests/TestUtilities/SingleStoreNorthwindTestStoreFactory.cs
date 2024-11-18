@@ -5,6 +5,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 {
     public class SingleStoreNorthwindTestStoreFactory : SingleStoreTestStoreFactory
     {
+        public const string DefaultName = "Northwind";
+
         public static new SingleStoreNorthwindTestStoreFactory Instance => InstanceCi;
         public static SingleStoreNorthwindTestStoreFactory InstanceCi { get; } = new SingleStoreNorthwindTestStoreFactory(databaseCollation: AppConfig.ServerVersion.DefaultUtf8CiCollation);
         public static SingleStoreNorthwindTestStoreFactory InstanceCs { get; } = new SingleStoreNorthwindTestStoreFactory(databaseCollation: AppConfig.ServerVersion.DefaultUtf8CsCollation);
@@ -16,6 +18,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
         }
 
         public override TestStore GetOrCreate(string storeName)
-            => SingleStoreTestStore.GetOrCreate(storeName, "Northwind.sql", noBackslashEscapes: NoBackslashEscapes, databaseCollation: DatabaseCollation);
+            => SingleStoreTestStore.GetOrCreate(storeName ?? DefaultName, "Northwind.sql", noBackslashEscapes: NoBackslashEscapes, databaseCollation: DatabaseCollation);
     }
 }

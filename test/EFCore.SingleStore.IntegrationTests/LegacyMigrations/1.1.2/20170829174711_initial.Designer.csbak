@@ -10,8 +10,8 @@ using EntityFrameworkCore.SingleStore.IntegrationTests.Models;
 namespace EntityFrameworkCore.SingleStore.IntegrationTests.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20170829174711_initial")]
-    partial class initial
+    [Migration("20170829174711_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

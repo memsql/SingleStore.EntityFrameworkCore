@@ -1,11 +1,15 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Query;
-using EntityFrameworkCore.SingleStore.Infrastructure;
-using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Microsoft.EntityFrameworkCore.TestModels.ComplexNavigationsModel;
+using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests;
+using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
+using Xunit.Sdk;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
@@ -51,16 +55,22 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Distinct_take_without_orderby(async);
         }
 
-        [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
-        public override void Member_pushdown_chain_3_levels_deep()
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
+        public override Task Element_selector_with_coalesce_repeated_in_aggregate(bool async)
         {
-            base.Member_pushdown_chain_3_levels_deep();
+            return base.Element_selector_with_coalesce_repeated_in_aggregate(async);
         }
 
-        [ConditionalFact(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
-        public override void Member_pushdown_with_collection_navigation_in_the_middle()
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
+        public override Task Member_pushdown_chain_3_levels_deep(bool async)
         {
-            base.Member_pushdown_with_collection_navigation_in_the_middle();
+            return base.Member_pushdown_chain_3_levels_deep(async);
+        }
+
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
+        public override Task Member_pushdown_with_collection_navigation_in_the_middle(bool async)
+        {
+            return base.Member_pushdown_with_collection_navigation_in_the_middle(async);
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
@@ -111,10 +121,63 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.SelectMany_subquery_with_custom_projection(async);
         }
 
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
+        public override Task Simple_level1_level2_GroupBy_Having_Count(bool async)
+        {
+            return base.Simple_level1_level2_GroupBy_Having_Count(async);
+        }
+
         [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
         public override Task Sum_with_filter_with_include_selector_cast_using_as(bool async)
         {
             return base.Sum_with_filter_with_include_selector_cast_using_as(async);
         }
+
+        public override async Task GroupJoin_client_method_in_OrderBy(bool async)
+        {
+            await AssertTranslationFailedWithDetails(
+                () => base.GroupJoin_client_method_in_OrderBy(async),
+                CoreStrings.QueryUnableToTranslateMethod(
+                    "Microsoft.EntityFrameworkCore.Query.ComplexNavigationsQueryTestBase<EntityFrameworkCore.SingleStore.FunctionalTests.Query.ComplexNavigationsQuerySingleStoreFixture>",
+                    "ClientMethodNullableInt"));
+
+            AssertSql();
+        }
+
+        public override async Task Join_with_result_selector_returning_queryable_throws_validation_error(bool async)
+        {
+            // Expression cannot be used for return type. Issue #23302.
+            await Assert.ThrowsAsync<ArgumentException>(
+                () => base.Join_with_result_selector_returning_queryable_throws_validation_error(async));
+
+            AssertSql();
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterApply))]
+        public override async Task Nested_SelectMany_correlated_with_join_table_correctly_translated_to_apply(bool async)
+        {
+            // DefaultIfEmpty on child collection. Issue #19095.
+            await Assert.ThrowsAsync<EqualException>(
+                async () => await base.Nested_SelectMany_correlated_with_join_table_correctly_translated_to_apply(async));
+
+            AssertSql(
+                @"SELECT `t0`.`l1Name`, `t0`.`l2Name`, `t0`.`l3Name`
+FROM `LevelOne` AS `l`
+LEFT JOIN LATERAL (
+    SELECT `t`.`l1Name`, `t`.`l2Name`, `t`.`l3Name`
+    FROM `LevelTwo` AS `l0`
+    LEFT JOIN `LevelThree` AS `l1` ON `l0`.`Id` = `l1`.`Id`
+    JOIN LATERAL (
+        SELECT `l`.`Name` AS `l1Name`, `l1`.`Name` AS `l2Name`, `l3`.`Name` AS `l3Name`
+        FROM `LevelFour` AS `l2`
+        LEFT JOIN `LevelThree` AS `l3` ON `l2`.`OneToOne_Optional_PK_Inverse4Id` = `l3`.`Id`
+        WHERE `l1`.`Id` IS NOT NULL AND (`l1`.`Id` = `l2`.`OneToMany_Optional_Inverse4Id`)
+    ) AS `t` ON TRUE
+    WHERE `l`.`Id` = `l0`.`OneToMany_Optional_Inverse2Id`
+) AS `t0` ON TRUE");
+        }
+
+        private void AssertSql(params string[] expected)
+            => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
     }
 }

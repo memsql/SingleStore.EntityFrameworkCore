@@ -2,12 +2,14 @@
 // Copyright (c) SingleStore Inc. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using EntityFrameworkCore.SingleStore.Metadata.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Metadata.Conventions
@@ -63,13 +65,15 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Conventions
         /// <returns> The store value generation strategy to set for the given property. </returns>
         protected override ValueGenerated? GetValueGenerated(IConventionProperty property)
         {
-            var tableName = property.DeclaringEntityType.GetTableName();
-            if (tableName == null)
+            var declaringTable = property.GetMappedStoreObjects(StoreObjectType.Table).FirstOrDefault();
+            if (declaringTable.Name == null)
             {
                 return null;
             }
 
-            return GetValueGenerated(property, StoreObjectIdentifier.Table(tableName, property.DeclaringEntityType.GetSchema()));
+            // If the first mapping can be value generated then we'll consider all mappings to be value generated
+            // as this is a client-side configuration and can't be specified per-table.
+            return GetValueGenerated(property, declaringTable, Dependencies.TypeMappingSource);
         }
 
         /// <summary>
@@ -78,7 +82,9 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Conventions
         /// <param name="property"> The property. </param>
         /// <param name="storeObject"> The identifier of the store object. </param>
         /// <returns> The store value generation strategy to set for the given property. </returns>
-        public static new ValueGenerated? GetValueGenerated([NotNull] IReadOnlyProperty property, in StoreObjectIdentifier storeObject)
+        public static new ValueGenerated? GetValueGenerated(
+            [NotNull] IReadOnlyProperty property,
+            in StoreObjectIdentifier storeObject)
         {
             var valueGenerated = RelationalValueGenerationConvention.GetValueGenerated(property, storeObject);
             if (valueGenerated != null)
@@ -86,19 +92,31 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Conventions
                 return valueGenerated;
             }
 
-            var valueGenerationStrategy = property.GetValueGenerationStrategy(storeObject);
-            if (valueGenerationStrategy.HasValue)
+            return property.GetValueGenerationStrategy(storeObject) switch
             {
-                switch (valueGenerationStrategy.Value)
-                {
-                    case SingleStoreValueGenerationStrategy.IdentityColumn:
-                        return ValueGenerated.OnAdd;
-                    case SingleStoreValueGenerationStrategy.ComputedColumn:
-                        return ValueGenerated.OnAddOrUpdate;
-                }
+                SingleStoreValueGenerationStrategy.IdentityColumn => ValueGenerated.OnAdd,
+                SingleStoreValueGenerationStrategy.ComputedColumn => ValueGenerated.OnAddOrUpdate,
+                _ => null
+            };
+        }
+
+        private ValueGenerated? GetValueGenerated(
+            IReadOnlyProperty property,
+            in StoreObjectIdentifier storeObject,
+            ITypeMappingSource typeMappingSource)
+        {
+            var valueGenerated = RelationalValueGenerationConvention.GetValueGenerated(property, storeObject);
+            if (valueGenerated != null)
+            {
+                return valueGenerated;
             }
 
-            return null;
+            return property.GetValueGenerationStrategy(storeObject, typeMappingSource) switch
+            {
+                SingleStoreValueGenerationStrategy.IdentityColumn => ValueGenerated.OnAdd,
+                SingleStoreValueGenerationStrategy.ComputedColumn => ValueGenerated.OnAddOrUpdate,
+                _ => null
+            };
         }
     }
 }

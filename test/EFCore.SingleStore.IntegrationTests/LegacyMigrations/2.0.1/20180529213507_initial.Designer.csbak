@@ -14,8 +14,8 @@ using System.Collections.Generic;
 namespace EntityFrameworkCore.SingleStore.IntegrationTests.Migrations
 {
     [DbContext(typeof(AppDb))]
-    [Migration("20180529213507_initial")]
-    partial class initial
+    [Migration("20180529213507_Initial")]
+    partial class Initial
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {

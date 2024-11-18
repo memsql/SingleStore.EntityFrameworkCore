@@ -1,26 +1,53 @@
-using System.Threading.Tasks;
-using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 
-namespace EntityFrameworkCore.SingleStore.FunctionalTests
+namespace EntityFrameworkCore.SingleStore.FunctionalTests;
+
+// Made internal to skip all tests
+internal abstract class FindSingleStoreTest : FindTestBase<FindSingleStoreTest.FindSingleStoreFixture>
 {
-    public class FindSingleStoreTest : FindTestBase<FindSingleStoreTest.FindSingleStoreFixture>
+    protected FindSingleStoreTest(FindSingleStoreFixture fixture)
+        : base(fixture)
     {
-        public FindSingleStoreTest(FindSingleStoreFixture fixture)
+        fixture.TestSqlLoggerFactory.Clear();
+    }
+
+    public class FindSingleStoreTestSet : FindSingleStoreTest
+    {
+        public FindSingleStoreTestSet(FindSingleStoreFixture fixture)
             : base(fixture)
         {
         }
 
-        protected override TEntity Find<TEntity>(DbContext context, params object[] keyValues)
-            => context.Set<TEntity>().Find(keyValues);
+        protected override TestFinder Finder { get; } = new FindViaSetFinder();
+    }
 
-        protected override ValueTask<TEntity> FindAsync<TEntity>(DbContext context, params object[] keyValues)
-            => context.Set<TEntity>().FindAsync(keyValues);
-
-        public class FindSingleStoreFixture : FindFixtureBase
+    public class FindSingleStoreTestContext : FindSingleStoreTest
+    {
+        public FindSingleStoreTestContext(FindSingleStoreFixture fixture)
+            : base(fixture)
         {
-            protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
         }
+
+        protected override TestFinder Finder { get; } = new FindViaContextFinder();
+    }
+
+    public class FindSingleStoreTestNonGeneric : FindSingleStoreTest
+    {
+        public FindSingleStoreTestNonGeneric(FindSingleStoreFixture fixture)
+            : base(fixture)
+        {
+        }
+
+        protected override TestFinder Finder { get; } = new FindViaNonGenericContextFinder();
+    }
+
+    public class FindSingleStoreFixture : FindFixtureBase
+    {
+        public TestSqlLoggerFactory TestSqlLoggerFactory => (TestSqlLoggerFactory)ServiceProvider.GetRequiredService<ILoggerFactory>();
+        protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
     }
 }

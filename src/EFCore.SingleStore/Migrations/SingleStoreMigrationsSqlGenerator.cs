@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
-using System.Net.NetworkInformation;
+using System.Text;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using JetBrains.Annotations;
@@ -17,13 +17,14 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Update;
 using Microsoft.EntityFrameworkCore.Utilities;
 using Microsoft.Extensions.Logging;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Internal;
 using EntityFrameworkCore.SingleStore.Metadata.Internal;
 using EntityFrameworkCore.SingleStore.Storage.Internal;
-using SingleStoreConnector;
+using EntityFrameworkCore.SingleStore.Update.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Migrations
 {
@@ -54,17 +55,17 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             "multipolygon",
         };
 
-        private readonly IRelationalAnnotationProvider _annotationProvider;
+        private readonly ICommandBatchPreparer _commandBatchPreparer;
         private readonly ISingleStoreOptions _options;
         private readonly RelationalTypeMapping _stringTypeMapping;
 
         public SingleStoreMigrationsSqlGenerator(
             [NotNull] MigrationsSqlGeneratorDependencies dependencies,
-            [NotNull] IRelationalAnnotationProvider annotationProvider,
+            [NotNull] ICommandBatchPreparer commandBatchPreparer,
             [NotNull] ISingleStoreOptions options)
             : base(dependencies)
         {
-            _annotationProvider = annotationProvider;
+             _commandBatchPreparer = commandBatchPreparer;
             _options = options;
             _stringTypeMapping = dependencies.TypeMappingSource.GetMapping(typeof(string));
         }
@@ -516,7 +517,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 .Append(" ON ")
                 .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
                 .Append(" (")
-                .Append(ColumnListWithIndexPrefixLength(operation, operation.Columns))
+                .Append(ColumnListWithIndexPrefixLengthAndSortOrder(operation, operation.Columns, operation[SingleStoreAnnotationNames.IndexPrefixLength] as int[], operation.IsDescending))
                 .Append(")");
 
             IndexOptions(operation, model, builder);
@@ -563,6 +564,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
         {
             Check.NotNull(operation, nameof(operation));
             Check.NotNull(builder, nameof(builder));
+
             if (!_options.ServerVersion.Supports.Sequences)
             {
                 throw new InvalidOperationException(
@@ -577,12 +579,61 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             // https://github.com/aspnet/EntityFrameworkCore/blob/master/src/EFCore.Relational/Migrations/MigrationsSqlGenerator.cs#L535-L543
             var oldValue = operation.ClrType;
             operation.ClrType = typeof(long);
-            if (operation.StartValue <= 0 )
+            if (operation.StartValue <= 0)
             {
                 operation.MinValue = operation.StartValue;
             }
             base.Generate(operation, model, builder);
             operation.ClrType = oldValue;
+        }
+
+        protected override void Generate(AlterSequenceOperation operation, IModel model, MigrationCommandListBuilder builder)
+        {
+            Check.NotNull(operation, nameof(operation));
+            Check.NotNull(builder, nameof(builder));
+
+            if (!_options.ServerVersion.Supports.Sequences)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot alter sequence '{operation.Name}' because sequences are not supported in server version {_options.ServerVersion}.");
+            }
+
+            base.Generate(operation, model, builder);
+        }
+
+        protected override void Generate(DropSequenceOperation operation, IModel model, MigrationCommandListBuilder builder)
+        {
+            Check.NotNull(operation, nameof(operation));
+            Check.NotNull(builder, nameof(builder));
+
+            if (!_options.ServerVersion.Supports.Sequences)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot alter sequence '{operation.Name}' because sequences are not supported in server version {_options.ServerVersion}.");
+            }
+
+            base.Generate(operation, model, builder);
+        }
+
+        protected override void Generate(RenameSequenceOperation operation, IModel model, MigrationCommandListBuilder builder)
+        {
+            Check.NotNull(operation, nameof(operation));
+            Check.NotNull(builder, nameof(builder));
+
+            if (!_options.ServerVersion.Supports.Sequences)
+            {
+                throw new InvalidOperationException(
+                    $"Cannot alter sequence '{operation.Name}' because sequences are not supported in server version {_options.ServerVersion}.");
+            }
+
+            builder
+                .Append("ALTER TABLE ")
+                .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema))
+                .Append(" RENAME ")
+                .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.NewName, operation.NewSchema))
+                .AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+
+            EndStatement(builder);
         }
 
         /// <summary>
@@ -1166,7 +1217,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             IndexTraits(operation, model, builder);
 
             builder.Append("(")
-                .Append(ColumnListWithIndexPrefixLength(operation, operation.Columns))
+                .Append(ColumnListWithIndexPrefixLengthAndSortOrder(operation, operation.Columns, operation[SingleStoreAnnotationNames.IndexPrefixLength] as int[]))
                 .Append(")");
         }
 
@@ -1195,7 +1246,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             IndexTraits(operation, model, builder);
 
             builder.Append("(")
-                .Append(ColumnListWithIndexPrefixLength(operation, operation.Columns))
+                .Append(ColumnListWithIndexPrefixLengthAndSortOrder(operation, operation.Columns, operation[SingleStoreAnnotationNames.IndexPrefixLength] as int[]))
                 .Append(")");*/
         }
 
@@ -1308,14 +1359,38 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             }
         }
 
-        private string ColumnListWithIndexPrefixLength(MigrationOperation operation, string[] columns)
-            => operation[SingleStoreAnnotationNames.IndexPrefixLength] is int[] prefixValues
-                ? ColumnList(
-                    columns,
-                    (c, i) => prefixValues.Length > i && prefixValues[i] > 0
-                        ? $"({prefixValues[i]})"
-                        : null)
-                : ColumnList(columns);
+        /// <summary>
+        /// Use VALUES batches for INSERT commands where possible.
+        /// </summary>
+        protected override void Generate(InsertDataOperation operation, IModel model, MigrationCommandListBuilder builder, bool terminate = true)
+        {
+            var sqlBuilder = new StringBuilder();
+
+            var modificationCommands = GenerateModificationCommands(operation, model).ToList();
+            var updateSqlGenerator = (ISingleStoreUpdateSqlGenerator)Dependencies.UpdateSqlGenerator;
+
+            foreach (var batch in _commandBatchPreparer.CreateCommandBatches(modificationCommands, moreCommandSets: true))
+            {
+                updateSqlGenerator.AppendBulkInsertOperation(sqlBuilder, batch.ModificationCommands, commandPosition: 0, out _);
+            }
+
+            builder.Append(sqlBuilder.ToString());
+
+            if (terminate)
+            {
+                builder.EndCommand();
+            }
+        }
+
+        /// <remarks>
+        /// There is no need to check for explicit index collation/descending support, because ASC and DESC modifiers are being silently
+        /// ignored in versions of MySQL and MariaDB, that do not support them.
+        /// </remarks>
+        private string ColumnListWithIndexPrefixLengthAndSortOrder(MigrationOperation operation, string[] columns, int[] prefixValues, bool[] isDescending = null)
+            => ColumnList(
+                columns,
+                (c, i)
+                    => $"{(prefixValues is not null && prefixValues.Length > i && prefixValues[i] > 0 ? $"({prefixValues[i]})" : null)}{(isDescending is not null && (isDescending.Length == 0 || isDescending[i]) ? " DESC" : null)}");
 
         protected virtual string ColumnList([NotNull] string[] columns, Func<string, int, string> columnPostfix)
             => string.Join(", ", columns.Select((c, i) => Dependencies.SqlGenerationHelper.DelimitIdentifier(c) + columnPostfix?.Invoke(c, i)));

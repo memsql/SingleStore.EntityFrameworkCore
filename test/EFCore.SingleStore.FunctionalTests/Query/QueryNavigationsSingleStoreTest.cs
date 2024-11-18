@@ -1,6 +1,8 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -33,10 +35,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Collection_select_nav_prop_all(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
-        public override void Navigation_in_subquery_referencing_outer_query()
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task Navigation_in_subquery_referencing_outer_query(bool async)
         {
-            base.Navigation_in_subquery_referencing_outer_query();
+            return base.Navigation_in_subquery_referencing_outer_query(async);
         }
 
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
@@ -93,10 +95,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Where_subquery_on_navigation2(async);
         }
 
-        [ConditionalFact(Skip = "Issue #573")]
-        public override void Navigation_in_subquery_referencing_outer_query_with_client_side_result_operator_and_count()
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterReferenceInMultiLevelSubquery))]
+        public override Task Navigation_in_subquery_referencing_outer_query_with_client_side_result_operator_and_count(bool async)
         {
-            base.Navigation_in_subquery_referencing_outer_query_with_client_side_result_operator_and_count();
+            return base.Navigation_in_subquery_referencing_outer_query_with_client_side_result_operator_and_count(async);
         }
 
         private void AssertSql(params string[] expected)

@@ -31,6 +31,18 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Where_contains_on_navigation(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task FirstOrDefault_over_scalar_projection_compared_to_not_null(bool async)
+        {
+            return base.FirstOrDefault_over_scalar_projection_compared_to_not_null(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        public override Task FirstOrDefault_over_scalar_projection_compared_to_null(bool async)
+        {
+            return base.FirstOrDefault_over_scalar_projection_compared_to_null(async);
+        }
+
         [ConditionalTheory]
         public override async Task Where_datetime_now(bool async)
         {
@@ -580,6 +592,86 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
         public override Task Where_subquery_FirstOrDefault_compared_to_entity(bool async)
         {
             return base.Where_subquery_FirstOrDefault_compared_to_entity(async);
+        }
+
+        public override async Task Where_bitwise_xor(bool async)
+        {
+            // Cannot eval 'where (([c].CustomerID == \"ALFKI\") ^ True)'. Issue #16645.
+            await AssertTranslationFailed(() => base.Where_bitwise_xor(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_constructed_equal(bool async)
+        {
+            //  Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_constructed_equal(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_constructed_multi_value_equal(bool async)
+        {
+            //  Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_constructed_multi_value_equal(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_constructed_multi_value_not_equal(bool async)
+        {
+            //  Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_constructed_multi_value_not_equal(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_tuple_create_constructed_equal(bool async)
+        {
+            //  Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_tuple_create_constructed_equal(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_tuple_create_constructed_multi_value_equal(bool async)
+        {
+            //  Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_tuple_create_constructed_multi_value_equal(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_tuple_create_constructed_multi_value_not_equal(bool async)
+        {
+            //  Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_tuple_create_constructed_multi_value_not_equal(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_tuple_constructed_equal(bool async)
+        {
+            // Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_tuple_constructed_equal(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_tuple_constructed_multi_value_equal(bool async)
+        {
+            // Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_tuple_constructed_multi_value_equal(async));
+
+            AssertSql();
+        }
+
+        public override async Task Where_compare_tuple_constructed_multi_value_not_equal(bool async)
+        {
+            // Anonymous type to constant comparison. Issue #14672.
+            await AssertTranslationFailed(() => base.Where_compare_tuple_constructed_multi_value_not_equal(async));
+
+            AssertSql();
         }
 
         private void AssertSql(params string[] expected)
