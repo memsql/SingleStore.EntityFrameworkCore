@@ -85,7 +85,7 @@ namespace Microsoft.EntityFrameworkCore
                 {
                     AllowUserVariables = true,
                     UseAffectedRows = false,
-                    ConnectionAttributes = $"program_name:SingleStore Entity Framework Core provider, program_version:{programVersion}",
+                    ConnectionAttributes = $"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}",
                 };
 
                 connectionString = csb.ConnectionString;
@@ -144,7 +144,7 @@ namespace Microsoft.EntityFrameworkCore
 
             var csb = new SingleStoreConnectionStringBuilder(resolvedConnectionString);
             var programVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            csb.ConnectionAttributes = $"program_name:SingleStore Entity Framework Core provider, program_version:{programVersion}";
+            csb.ConnectionAttributes = $"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}";
 
             if (!csb.AllowUserVariables ||
                 csb.UseAffectedRows)
