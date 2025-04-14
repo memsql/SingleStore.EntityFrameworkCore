@@ -4,6 +4,7 @@
 
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Storage;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
@@ -11,17 +12,20 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
     public class SingleStoreQuerySqlGeneratorFactory : IQuerySqlGeneratorFactory
     {
         private readonly QuerySqlGeneratorDependencies _dependencies;
+        private readonly IRelationalTypeMappingSource _typeMappingSource;
         private readonly ISingleStoreOptions _options;
 
         public SingleStoreQuerySqlGeneratorFactory(
             [NotNull] QuerySqlGeneratorDependencies dependencies,
+            IRelationalTypeMappingSource typeMappingSource,
             ISingleStoreOptions options)
         {
             _dependencies = dependencies;
+            _typeMappingSource = typeMappingSource;
             _options = options;
         }
 
         public virtual QuerySqlGenerator Create()
-            => new SingleStoreQuerySqlGenerator(_dependencies, _options);
+            => new SingleStoreQuerySqlGenerator(_dependencies, _typeMappingSource, _options);
     }
 }

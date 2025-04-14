@@ -3,6 +3,7 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
@@ -24,14 +25,26 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 {
     public class SingleStoreSqlTranslatingExpressionVisitor : RelationalSqlTranslatingExpressionVisitor
     {
+        private readonly QueryCompilationContext _queryCompilationContext;
         private readonly ISingleStoreJsonPocoTranslator _jsonPocoTranslator;
         private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
 
         protected static readonly MethodInfo[] NewArrayExpressionSupportMethodInfos = Array.Empty<MethodInfo>()
-            .Concat(typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethods().Where(m => m.Name == nameof(SingleStoreDbFunctionsExtensions.Match)))
+            .Concat(typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethods().Where(m => m.Name is nameof(SingleStoreDbFunctionsExtensions.Match)
+                or nameof(SingleStoreDbFunctionsExtensions.IsMatch)))
             .Concat(typeof(string).GetRuntimeMethods().Where(m => m.Name == nameof(string.Concat)))
             .Where(m => m.GetParameters().Any(p => p.ParameterType.IsArray))
             .ToArray();
+
+        protected static readonly MethodInfo ElementAtMethodInfo = typeof(Enumerable)
+            .GetRuntimeMethods()
+            .Single(m => m.Name == nameof(Enumerable.ElementAt) &&
+                         m.GetParameters()
+                             .Select(
+                                 p => p.ParameterType.IsGenericType
+                                     ? p.ParameterType.GetGenericTypeDefinition()
+                                     : p.ParameterType)
+                             .SequenceEqual(new[] { typeof(IEnumerable<>), typeof(int) }));
 
         public SingleStoreSqlTranslatingExpressionVisitor(
             RelationalSqlTranslatingExpressionVisitorDependencies dependencies,
@@ -40,8 +53,34 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             [CanBeNull] ISingleStoreJsonPocoTranslator jsonPocoTranslator)
             : base(dependencies, queryCompilationContext, queryableMethodTranslatingExpressionVisitor)
         {
+            _queryCompilationContext = queryCompilationContext;
             _jsonPocoTranslator = jsonPocoTranslator;
             _sqlExpressionFactory = (SingleStoreSqlExpressionFactory)Dependencies.SqlExpressionFactory;
+        }
+
+        protected override Expression VisitExtension(Expression extensionExpression)
+            => extensionExpression switch
+            {
+                SingleStoreBipolarExpression bipolarExpression => VisitSingleStoreBipolarExpression(bipolarExpression),
+                _ => base.VisitExtension(extensionExpression)
+            };
+
+        private Expression VisitSingleStoreBipolarExpression(SingleStoreBipolarExpression bipolarExpression)
+        {
+            var defaultExpression = Visit(bipolarExpression.DefaultExpression) ?? QueryCompilationContext.NotTranslatedExpression;
+            var alternativeExpression = Visit(bipolarExpression.AlternativeExpression) ?? QueryCompilationContext.NotTranslatedExpression;
+
+            return defaultExpression != QueryCompilationContext.NotTranslatedExpression
+                // ? alternativeExpression != QueryCompilationContext.NotTranslatedExpression
+                //     // ? new SingleStoreBipolarSqlExpression(
+                //     //     (SqlExpression)defaultExpression,
+                //     //     (SqlExpression)alternativeExpression)
+                //     ? QueryCompilationContext.NotTranslatedExpression
+                //     : (SqlExpression)defaultExpression
+                ? (SqlExpression)defaultExpression
+                : alternativeExpression != QueryCompilationContext.NotTranslatedExpression
+                    ? (SqlExpression)alternativeExpression
+                    : QueryCompilationContext.NotTranslatedExpression;
         }
 
         /// <inheritdoc />
@@ -116,26 +155,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 
                 if (binaryExpression.Left.Type == typeof(byte[]))
                 {
-                    if (Visit(binaryExpression.Left) is SqlExpression leftSql &&
-                        Visit(binaryExpression.Right) is SqlExpression rightSql)
-                    {
-                        return _sqlExpressionFactory.NullableFunction(
-                            "ASCII",
-                            new[]
-                            {
-                                _sqlExpressionFactory.NullableFunction(
-                                    "SUBSTRING",
-                                    new[]
-                                    {
-                                        leftSql, Dependencies.SqlExpressionFactory.Add(
-                                            Dependencies.SqlExpressionFactory.ApplyDefaultTypeMapping(rightSql),
-                                            Dependencies.SqlExpressionFactory.Constant(1)),
-                                        Dependencies.SqlExpressionFactory.Constant(1)
-                                    },
-                                    typeof(byte[]))
-                            },
-                            typeof(byte));
-                    }
+                    return TranslateByteArrayElementAccess(sqlLeft, sqlRight);
                 }
 
                 // Try translating ArrayIndex inside json column
@@ -284,6 +304,27 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             return base.VisitBinary(binaryExpression);
         }
 
+        private Expression TranslateByteArrayElementAccess(Expression array, Expression index)
+            => Visit(array) is SqlExpression leftSql &&
+               Visit(index) is SqlExpression rightSql
+                ? _sqlExpressionFactory.NullableFunction(
+                    "ASCII",
+                    new[]
+                    {
+                        _sqlExpressionFactory.NullableFunction(
+                            "SUBSTRING",
+                            new[]
+                            {
+                                leftSql, Dependencies.SqlExpressionFactory.Add(
+                                    Dependencies.SqlExpressionFactory.ApplyDefaultTypeMapping(rightSql),
+                                    Dependencies.SqlExpressionFactory.Constant(1)),
+                                Dependencies.SqlExpressionFactory.Constant(1)
+                            },
+                            typeof(byte[]))
+                    },
+                    typeof(byte))
+                : QueryCompilationContext.NotTranslatedExpression;
+
         protected virtual Expression VisitMethodCallNewArray(NewArrayExpression newArrayExpression)
         {
             // Needed for SingleStoreDbFunctionsExtensions.Match() and String.Concat() translation.
@@ -313,6 +354,15 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 
         protected override Expression VisitMethodCall(MethodCallExpression methodCallExpression)
         {
+            if (methodCallExpression.Method.IsGenericMethod
+                && methodCallExpression.Method.GetGenericMethodDefinition() == ElementAtMethodInfo
+                && methodCallExpression.Arguments[0].Type == typeof(byte[]))
+            {
+                return TranslateByteArrayElementAccess(
+                    methodCallExpression.Arguments[0],
+                    methodCallExpression.Arguments[1]);
+            }
+
             if (NewArrayExpressionSupportMethodInfos.Contains(methodCallExpression.Method))
             {
                 var arguments = new Expression[methodCallExpression.Arguments.Count];
@@ -338,7 +388,8 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
                 methodCallExpression = methodCallExpression.Update(methodCallExpression.Object, arguments);
             }
 
-            var result = base.VisitMethodCall(methodCallExpression);
+            var result = CallBaseVisitMethodCall(methodCallExpression);
+
             if (result == QueryCompilationContext.NotTranslatedExpression &&
                 SingleStoreStringComparisonMethodTranslator.StringComparisonMethodInfos.Any(m => m == methodCallExpression.Method))
             {
@@ -362,6 +413,36 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// EF Core does not forward the current QueryCompilationContext to IMethodCallTranslator implementations.
+        /// Our SingleStoreMethodCallTranslatorProvider and SingleStoreQueryCompilationContextMethodTranslator implementations take care of that.
+        /// </summary>
+        private Expression CallBaseVisitMethodCall(MethodCallExpression methodCallExpression)
+        {
+            var mySqlMethodCallTranslatorProvider = (SingleStoreMethodCallTranslatorProvider)Dependencies.MethodCallTranslatorProvider;
+
+            if (mySqlMethodCallTranslatorProvider.QueryCompilationContext is null)
+            {
+                mySqlMethodCallTranslatorProvider.QueryCompilationContext = _queryCompilationContext;
+
+                try
+                {
+                    return base.VisitMethodCall(methodCallExpression);
+                }
+                finally
+                {
+                    mySqlMethodCallTranslatorProvider.QueryCompilationContext = null;
+                }
+            }
+
+            if (mySqlMethodCallTranslatorProvider.QueryCompilationContext == _queryCompilationContext)
+            {
+                return base.VisitMethodCall(methodCallExpression);
+            }
+
+            throw new UnreachableException();
         }
 
         protected virtual void ResetTranslationErrorDetails()

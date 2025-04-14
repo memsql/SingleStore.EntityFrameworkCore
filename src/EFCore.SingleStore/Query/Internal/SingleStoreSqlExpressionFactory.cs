@@ -21,12 +21,14 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
     {
         private readonly IRelationalTypeMappingSource _typeMappingSource;
         private readonly RelationalTypeMapping _boolTypeMapping;
+        private readonly RelationalTypeMapping _doubleTypeMapping;
 
         public SingleStoreSqlExpressionFactory(SqlExpressionFactoryDependencies dependencies)
             : base(dependencies)
         {
             _typeMappingSource = dependencies.TypeMappingSource;
             _boolTypeMapping = _typeMappingSource.FindMapping(typeof(bool));
+            _doubleTypeMapping = _typeMappingSource.FindMapping(typeof(double));
         }
 
         public virtual RelationalTypeMapping FindMapping(
@@ -383,7 +385,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             return new SingleStoreMatchExpression(
                 ApplyTypeMapping(matchExpression.Match, inferredTypeMapping),
                 ApplyTypeMapping(matchExpression.Against, inferredTypeMapping),
-                _boolTypeMapping);
+                _doubleTypeMapping);
         }
 
         private SqlExpression ApplyTypeMappingOnRegexp(SingleStoreRegexpExpression regexpExpression)

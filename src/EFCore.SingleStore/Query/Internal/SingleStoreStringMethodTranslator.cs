@@ -6,8 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -18,9 +16,10 @@ using EntityFrameworkCore.SingleStore.Storage.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Query.Internal
 {
-    public class SingleStoreStringMethodTranslator : IMethodCallTranslator
+    public class SingleStoreStringMethodTranslator : SingleStoreQueryCompilationContextMethodTranslator
     {
         private readonly IRelationalTypeMappingSource _typeMappingSource;
+        private readonly Func<QueryCompilationContext> _queryCompilationContextResolver;
         private readonly ISingleStoreOptions _options;
 
         private static readonly MethodInfo _indexOfMethodInfo
@@ -117,28 +116,31 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
         public SingleStoreStringMethodTranslator(
             SingleStoreSqlExpressionFactory sqlExpressionFactory,
             SingleStoreTypeMappingSource typeMappingSource,
+            Func<QueryCompilationContext> queryCompilationContextResolver,
             ISingleStoreOptions options)
+            : base(queryCompilationContextResolver)
         {
             _sqlExpressionFactory = sqlExpressionFactory;
             _typeMappingSource = typeMappingSource;
+            _queryCompilationContextResolver = queryCompilationContextResolver;
             _options = options;
         }
 
-        public virtual SqlExpression Translate(
+        public override SqlExpression Translate(
             SqlExpression instance,
             MethodInfo method,
             IReadOnlyList<SqlExpression> arguments,
-            IDiagnosticsLogger<DbLoggerCategory.Query> logger)
+            QueryCompilationContext queryCompilationContext)
         {
             if (_indexOfMethodInfo.Equals(method))
             {
-                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _options)
+                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _queryCompilationContextResolver, _options)
                     .MakeIndexOfExpression(instance, arguments[0]);
             }
 
             if(_indexOfMethodInfoWithOneArg.Equals(method))
             {
-                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _options)
+                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _queryCompilationContextResolver, _options)
                     .MakeIndexOfExpression(instance, arguments[0], startIndex: arguments[1]);
             }
 
@@ -250,20 +252,20 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
 
             if (_containsMethodInfo.Equals(method))
             {
-                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _options)
-                    .MakeContainsExpression(instance, arguments[0]);
+                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _queryCompilationContextResolver, _options)
+                    .MakeContainsExpression(queryCompilationContext, instance, arguments[0]);
             }
 
             if (_startsWithMethodInfo.Equals(method))
             {
-                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _options)
-                    .MakeStartsWithExpression(instance, arguments[0]);
+                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _queryCompilationContextResolver, _options)
+                    .MakeStartsWithExpression(queryCompilationContext, instance, arguments[0]);
             }
 
             if (_endsWithMethodInfo.Equals(method))
             {
-                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _options)
-                    .MakeEndsWithExpression(instance, arguments[0]);
+                return new SingleStoreStringComparisonMethodTranslator(_sqlExpressionFactory, _queryCompilationContextResolver, _options)
+                    .MakeEndsWithExpression(queryCompilationContext, instance, arguments[0]);
             }
 
             if (_padLeftWithOneArg.Equals(method))
