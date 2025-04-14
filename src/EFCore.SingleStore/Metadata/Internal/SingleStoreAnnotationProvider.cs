@@ -61,7 +61,7 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Internal
             }
 
             // Model validation ensures that these facets are the same on all mapped entity types
-            var entityType = table.EntityTypeMappings.First().EntityType;
+            var entityType = (IEntityType)table.EntityTypeMappings.First().TypeBase;
 
             // Use an explicitly defined character set, if set.
             // Otherwise, explicitly use the model/database character set, if delegation is enabled.
@@ -167,7 +167,7 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Internal
 
             if (column.PropertyMappings.Where(
                     m => (m.TableMapping.IsSharedTablePrincipal ?? true) &&
-                         m.TableMapping.EntityType == m.Property.DeclaringEntityType)
+                         m.TableMapping.TypeBase == m.Property.DeclaringType)
                 .Select(m => m.Property)
                 .FirstOrDefault(p => p.GetValueGenerationStrategy(table) == SingleStoreValueGenerationStrategy.IdentityColumn) is IProperty identityProperty)
             {
@@ -409,7 +409,8 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Internal
                    properties.Select(
                            p => p.FindTypeMapping() is SingleStoreStringTypeMapping {IsNationalChar: false}
                                // An explicitly defined collation on the current property level takes precedence over an inherited charset.
-                               ? GetActualEntityTypeCharSet(p.DeclaringEntityType, currentLevel) is string charSet &&
+                               ? p.DeclaringType is IEntityType entityType &&
+                                 GetActualEntityTypeCharSet(entityType, currentLevel) is string charSet &&
                                  (p.GetCollation() is not string collation ||
                                   collation.StartsWith(charSet, StringComparison.OrdinalIgnoreCase))
                                    ? charSet
@@ -436,10 +437,11 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Internal
                 ? properties.Select(p => p.GetSingleStoreLegacyCollation()).FirstOrDefault(c => c is not null) ??
                   properties.Select(
                           // An explicitly defined charset on the current property level takes precedence over an inherited collation.
-                          p => (p.FindTypeMapping() is SingleStoreStringTypeMapping {IsNationalChar: false}
-                                   ? GetActualEntityTypeCollation(p.DeclaringEntityType, currentLevel)
+                          p => (p.FindTypeMapping() is MySqlStringTypeMapping {IsNationalChar: false} &&
+                                p.DeclaringType is IEntityType entityType
+                              ? GetActualEntityTypeCollation(entityType, currentLevel)
                                    : p.FindTypeMapping() is SingleStoreGuidTypeMapping {IsCharBasedStoreType: true}
-                                       ? p.DeclaringEntityType.Model.GetActualGuidCollation(_options.DefaultGuidCollation)
+                                       ? p.DeclaringType.Model.GetActualGuidCollation(_options.DefaultGuidCollation)
                                        : null) is string collation &&
                                (p.GetCharSet() is not string charSet ||
                                 collation.StartsWith(charSet, StringComparison.OrdinalIgnoreCase))

@@ -12,7 +12,7 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Conventions
     /// <summary>
     ///     A convention that configures the collation for an entity based on the applied <see cref="SingleStoreCollationAttribute" />.
     /// </summary>
-    public class TableCollationAttributeConvention : EntityTypeAttributeConventionBase<SingleStoreCollationAttribute>
+    public class TableCollationAttributeConvention : TypeAttributeConventionBase<SingleStoreCollationAttribute>
     {
         /// <summary>
         ///     Creates a new instance of <see cref="TableCollationAttributeConvention" />.

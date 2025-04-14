@@ -117,6 +117,9 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="TwoDataSourcesInSameServiceProvider" xml:space="preserve">
+    <value>Using two distinct data sources within a service provider is not supported, and Entity Framework is not building its own internal service provider. Either allow Entity Framework to build the service provider by removing the call to '{useInternalServiceProvider}', or ensure that the same data source is used for all uses of a given service provider passed to '{useInternalServiceProvider}'.</value>
+  </data>
   <data name="IdentityBadType" xml:space="preserve">
     <value>Identity value generation cannot be used for the property '{property}' on entity type '{entityType}' because the property type is '{propertyType}'. Identity value generation can only be used with integer, DateTime, and DateTimeOffset properties.</value>
   </data>
@@ -242,5 +245,8 @@
   </data>
   <data name="StoredProcedureOutputParametersNotSupported" xml:space="preserve">
     <value>The entity type '{entityType}' is mapped to the stored procedure '{sproc}', which is configured with an output parameter. SingleStore stored procedures do not support output parameters; use result columns or return values instead.</value>
+  </data>
+  <data name="Ef7CoreJsonMappingNotSupported" xml:space="preserve">
+    <value>The EF Core 7.0 JSON support isn't currently implemented. Instead, there is support for a more extensive implementation. See https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql for more information on how to map JSON.</value>
   </data>
 </root>

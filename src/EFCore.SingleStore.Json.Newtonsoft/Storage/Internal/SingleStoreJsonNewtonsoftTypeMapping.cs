@@ -4,7 +4,6 @@
 
 using System;
 using System.Linq.Expressions;
-using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -12,11 +11,12 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SingleStoreConnector;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Storage.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Json.Newtonsoft.Storage.Internal
 {
+    public static new SingleStoreJsonNewtonsoftTypeMapping<T> Default { get; } = new("json", null, null, false, true);
+
     public class SingleStoreJsonNewtonsoftTypeMapping<T> : SingleStoreJsonTypeMapping<T>
     {
         // Called via reflection.
@@ -25,25 +25,35 @@ namespace EntityFrameworkCore.SingleStore.Json.Newtonsoft.Storage.Internal
             [NotNull] string storeType,
             [CanBeNull] ValueConverter valueConverter,
             [CanBeNull] ValueComparer valueComparer,
-            [NotNull] ISingleStoreOptions options)
+            bool noBackslashEscapes,
+            bool replaceLineBreaksWithCharFunction)
             : base(
                 storeType,
                 valueConverter,
                 valueComparer,
-                options)
+                noBackslashEscapes,
+                replaceLineBreaksWithCharFunction)
         {
         }
 
         protected SingleStoreJsonNewtonsoftTypeMapping(
             RelationalTypeMappingParameters parameters,
             SingleStoreDbType mySqlDbType,
-            ISingleStoreOptions options)
-            : base(parameters, mySqlDbType, options)
+            bool noBackslashEscapes,
+            bool replaceLineBreaksWithCharFunction)
+            : base(parameters, mySqlDbType, noBackslashEscapes, replaceLineBreaksWithCharFunction)
         {
         }
 
         protected override RelationalTypeMapping Clone(RelationalTypeMappingParameters parameters)
-            => new SingleStoreJsonNewtonsoftTypeMapping<T>(parameters, SingleStoreDbType, Options);
+            => new SingleStoreJsonNewtonsoftTypeMapping<T>(parameters, SingleStoreDbType, NoBackslashEscapes, ReplaceLineBreaksWithCharFunction);
+
+        protected override RelationalTypeMapping Clone(bool? noBackslashEscapes = null, bool? replaceLineBreaksWithCharFunction = null)
+            => new SingleStoreJsonNewtonsoftTypeMapping<T>(
+                Parameters,
+                SingleStoreDbType,
+                noBackslashEscapes ?? NoBackslashEscapes,
+                replaceLineBreaksWithCharFunction ?? ReplaceLineBreaksWithCharFunction);
 
         public override Expression GenerateCodeLiteral(object value)
             => value switch

@@ -16,7 +16,7 @@ namespace Microsoft.EntityFrameworkCore
     public class SingleStoreServerVersion : ServerVersion
     {
         public static readonly string SingleStoreTypeIdentifier = nameof(ServerType.SingleStore).ToLowerInvariant();
-        public static readonly ServerVersion LatestSupportedServerVersion = new SingleStoreServerVersion(new Version(8, 7, 0));
+        public static readonly ServerVersion LatestSupportedServerVersion = new SingleStoreServerVersion(new Version(8, 9, 0));
 
         public override ServerVersionSupport Supports { get; }
 
@@ -90,6 +90,17 @@ namespace Microsoft.EntityFrameworkCore
             public override bool ConnectionAttributes => ServerVersion.Version >= new Version(8, 1, 0);
             public override bool DescendingIndexes => false;
             public override bool CommonTableExpressions => false;
+            public override bool LimitWithinInAllAnySomeSubquery => false;
+            public override bool LimitWithNonConstantValue => false;
+            public override bool JsonTable => false;
+            public override bool JsonValue => false;
+            public override bool Values => false;
+            public override bool ValuesWithRows => false;
+            public override bool OffsetReferencesOuterQuery => false;
+
+            public override bool JsonTableImplementationStable => false;
+            public override bool JsonTableImplementationWithoutMySqlBugs => false; // Other non-fatal bugs regarding JSON_TABLE.
+            public override bool JsonTableImplementationUsingParameterAsSourceWithoutEngineCrash => false; // MySQL non-deterministically crashes when using a parameter with JSON as the source of a JSON_TABLE call.
         }
     }
 }

@@ -665,7 +665,47 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="pattern">The pattern against which Full Text search is performed</param>
         /// <returns>true if there is a match.</returns>
         /// <exception cref="InvalidOperationException">Throws when query switched to client-evaluation.</exception>
-        public static bool Match(
+        public static bool IsMatch(
+            [CanBeNull] this DbFunctions _,
+            [CanBeNull] string property,
+            [CanBeNull] string pattern)
+            => throw new InvalidOperationException(CoreStrings.FunctionOnClient(nameof(IsMatch)));
+
+        /// <summary>
+        ///     <para>
+        ///         An implementation of the SQL MATCH operation for Full Text search.
+        ///     </para>
+        ///     <para>
+        ///         The semantics of the comparison will depend on the database configuration.
+        ///         In particular, it may be either case-sensitive or case-insensitive.
+        ///     </para>
+        /// </summary>
+        /// <param name="_">The DbFunctions instance.</param>
+        /// <param name="properties">The propertys of entity that is to be matched.</param>
+        /// <param name="pattern">The pattern against which Full Text search is performed</param>
+        /// <returns>true if there is a match.</returns>
+        /// <exception cref="InvalidOperationException">Throws when query switched to client-evaluation.</exception>
+        public static bool IsMatch(
+            [CanBeNull] this DbFunctions _,
+            [NotNull] string[] properties,
+            [CanBeNull] string pattern)
+            => throw new InvalidOperationException(CoreStrings.FunctionOnClient(nameof(IsMatch)));
+
+        /// <summary>
+        ///     <para>
+        ///         An implementation of the SQL MATCH operation for Full Text search.
+        ///     </para>
+        ///     <para>
+        ///         The semantics of the comparison will depend on the database configuration.
+        ///         In particular, it may be either case-sensitive or case-insensitive.
+        ///     </para>
+        /// </summary>
+        /// <param name="_">The DbFunctions instance.</param>
+        /// <param name="property">The property of entity that is to be matched.</param>
+        /// <param name="pattern">The pattern against which Full Text search is performed</param>
+        /// <returns>The relevance value of the match.</returns>
+        /// <exception cref="InvalidOperationException">Throws when query switched to client-evaluation.</exception>
+        public static double Match(
             [CanBeNull] this DbFunctions _,
             [CanBeNull] string property,
             [CanBeNull] string pattern)
@@ -683,9 +723,9 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="_">The DbFunctions instance.</param>
         /// <param name="properties">The propertys of entity that is to be matched.</param>
         /// <param name="pattern">The pattern against which Full Text search is performed</param>
-        /// <returns>true if there is a match.</returns>
+        /// <returns>The relevance value of the match.</returns>
         /// <exception cref="InvalidOperationException">Throws when query switched to client-evaluation.</exception>
-        public static bool Match(
+        public static double Match(
             [CanBeNull] this DbFunctions _,
             [NotNull] string[] properties,
             [CanBeNull] string pattern)

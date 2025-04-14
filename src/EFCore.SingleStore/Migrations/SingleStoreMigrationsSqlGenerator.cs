@@ -434,16 +434,26 @@ namespace EntityFrameworkCore.SingleStore.Migrations
         {
             Check.NotNull(operation, nameof(operation));
             Check.NotNull(builder, nameof(builder));
+
             if (!_options.ServerVersion.Supports.Sequences)
             {
                 throw new InvalidOperationException(
                     $"Cannot restart sequence '{operation.Name}' because sequences are not supported in server version {_options.ServerVersion}.");
             }
+
             builder
                 .Append("ALTER SEQUENCE ")
-                .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema))
-                .Append(" RESTART WITH ")
-                .Append(IntegerConstant(operation.StartValue))
+                .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema));
+
+            if (operation.StartValue.HasValue)
+            {
+                builder
+                    .Append(" START WITH ")
+                    .Append(IntegerConstant(operation.StartValue));
+            }
+
+            builder
+                .Append(" RESTART")
                 .AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
 
             EndStatement(builder);
@@ -1062,7 +1072,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
                 if (typeMapping is IDefaultValueCompatibilityAware defaultValueCompatibilityAware)
                 {
-                    typeMapping = defaultValueCompatibilityAware.Clone(true);
+                    typeMapping = defaultValueCompatibilityAware.Clone(isDefaultValueCompatible: true);
                 }
 
                 var sqlLiteralDefaultValue = typeMapping.GenerateSqlLiteral(defaultValue);
@@ -1395,7 +1405,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
         protected virtual string ColumnList([NotNull] string[] columns, Func<string, int, string> columnPostfix)
             => string.Join(", ", columns.Select((c, i) => Dependencies.SqlGenerationHelper.DelimitIdentifier(c) + columnPostfix?.Invoke(c, i)));
 
-        private string IntegerConstant(long value)
+        private string IntegerConstant(long? value)
             => string.Format(CultureInfo.InvariantCulture, "{0}", value);
 
         private static string Truncate(string source, int maxLength)

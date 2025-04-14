@@ -28,7 +28,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
         {
             _typeMappingSource = typeMappingSource;
             _sqlExpressionFactory = sqlExpressionFactory;
-            _unquotedStringTypeMapping = ((SingleStoreStringTypeMapping)_typeMappingSource.FindMapping(typeof(string))).Clone(true);
+            _unquotedStringTypeMapping = ((SingleStoreStringTypeMapping)_typeMappingSource.FindMapping(typeof(string))).Clone(unquoted: true);
             _intTypeMapping = _typeMappingSource.FindMapping(typeof(int));
         }
 

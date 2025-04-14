@@ -72,6 +72,16 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
                                  && method.GetParameters().Length is >= 3 and <= 4)
                 .SelectMany(method => _supportedLikeTypes.Select(type => method.MakeGenericMethod(type))).ToArray();
 
+        private static readonly MethodInfo _isMatchMethodInfo
+            = typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.IsMatch),
+                new[] {typeof(DbFunctions), typeof(string), typeof(string)});
+
+        private static readonly MethodInfo _isMatchWithMultiplePropertiesMethodInfo
+            = typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.IsMatch),
+                new[] {typeof(DbFunctions), typeof(string[]), typeof(string)});
+
         private static readonly MethodInfo _matchMethodInfo
             = typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
                 nameof(SingleStoreDbFunctionsExtensions.Match),
@@ -159,10 +169,28 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
                     excapeChar);
             }
 
+            if (Equals(method, _isMatchMethodInfo) ||
+                Equals(method, _isMatchWithMultiplePropertiesMethodInfo))
+            {
+                if (arguments[3] is SqlConstantExpression constant)
+                {
+                    return _sqlExpressionFactory.GreaterThan(
+                        _sqlExpressionFactory.MakeMatch(
+                            arguments[1],
+                            arguments[2]),
+                        _sqlExpressionFactory.Constant(0));
+                }
+            }
+
             if (Equals(method, _matchMethodInfo) ||
                 Equals(method, _matchWithMultiplePropertiesMethodInfo))
             {
-                return _sqlExpressionFactory.MakeMatch(arguments[1], arguments[2]);
+                if (arguments[3] is SqlConstantExpression constant)
+                {
+                    return _sqlExpressionFactory.MakeMatch(
+                        arguments[1],
+                        arguments[2]);
+                }
             }
 
             if (_hexMethodInfos.Any(m => Equals(method, m)))

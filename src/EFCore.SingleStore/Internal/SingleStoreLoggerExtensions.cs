@@ -24,7 +24,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             var p = (PropertyEventData)payload;
             return d.GenerateMessage(
                 p.Property.Name,
-                p.Property.DeclaringEntityType.DisplayName());
+                p.Property.DeclaringType.DisplayName());
         }
 
         /// <summary>
@@ -41,7 +41,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
 
             if (diagnostics.ShouldLog(definition))
             {
-                definition.Log(diagnostics, property.Name, property.DeclaringEntityType.DisplayName());
+                definition.Log(diagnostics, property.Name, property.DeclaringType.DisplayName());
             }
 
             if (diagnostics.NeedsEventData(definition, out var diagnosticSourceEnabled, out var simpleLogEnabled))
@@ -61,7 +61,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             var p = (PropertyEventData)payload;
             return d.GenerateMessage(
                 p.Property.Name,
-                p.Property.DeclaringEntityType.DisplayName());
+                p.Property.DeclaringType.DisplayName());
         }
 
         /// <summary>
@@ -78,7 +78,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
 
             if (diagnostics.ShouldLog(definition))
             {
-                definition.Log(diagnostics, property.Name, property.DeclaringEntityType.DisplayName());
+                definition.Log(diagnostics, property.Name, property.DeclaringType.DisplayName());
             }
 
             if (diagnostics.NeedsEventData(definition, out var diagnosticSourceEnabled, out var simpleLogEnabled))
@@ -98,7 +98,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             var p = (PropertyEventData)payload;
             return d.GenerateMessage(
                 p.Property.Name,
-                p.Property.DeclaringEntityType.DisplayName());
+                p.Property.DeclaringType.DisplayName());
         }
 
         /// <summary>

@@ -19,10 +19,10 @@ namespace EntityFrameworkCore.SingleStore.Json.Microsoft.Storage.ValueConversion
         {
         }
 
-        private static string ConvertToProviderCore(string v)
+        public static string ConvertToProviderCore(string v)
             => ProcessJsonString(v);
 
-        private static string ConvertFromProviderCore(string v)
+        public static string ConvertFromProviderCore(string v)
             => ProcessJsonString(v);
 
         internal static string ProcessJsonString(string v)

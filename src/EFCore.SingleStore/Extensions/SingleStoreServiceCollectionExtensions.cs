@@ -28,7 +28,6 @@ using EntityFrameworkCore.SingleStore.Metadata.Internal;
 using EntityFrameworkCore.SingleStore.Migrations;
 using EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal;
 using EntityFrameworkCore.SingleStore.Query.Internal;
-using EntityFrameworkCore.SingleStore.Storage;
 
 // ReSharper disable once CheckNamespace
 namespace Microsoft.Extensions.DependencyInjection
@@ -111,7 +110,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .TryAdd<IModificationCommandFactory, SingleStoreModificationCommandFactory>()
                 .TryAdd<IModificationCommandBatchFactory, SingleStoreModificationCommandBatchFactory>()
                 .TryAdd<IValueGeneratorSelector, SingleStoreValueGeneratorSelector>()
-                .TryAdd<IRelationalConnection>(p => p.GetService<ISingleStoreRelationalConnection>())
+                .TryAdd<IRelationalConnection>(p => p.GetRequiredService<ISingleStoreRelationalConnection>())
                 .TryAdd<IMigrationsSqlGenerator, SingleStoreMigrationsSqlGenerator>()
                 .TryAdd<IRelationalDatabaseCreator, SingleStoreDatabaseCreator>()
                 .TryAdd<IHistoryRepository, SingleStoreHistoryRepository>()
@@ -126,15 +125,22 @@ namespace Microsoft.Extensions.DependencyInjection
                 .TryAdd<IRelationalSqlTranslatingExpressionVisitorFactory, SingleStoreSqlTranslatingExpressionVisitorFactory>()
                 .TryAdd<IRelationalParameterBasedSqlProcessorFactory, SingleStoreParameterBasedSqlProcessorFactory>()
                 .TryAdd<ISqlExpressionFactory, SingleStoreSqlExpressionFactory>()
-                .TryAdd<ISingletonOptions, ISingleStoreOptions>(p => p.GetService<ISingleStoreOptions>())
+                .TryAdd<ISingletonOptions, ISingleStoreOptions>(p => p.GetRequiredService<ISingleStoreOptions>())
                 //.TryAdd<IValueConverterSelector, SingleStoreValueConverterSelector>()
                 .TryAdd<IQueryCompilationContextFactory, SingleStoreQueryCompilationContextFactory>()
                 .TryAdd<IQueryTranslationPostprocessorFactory, SingleStoreQueryTranslationPostprocessorFactory>()
+
+                // TODO: Injecting this service will make our original JSON implementations work, but interferes with EF Core 8's new
+                //       primitive collections support.
+                //       We will need to limit the preprocessor logic to only the relevant cases.
+                .TryAdd<IQueryTranslationPreprocessorFactory, SingleStoreQueryTranslationPreprocessorFactory>()
+
                 .TryAdd<IMigrationsModelDiffer, SingleStoreMigrationsModelDiffer>()
                 .TryAdd<IMigrator, SingleStoreMigrator>()
                 .TryAddProviderSpecificServices(m => m
                     //.TryAddSingleton<ISingleStoreValueGeneratorCache, SingleStoreValueGeneratorCache>()
                     .TryAddSingleton<ISingleStoreOptions, SingleStoreOptions>()
+                    .TryAddSingleton<ISingleStoreConnectionStringOptionsValidator, SingleStoreConnectionStringOptionsValidator>()
                     //.TryAddScoped<ISingleStoreSequenceValueGeneratorFactory, SingleStoreSequenceValueGeneratorFactory>()
                     .TryAddScoped<ISingleStoreUpdateSqlGenerator, SingleStoreUpdateSqlGenerator>()
                     .TryAddScoped<ISingleStoreRelationalConnection, SingleStoreRelationalConnection>());

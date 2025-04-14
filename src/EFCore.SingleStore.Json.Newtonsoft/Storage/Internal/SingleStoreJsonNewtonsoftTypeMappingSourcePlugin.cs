@@ -39,7 +39,8 @@ namespace EntityFrameworkCore.SingleStore.Json.Newtonsoft.Storage.Internal
                     "json",
                     GetValueConverter(clrType),
                     GetValueComparer(clrType),
-                    Options);
+                    Options.NoBackslashEscapes,
+                    Options.ReplaceLineBreaksWithCharFunction);
             }
 
             return null;

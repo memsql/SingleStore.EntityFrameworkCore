@@ -3,18 +3,26 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
+using EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 {
     public class SingleStoreCompatibilityExpressionVisitor : ExpressionVisitor
     {
         private readonly ISingleStoreOptions _options;
+
+        private SelectExpression _currentSelectExpression;
+        private SelectExpression _parentSelectExpression;
+
+        private readonly SingleStoreContainsAggregateFunctionExpressionVisitor _mySqlContainsAggregateFunctionExpressionVisitor = new SingleStoreContainsAggregateFunctionExpressionVisitor();
 
         public SingleStoreCompatibilityExpressionVisitor(ISingleStoreOptions options)
         {
@@ -28,7 +36,12 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
                 CrossApplyExpression crossApplyExpression => VisitCrossApply(crossApplyExpression),
                 OuterApplyExpression outerApplyExpression => VisitOuterApply(outerApplyExpression),
                 ExceptExpression exceptExpression => VisitExcept(exceptExpression),
-                IntersectExpression intersectExpression => VisitIntercept(intersectExpression),
+                IntersectExpression intersectExpression => VisitIntersect(intersectExpression),
+                JsonScalarExpression jsonScalarExpression => VisitJsonScalar(jsonScalarExpression),
+                SingleStoreJsonTableExpression jsonTableExpression => VisitJsonTable(jsonTableExpression),
+
+                SelectExpression selectExpression => VisitSelect(selectExpression),
+
                 ShapedQueryExpression shapedQueryExpression => shapedQueryExpression.Update(Visit(shapedQueryExpression.QueryExpression), Visit(shapedQueryExpression.ShaperExpression)),
                 _ => base.VisitExtension(extensionExpression)
             };
@@ -45,8 +58,74 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
         protected virtual Expression VisitExcept(ExceptExpression exceptExpression)
             => CheckSupport(exceptExpression, _options.ServerVersion.Supports.ExceptIntercept);
 
-        protected virtual Expression VisitIntercept(IntersectExpression intersectExpression)
+        protected virtual Expression VisitIntersect(IntersectExpression intersectExpression)
             => CheckSupport(intersectExpression, _options.ServerVersion.Supports.ExceptIntercept);
+
+                protected virtual Expression VisitJsonScalar(JsonScalarExpression jsonScalarExpression)
+            => CheckSupport(jsonScalarExpression, _options.ServerVersion.Supports.Json);
+
+        protected virtual Expression VisitJsonTable(SingleStoreJsonTableExpression jsonTableExpression)
+        {
+            if (!_options.ServerVersion.Supports.JsonTable)
+            {
+                return CheckSupport(jsonTableExpression, false);
+            }
+
+            if (!_options.ServerVersion.Supports.JsonTableImplementationWithAggregate &&
+                _mySqlContainsAggregateFunctionExpressionVisitor.ProcessSelect(_currentSelectExpression))
+            {
+                throw new InvalidOperationException($"JSON_TABLE() does not support aggregates on {_options.ServerVersion} and would return unexpected results if used.");
+            }
+
+            if (!_options.ServerVersion.Supports.OuterApply &&
+                jsonTableExpression.JsonExpression is ColumnExpression columnExpression &&
+                _parentSelectExpression is not null &&
+                _parentSelectExpression.Tables.All(t => t.Alias != columnExpression.TableAlias))
+            {
+                throw new InvalidOperationException($"JSON_TABLE() does not support references to an outer query that is not the immediate parent on {_options.ServerVersion}.");
+            }
+
+            return jsonTableExpression;
+        }
+
+        protected virtual Expression VisitSelect(SelectExpression selectExpression)
+        {
+            var grandParentSelectExpression = _parentSelectExpression;
+            _parentSelectExpression = _currentSelectExpression;
+            _currentSelectExpression = selectExpression;
+
+            foreach (var item in selectExpression.Projection)
+            {
+                Visit(item);
+            }
+
+            foreach (var table in selectExpression.Tables)
+            {
+                Visit(table);
+            }
+
+            Visit(selectExpression.Predicate);
+
+            foreach (var groupingKey in selectExpression.GroupBy)
+            {
+                Visit(groupingKey);
+            }
+
+            Visit(selectExpression.Having);
+
+            foreach (var ordering in selectExpression.Orderings)
+            {
+                Visit(ordering.Expression);
+            }
+
+            Visit(selectExpression.Offset);
+            Visit(selectExpression.Limit);
+
+            _currentSelectExpression = _parentSelectExpression;
+            _parentSelectExpression = grandParentSelectExpression;
+
+            return selectExpression;
+        }
 
         protected virtual Expression CheckSupport(Expression expression, bool isSupported)
             => CheckTranslated(

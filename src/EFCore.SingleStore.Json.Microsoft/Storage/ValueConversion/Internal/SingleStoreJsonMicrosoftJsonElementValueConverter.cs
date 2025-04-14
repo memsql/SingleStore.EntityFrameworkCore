@@ -15,7 +15,7 @@ namespace EntityFrameworkCore.SingleStore.Json.Microsoft.Storage.ValueConversion
         {
         }
 
-        private static string ConvertToProviderCore(JsonElement v)
+        public static string ConvertToProviderCore(JsonElement v)
         {
             using var stream = new MemoryStream();
             using var writer = new Utf8JsonWriter(stream);
@@ -24,7 +24,7 @@ namespace EntityFrameworkCore.SingleStore.Json.Microsoft.Storage.ValueConversion
             return Encoding.UTF8.GetString(stream.ToArray());
         }
 
-        private static JsonElement ConvertFromProviderCore(string v)
+        public static JsonElement ConvertFromProviderCore(string v)
             => JsonDocument.Parse(v).RootElement;
     }
 }

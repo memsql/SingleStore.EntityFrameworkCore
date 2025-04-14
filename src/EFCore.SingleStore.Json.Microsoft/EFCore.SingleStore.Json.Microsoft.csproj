@@ -2,8 +2,7 @@
 
   <PropertyGroup>
     <Description>JSON support using System.Text.Json for SingleStore provider for Entity Framework Core.</Description>
-    <TargetFrameworks>$(SingleStoreTargetFrameworks)</TargetFrameworks>
-    <MinClientVersion>3.6</MinClientVersion>
+    <TargetFramework>$(SingleStoreTargetFramework)</TargetFramework>
     <AssemblyName>EntityFrameworkCore.SingleStore.Json.Microsoft</AssemblyName>
     <RootNamespace>EntityFrameworkCore.SingleStore.Json.Microsoft</RootNamespace>
     <IsPackable>true</IsPackable>
@@ -32,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="SingleStoreConnector" Version="1.1.4" />
+    <PackageReference Include="SingleStoreConnector" Version="1.2.0" />
   </ItemGroup>
 
   <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->

@@ -41,7 +41,8 @@ namespace EntityFrameworkCore.SingleStore.Json.Microsoft.Storage.Internal
                     "json",
                     GetValueConverter(clrType),
                     GetValueComparer(clrType),
-                    Options);
+                    Options.NoBackslashEscapes,
+                    Options.ReplaceLineBreaksWithCharFunction);
             }
 
             return null;

@@ -3,6 +3,7 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
+using System.Data.Common;
 using System.Linq;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Storage.Internal;
@@ -10,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
 
 namespace EntityFrameworkCore.SingleStore.Internal
@@ -21,6 +23,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
         public SingleStoreOptions()
         {
             ConnectionSettings = new SingleStoreConnectionSettings();
+            DataSource = null;
             ServerVersion = null;
 
             // We explicitly use `utf8` in all instances, where charset based calculations need to be done, but accessing annotations
@@ -44,6 +47,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
 
             LimitKeyedOrIndexedStringColumnLength = true;
             StringComparisonTranslations = false;
+            PrimitiveCollectionsSupport = false;
         }
 
         public virtual void Initialize(IDbContextOptions options)
@@ -52,6 +56,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             var mySqlJsonOptions = (SingleStoreJsonOptionsExtension)options.Extensions.LastOrDefault(e => e is SingleStoreJsonOptionsExtension);
 
             ConnectionSettings = GetConnectionSettings(mySqlOptions);
+            DataSource = mySqlOptions.DataSource;
             ServerVersion = mySqlOptions.ServerVersion ?? throw new InvalidOperationException($"The {nameof(ServerVersion)} has not been set.");
             NoBackslashEscapes = mySqlOptions.NoBackslashEscapes;
             ReplaceLineBreaksWithCharFunction = mySqlOptions.ReplaceLineBreaksWithCharFunction;
@@ -63,6 +68,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             JsonChangeTrackingOptions = mySqlJsonOptions?.JsonChangeTrackingOptions ?? default;
             LimitKeyedOrIndexedStringColumnLength = mySqlOptions.LimitKeyedOrIndexedStringColumnLength;
             StringComparisonTranslations = mySqlOptions.StringComparisonTranslations;
+            PrimitiveCollectionsSupport = mySqlOptions.PrimitiveCollectionsSupport;
         }
 
         public virtual void Validate(IDbContextOptions options)
@@ -70,6 +76,24 @@ namespace EntityFrameworkCore.SingleStore.Internal
             var mySqlOptions = options.FindExtension<SingleStoreOptionsExtension>() ?? new SingleStoreOptionsExtension();
             var mySqlJsonOptions = (SingleStoreJsonOptionsExtension)options.Extensions.LastOrDefault(e => e is SingleStoreJsonOptionsExtension);
             var connectionSettings = GetConnectionSettings(mySqlOptions);
+
+            //
+            // CHECK: To we have to ensure that the ApplicationServiceProvider itself is not replaced, because we rely on it in our
+            //        DbDataSource check, or is that not possible?
+            //
+
+            // Even though we only save a DbDataSource that has been explicitly set using the SingleStoreOptionsExtensions here in SingleStoreOptions,
+            // we will later also fall back to a DbDataSource that has been added as a service to the ApplicationServiceProvider, if no
+            // DbDataSource has been explicitly set here. We call that DbDataSource the "effective" DbDataSource and handle it in the same
+            // way we would handle a singleton option.
+            var effectiveDataSource = mySqlOptions.DataSource ??
+                                      options.FindExtension<CoreOptionsExtension>()?.ApplicationServiceProvider?.GetService<SingleStoreDataSource>();
+            if (effectiveDataSource is not null &&
+                !ReferenceEquals(DataSource, mySqlOptions.DataSource))
+            {
+                throw new InvalidOperationException(
+                    SingleStoreStrings.TwoDataSourcesInSameServiceProvider(nameof(DbContextOptionsBuilder.UseInternalServiceProvider)));
+            }
 
             if (!Equals(ServerVersion, mySqlOptions.ServerVersion))
             {
@@ -162,6 +186,14 @@ namespace EntityFrameworkCore.SingleStore.Internal
                         nameof(SingleStoreDbContextOptionsBuilder.EnableStringComparisonTranslations),
                         nameof(DbContextOptionsBuilder.UseInternalServiceProvider)));
             }
+
+            if (!Equals(PrimitiveCollectionsSupport, mySqlOptions.PrimitiveCollectionsSupport))
+            {
+                throw new InvalidOperationException(
+                    CoreStrings.SingletonOptionChanged(
+                        nameof(SingleStoreDbContextOptionsBuilder.EnablePrimitiveCollectionsSupport),
+                        nameof(DbContextOptionsBuilder.UseInternalServiceProvider)));
+            }
         }
 
         protected virtual SingleStoreDefaultDataTypeMappings ApplyDefaultDataTypeMappings(SingleStoreDefaultDataTypeMappings defaultDataTypeMappings, SingleStoreConnectionSettings connectionSettings)
@@ -221,6 +253,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
         protected virtual bool Equals(SingleStoreOptions other)
         {
             return Equals(ConnectionSettings, other.ConnectionSettings) &&
+                   ReferenceEquals(DataSource, other.DataSource) &&
                    Equals(ServerVersion, other.ServerVersion) &&
                    Equals(DefaultCharSet, other.DefaultCharSet) &&
                    Equals(NationalCharSet, other.NationalCharSet) &&
@@ -232,7 +265,8 @@ namespace EntityFrameworkCore.SingleStore.Internal
                    IndexOptimizedBooleanColumns == other.IndexOptimizedBooleanColumns &&
                    JsonChangeTrackingOptions == other.JsonChangeTrackingOptions &&
                    LimitKeyedOrIndexedStringColumnLength == other.LimitKeyedOrIndexedStringColumnLength &&
-                   StringComparisonTranslations == other.StringComparisonTranslations;
+                   StringComparisonTranslations == other.StringComparisonTranslations &&
+                   PrimitiveCollectionsSupport == other.PrimitiveCollectionsSupport;
         }
 
         public override bool Equals(object obj)
@@ -260,6 +294,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             var hashCode = new HashCode();
 
             hashCode.Add(ConnectionSettings);
+            hashCode.Add(DataSource?.ConnectionString);
             hashCode.Add(ServerVersion);
             hashCode.Add(DefaultCharSet);
             hashCode.Add(NationalCharSet);
@@ -272,11 +307,18 @@ namespace EntityFrameworkCore.SingleStore.Internal
             hashCode.Add(JsonChangeTrackingOptions);
             hashCode.Add(LimitKeyedOrIndexedStringColumnLength);
             hashCode.Add(StringComparisonTranslations);
+            hashCode.Add(PrimitiveCollectionsSupport);
 
             return hashCode.ToHashCode();
         }
 
         public virtual SingleStoreConnectionSettings ConnectionSettings { get; private set; }
+
+        /// <summary>
+        /// If null, there might still be a `DbDataSource` in the ApplicationServiceProvider.
+        /// </summary>
+        public virtual DbDataSource DataSource { get; private set; }
+
         public virtual ServerVersion ServerVersion { get; private set; }
         public virtual CharSet DefaultCharSet { get; private set; }
         public virtual CharSet NationalCharSet { get; }
@@ -289,5 +331,6 @@ namespace EntityFrameworkCore.SingleStore.Internal
         public virtual SingleStoreJsonChangeTrackingOptions JsonChangeTrackingOptions { get; private set; }
         public virtual bool LimitKeyedOrIndexedStringColumnLength { get; private set; }
         public virtual bool StringComparisonTranslations { get; private set; }
+        public virtual bool PrimitiveCollectionsSupport { get; private set; }
     }
 }
