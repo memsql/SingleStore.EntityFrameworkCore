@@ -3,56 +3,68 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.Data.Common;
+using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SingleStoreConnector;
-using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
     public class SingleStoreJsonTypeMapping<T> : SingleStoreJsonTypeMapping
     {
+        public static new SingleStoreJsonTypeMapping<T> Default { get; } = new("json", null, null, false, true);
+
         public SingleStoreJsonTypeMapping(
             [NotNull] string storeType,
             [CanBeNull] ValueConverter valueConverter,
             [CanBeNull] ValueComparer valueComparer,
-            [NotNull] ISingleStoreOptions options)
+            bool noBackslashEscapes,
+            bool replaceLineBreaksWithCharFunction)
             : base(
                 storeType,
                 typeof(T),
                 valueConverter,
                 valueComparer,
-                options)
+                noBackslashEscapes,
+                replaceLineBreaksWithCharFunction)
         {
         }
 
         protected SingleStoreJsonTypeMapping(
             RelationalTypeMappingParameters parameters,
-            SingleStoreDbType mySqlDbType,
-            ISingleStoreOptions options)
-            : base(parameters, mySqlDbType, options)
+            SingleStoreDbType SingleStoreDbType,
+            bool noBackslashEscapes,
+            bool replaceLineBreaksWithCharFunction)
+            : base(parameters, mySqlDbType, noBackslashEscapes, replaceLineBreaksWithCharFunction)
         {
         }
 
         protected override RelationalTypeMapping Clone(RelationalTypeMappingParameters parameters)
-            => new SingleStoreJsonTypeMapping<T>(parameters, SingleStoreDbType, Options);
+            => new SingleStoreJsonTypeMapping<T>(parameters, SingleStoreDbType, NoBackslashEscapes, ReplaceLineBreaksWithCharFunction);
+
+        protected override RelationalTypeMapping Clone(bool? noBackslashEscapes = null, bool? replaceLineBreaksWithCharFunction = null)
+            => new SingleStoreJsonTypeMapping<T>(
+                Parameters,
+                SingleStoreDbType,
+                noBackslashEscapes ?? NoBackslashEscapes,
+                replaceLineBreaksWithCharFunction ?? ReplaceLineBreaksWithCharFunction);
     }
 
-    public abstract class SingleStoreJsonTypeMapping : SingleStoreStringTypeMapping
+    public abstract class SingleStoreJsonTypeMapping : SingleStoreStringTypeMapping, ISingleStoreCSharpRuntimeAnnotationTypeMappingCodeGenerator
     {
-        [NotNull]
-        protected virtual ISingleStoreOptions Options { get; }
-
         public SingleStoreJsonTypeMapping(
             [NotNull] string storeType,
             [NotNull] Type clrType,
             [CanBeNull] ValueConverter valueConverter,
             [CanBeNull] ValueComparer valueComparer,
-            [NotNull] ISingleStoreOptions options)
+            bool noBackslashEscapes,
+            bool replaceLineBreaksWithCharFunction)
             : base(
                 new RelationalTypeMappingParameters(
                     new CoreTypeMappingParameters(
@@ -62,7 +74,8 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
                     storeType,
                     unicode: true),
                 SingleStoreDbType.JSON,
-                options,
+                noBackslashEscapes,
+                replaceLineBreaksWithCharFunction,
                 false,
                 false)
         {
@@ -70,18 +83,29 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             {
                 throw new ArgumentException($"The store type '{nameof(storeType)}' must be 'json'.", nameof(storeType));
             }
-
-            Options = options;
         }
 
         protected SingleStoreJsonTypeMapping(
             RelationalTypeMappingParameters parameters,
             SingleStoreDbType mySqlDbType,
-            ISingleStoreOptions options)
-            : base(parameters, mySqlDbType, options, false, false)
+            bool noBackslashEscapes,
+            bool replaceLineBreaksWithCharFunction)
+            : base(
+                parameters,
+                mySqlDbType,
+                noBackslashEscapes,
+                replaceLineBreaksWithCharFunction,
+                isUnquoted: false,
+                forceToString: false)
         {
-            Options = options;
         }
+
+        /// <summary>
+        /// Supports compiled models via ISingleStoreCSharpRuntimeAnnotationTypeMappingCodeGenerator.Create.
+        /// </summary>
+        protected abstract RelationalTypeMapping Clone(
+            bool? noBackslashEscapes = null,
+            bool? replaceLineBreaksWithCharFunction = null);
 
         protected override void ConfigureParameter(DbParameter parameter)
         {
@@ -92,6 +116,56 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             if (parameter.Value is SingleStoreJsonString mySqlJsonString)
             {
                 parameter.Value = (string)mySqlJsonString;
+            }
+        }
+
+        void ISingleStoreCSharpRuntimeAnnotationTypeMappingCodeGenerator.Create(
+            CSharpRuntimeAnnotationCodeGeneratorParameters codeGeneratorParameters,
+            CSharpRuntimeAnnotationCodeGeneratorDependencies codeGeneratorDependencies)
+        {
+            var defaultTypeMapping = Default;
+            if (defaultTypeMapping == this)
+            {
+                return;
+            }
+
+            var code = codeGeneratorDependencies.CSharpHelper;
+
+            var cloneParameters = new List<string>();
+
+            if (NoBackslashEscapes != defaultTypeMapping.NoBackslashEscapes)
+            {
+                cloneParameters.Add($"noBackslashEscapes: {code.Literal(NoBackslashEscapes)}");
+            }
+
+            if (ReplaceLineBreaksWithCharFunction != defaultTypeMapping.ReplaceLineBreaksWithCharFunction)
+            {
+                cloneParameters.Add($"replaceLineBreaksWithCharFunction: {code.Literal(ReplaceLineBreaksWithCharFunction)}");
+            }
+
+            if (cloneParameters.Any())
+            {
+                var mainBuilder = codeGeneratorParameters.MainBuilder;
+
+                mainBuilder.AppendLine(";");
+
+                mainBuilder
+                    .AppendLine($"{codeGeneratorParameters.TargetName}.TypeMapping = (({code.Reference(GetType())}){codeGeneratorParameters.TargetName}.TypeMapping).Clone(")
+                    .IncrementIndent();
+
+                for (var i = 0; i < cloneParameters.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        mainBuilder.AppendLine(",");
+                    }
+
+                    mainBuilder.Append(cloneParameters[i]);
+                }
+
+                mainBuilder
+                    .Append(")")
+                    .DecrementIndent();
             }
         }
     }

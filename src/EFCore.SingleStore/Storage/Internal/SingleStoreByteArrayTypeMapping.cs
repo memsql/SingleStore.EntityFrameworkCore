@@ -6,7 +6,8 @@ using System;
 using System.Data;
 using System.Data.Common;
 using Microsoft.EntityFrameworkCore.Storage;
-using EntityFrameworkCore.SingleStore.Utilities;
+using Microsoft.EntityFrameworkCore.Storage.Json;
+using EntityFrameworkCore.SingleStore.Storage.Internal.Json;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
@@ -19,6 +20,8 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         private const int MaxSize = 8000;
 
         private readonly int _maxSpecificSize;
+
+        public static new SingleStoreByteArrayTypeMapping Default { get; } = new();
 
         /// <summary>
         ///     This API supports the Entity Framework Core infrastructure and is not intended to be used
@@ -46,7 +49,9 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             bool fixedLength)
             : this(
                 new RelationalTypeMappingParameters(
-                    new CoreTypeMappingParameters(typeof(byte[])),
+                    new CoreTypeMappingParameters(
+                        typeof(byte[]),
+                        jsonValueReaderWriter: JsonByteArrayReaderWriter.Instance /* SingleStoreJsonByteArrayAsHexStringReaderWriter.Instance */),
                     storeType ?? GetBaseType(size, fixedLength),
                     GetStoreTypePostfix(size),
                     type,
@@ -110,6 +115,9 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         /// <returns>
         ///     The generated string.
         /// </returns>
-        protected override string GenerateNonNullSqlLiteral(object value) => ByteArrayFormatter.ToHex((byte[])value);
+        protected override string GenerateNonNullSqlLiteral(object value)
+            => value is byte[] { Length: > 0 } byteArray
+                ? "0x" + Convert.ToHexString(byteArray)
+                : "X''";
     }
 }

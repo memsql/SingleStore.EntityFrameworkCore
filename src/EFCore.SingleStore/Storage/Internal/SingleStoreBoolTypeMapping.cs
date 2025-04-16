@@ -5,6 +5,7 @@
 using System.Data;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
@@ -16,16 +17,21 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
     /// </summary>
     public class SingleStoreBoolTypeMapping : BoolTypeMapping
     {
+        public static new SingleStoreBoolTypeMapping Default { get; } = new("tinyint", size: 1);
+
         public SingleStoreBoolTypeMapping(
             [NotNull] string storeType,
-            DbType? dbType = null,
+            DbType? dbType = System.Data.DbType.Boolean,
             int? size = null)
-            : this(new RelationalTypeMappingParameters(
-                new CoreTypeMappingParameters(typeof(bool)),
-                storeType,
-                size == null ? StoreTypePostfix.None : StoreTypePostfix.Size,
-                dbType,
-                size: size))
+            : this(
+                    new RelationalTypeMappingParameters(
+                        new CoreTypeMappingParameters(
+                            typeof(bool),
+                            jsonValueReaderWriter: JsonBoolReaderWriter.Instance),
+                        storeType,
+                        size == null ? StoreTypePostfix.None : StoreTypePostfix.Size,
+                        dbType,
+                        size: size))
         {
         }
 

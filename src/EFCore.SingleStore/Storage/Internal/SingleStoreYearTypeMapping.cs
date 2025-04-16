@@ -4,18 +4,22 @@
 
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using SingleStoreConnector;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
     public class SingleStoreYearTypeMapping : SingleStoreTypeMapping
     {
+        public static SingleStoreYearTypeMapping Default { get; } = new("year");
+
         public SingleStoreYearTypeMapping([NotNull] string storeType)
             : base(
                 storeType,
                 typeof(short),
                 SingleStoreDbType.Year,
-                System.Data.DbType.Int16)
+                System.Data.DbType.Int16,
+                jsonValueReaderWriter: JsonInt16ReaderWriter.Instance)
         {
         }
 
