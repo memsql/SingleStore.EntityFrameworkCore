@@ -20,6 +20,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         public class StoreGeneratedSingleStoreFixture : StoreGeneratedSingleStoreFixtureBase
         {
+            protected override string StoreName
+                => "StoreGeneratedTest";
+
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
 
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
@@ -100,6 +103,15 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                             b.Property(e => e.NullableAsNonNullable).HasDefaultValue(1);
                             b.Property(e => e.NonNullableAsNullable).HasDefaultValue(1);
                         }
+                    });
+
+                modelBuilder.Entity<WithNoBackingFields>(
+                    b =>
+                    {
+                        b.Property(e => e.TrueDefault).HasDefaultValue(true);
+                        b.Property(e => e.NonZeroDefault).HasDefaultValue(-1);
+                        b.Property(e => e.FalseDefault).HasDefaultValue(false);
+                        b.Property(e => e.ZeroDefault).HasDefaultValue(0);
                     });
 
                 modelBuilder.Entity<WithNullableBackingFields>(

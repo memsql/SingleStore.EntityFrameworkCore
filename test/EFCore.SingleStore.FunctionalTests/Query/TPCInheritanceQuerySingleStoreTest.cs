@@ -9,8 +9,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class TPCInheritanceQuerySingleStoreTest : TPCInheritanceQueryTestBase<TPCInheritanceQuerySingleStoreFixture>
 {
-    public TPCInheritanceQuerySingleStoreTest(TPCInheritanceQuerySingleStoreFixture fixture, ITestOutputHelper testOutputHelper)
-        : base(fixture)
+    public TPCInheritanceQuerySingleStoreTest(
+        TPCInheritanceQuerySingleStoreFixture fixture,
+        ITestOutputHelper testOutputHelper)
+        : base(fixture, testOutputHelper)
     {
         Fixture.TestSqlLoggerFactory.Clear();
         //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);

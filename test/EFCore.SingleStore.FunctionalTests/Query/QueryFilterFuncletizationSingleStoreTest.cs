@@ -6,6 +6,7 @@ using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -35,34 +36,86 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         public override void DbContext_list_is_parameterized()
         {
-            using var context = CreateContext();
-            // Default value of TenantIds is null InExpression over null values throws
-            Assert.Throws<NullReferenceException>(() => context.Set<ListFilter>().ToList());
+            base.DbContext_list_is_parameterized();
 
-            context.TenantIds = new List<int>();
-            var query = context.Set<ListFilter>().ToList();
-            Assert.Empty(query);
-
-            context.TenantIds = new List<int> { 1 };
-            query = context.Set<ListFilter>().ToList();
-            Assert.Single(query);
-
-            context.TenantIds = new List<int> { 2, 3 };
-            query = context.Set<ListFilter>().ToList();
-            Assert.Equal(2, query.Count);
-
-            AssertSql(
-                @"SELECT `l`.`Id`, `l`.`Tenant`
+            if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+            {
+                AssertSql(
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
 FROM `ListFilter` AS `l`
-WHERE FALSE",
-                //
-                @"SELECT `l`.`Id`, `l`.`Tenant`
+WHERE `l`.`Tenant` IN (
+    SELECT `e`.`value`
+    FROM JSON_TABLE(NULL, '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `e`
+)
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
 FROM `ListFilter` AS `l`
-WHERE `l`.`Tenant` = 1",
-                //
-                @"SELECT `l`.`Id`, `l`.`Tenant`
+WHERE `l`.`Tenant` IN (
+    SELECT `e`.`value`
+    FROM JSON_TABLE('[]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `e`
+)
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
 FROM `ListFilter` AS `l`
-WHERE `l`.`Tenant` IN (2, 3)");
+WHERE `l`.`Tenant` IN (
+    SELECT `e`.`value`
+    FROM JSON_TABLE('[1]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `e`
+)
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE `l`.`Tenant` IN (
+    SELECT `e`.`value`
+    FROM JSON_TABLE('[2,3]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `e`
+)
+""");
+            }
+            else
+            {
+                AssertSql(
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE FALSE
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE FALSE
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE `l`.`Tenant` = 1
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE `l`.`Tenant` IN (2, 3)
+""");
+            }
         }
 
         private void AssertSql(params string[] expected)

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Internal;
@@ -432,6 +433,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Storage
             => new SingleStoreTypeMappingSource(
                 new TypeMappingSourceDependencies(
                     new ValueConverterSelector(new ValueConverterSelectorDependencies()),
+                    new JsonValueReaderWriterSource(new JsonValueReaderWriterSourceDependencies()),
                     Array.Empty<ITypeMappingSourcePlugin>()),
                 new RelationalTypeMappingSourceDependencies(
                     Array.Empty<IRelationalTypeMappingSourcePlugin>()),

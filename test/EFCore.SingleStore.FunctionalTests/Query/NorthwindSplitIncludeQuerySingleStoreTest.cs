@@ -31,8 +31,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                     .ThenBy(o => o.Customer != null ? o.Customer.City : string.Empty)
                     .ThenBy(o => o.OrderID)
                     .Take(5),
-                elementAsserter: (e, a) => AssertInclude(e, a, new ExpectedInclude<Order>(o => o.OrderDetails)),
-                entryCount: 14);
+                elementAsserter: (e, a) => AssertInclude(e, a, new ExpectedInclude<Order>(o => o.OrderDetails)));
         }
 
         [ConditionalTheory(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
@@ -66,8 +65,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                             .Where(od => od.ProductID == 72) // <-- explicit filtering needed for some MariaDB versions, because we cannot manually influence the order of the Order.OrderDetails property
                        from o in ss.Set<Order>().Include(o => o.OrderDetails) select o)
                     .GroupBy(e => e.OrderID)
-                    .Select(e => e.OrderBy(o => o.OrderID).FirstOrDefault()),
-                entryCount: 2985);
+                    .Select(e => e.OrderBy(o => o.OrderID).FirstOrDefault()));
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
@@ -85,8 +83,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 {
                     AssertInclude(e.c1, a.c1, new ExpectedInclude<Customer>(c => c.Orders));
                     AssertInclude(e.c2, a.c2, new ExpectedInclude<Customer>(c => c.Orders));
-                },
-                entryCount: 15);
+                });
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
@@ -105,8 +102,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 {
                     AssertInclude(e.c1, a.c1, new ExpectedInclude<Customer>(c => c.Orders));
                     AssertEqual(e.c2, a.c2);
-                },
-                entryCount: 8);
+                });
         }
 
         [ConditionalTheory(Skip = "https://github.com/dotnet/efcore/issues/21202")]
@@ -172,8 +168,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                     .OrderBy(b => b.Customer.CustomerID != null)
                     .ThenBy(b => b.Customer != null ? b.Customer.CustomerID : string.Empty)
                     .ThenBy(b => b.EmployeeID) // Needs to be explicitly ordered by EmployeeID as well
-                    .Take(2),
-                entryCount: 6);
+                    .Take(2));
         }
 
         private void AssertSql(params string[] expected)

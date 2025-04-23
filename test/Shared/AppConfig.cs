@@ -4,7 +4,6 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SingleStoreConnector;
-using EntityFrameworkCore.SingleStore.Storage;
 
 namespace EntityFrameworkCore.SingleStore.Tests
 {

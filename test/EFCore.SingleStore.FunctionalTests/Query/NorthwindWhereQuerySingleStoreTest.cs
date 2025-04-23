@@ -143,9 +143,11 @@ WHERE EXTRACT(day FROM `o`.`OrderDate`) = 4");
             await base.Where_datetime_hour_component(async);
 
             AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+"""
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE EXTRACT(hour FROM `o`.`OrderDate`) = 14");
+WHERE EXTRACT(hour FROM `o`.`OrderDate`) = 0
+""");
         }
 
         [ConditionalTheory]
@@ -154,9 +156,11 @@ WHERE EXTRACT(hour FROM `o`.`OrderDate`) = 14");
             await base.Where_datetime_minute_component(async);
 
             AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+"""
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE EXTRACT(minute FROM `o`.`OrderDate`) = 23");
+WHERE EXTRACT(minute FROM `o`.`OrderDate`) = 0
+""");
         }
 
         [ConditionalTheory]
@@ -165,9 +169,11 @@ WHERE EXTRACT(minute FROM `o`.`OrderDate`) = 23");
             await base.Where_datetime_second_component(async);
 
             AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+"""
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE EXTRACT(second FROM `o`.`OrderDate`) = 44");
+WHERE EXTRACT(second FROM `o`.`OrderDate`) = 0
+""");
         }
 
         [ConditionalTheory]
@@ -176,9 +182,11 @@ WHERE EXTRACT(second FROM `o`.`OrderDate`) = 44");
             await base.Where_datetime_millisecond_component(async);
 
             AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+"""
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (EXTRACT(microsecond FROM `o`.`OrderDate`)) DIV (1000) = 88");
+WHERE (EXTRACT(microsecond FROM `o`.`OrderDate`)) DIV (1000) = 0
+""");
         }
 
         [ConditionalTheory]
@@ -248,8 +256,7 @@ WHERE SUBSTRING(`c`.`City`, 1 + 1, 2) = 'ea'");
         {
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => c.City.Remove(3) == "Sea"),
-                entryCount: 1);
+                ss => ss.Set<Customer>().Where(c => c.City.Remove(3) == "Sea"));
 
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
@@ -263,8 +270,7 @@ WHERE SUBSTRING(`c`.`City`, 1, 3) = 'Sea'");
         {
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => c.City.Remove(3, 1) == "Seatle"),
-                entryCount: 1);
+                ss => ss.Set<Customer>().Where(c => c.City.Remove(3, 1) == "Seatle"));
 
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
@@ -281,7 +287,7 @@ WHERE CONCAT(SUBSTRING(`c`.`City`, 1, 3), SUBSTRING(`c`.`City`, (3 + 1) + 1, CHA
             await AssertQuery(
                 async,
                 ss => ss.Set<Customer>().Where(c => guidParameter == Guid.NewGuid()),
-                entryCount: 0);
+                assertEmpty: true);
 
             AssertSql(
                 @"@__guidParameter_0='4d68fe70-ddb0-47d7-b6db-437684fa3e1f'
@@ -296,12 +302,14 @@ WHERE @__guidParameter_0 = UUID()");
             await base.Where_string_concat_method_comparison_2(async);
 
             AssertSql(
-                @"@__i_0='A' (Size = 4000)
+"""
+@__i_0='A' (Size = 4000)
 @__j_1='B' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, @__j_1, `c`.`CustomerID`) = `c`.`CompanyName`");
+WHERE CONCAT(@__i_0, @__j_1, `c`.`CustomerID`) = 'ABANATR'
+""");
         }
 
         public override async Task Where_string_concat_method_comparison_3(bool async)
@@ -309,13 +317,15 @@ WHERE CONCAT(@__i_0, @__j_1, `c`.`CustomerID`) = `c`.`CompanyName`");
             await base.Where_string_concat_method_comparison_3(async);
 
             AssertSql(
-                @"@__i_0='A' (Size = 4000)
+"""
+@__i_0='A' (Size = 4000)
 @__j_1='B' (Size = 4000)
 @__k_2='C' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = `c`.`CompanyName`");
+WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = 'ABCANTON'
+""");
         }
 
         [ConditionalTheory]
@@ -326,14 +336,17 @@ WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(i) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='1' (Size = 4000)
+"""
+@__Concat_0='1' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -344,7 +357,8 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(i, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
                 @"@__i_0='1' (Size = 4000)
@@ -363,7 +377,8 @@ WHERE CONCAT(@__i_0, `c`.`CustomerID`) = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
                 @"@__i_0='1' (Size = 4000)
@@ -384,16 +399,19 @@ WHERE CONCAT(@__i_0, @__j_1, `c`.`CustomerID`) = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__i_0='1' (Size = 4000)
+"""
+@__i_0='1' (Size = 4000)
 @__j_1='2' (Size = 4000)
 @__k_2='3' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE (CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = `c`.`CompanyName`) OR (CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) IS NULL AND (`c`.`CompanyName` IS NULL))");
+WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -407,17 +425,20 @@ WHERE (CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = `c`.`CompanyName`) OR 
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, m, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, m, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__i_0='A' (Size = 4000)
+"""
+@__i_0='A' (Size = 4000)
 @__j_1='B' (Size = 4000)
 @__k_2='C' (Size = 4000)
 @__m_3='D' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE (CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyName`) OR (CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) IS NULL AND (`c`.`CompanyName` IS NULL))");
+WHERE CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -428,14 +449,17 @@ WHERE (CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyNa
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(array) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(array) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='ABCD' (Size = 4000)
+"""
+@__Concat_0='ABCD' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -446,14 +470,17 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(array) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(array) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='A' (Size = 4000)
+"""
+@__Concat_0='A' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -467,17 +494,20 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, m, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, m, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__i_0='1' (Size = 4000)
+"""
+@__i_0='1' (Size = 4000)
 @__j_1='2' (Size = 4000)
 @__k_2='3' (Size = 4000)
 @__m_3='4' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE (CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyName`) OR (CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) IS NULL AND (`c`.`CompanyName` IS NULL))");
+WHERE CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -488,14 +518,17 @@ WHERE (CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyNa
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(array) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(array) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='1234' (Size = 4000)
+"""
+@__Concat_0='1234' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -506,14 +539,17 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(array) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(array) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='1' (Size = 4000)
+"""
+@__Concat_0='1' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -524,14 +560,17 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(enumerable) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(enumerable) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='ABCD' (Size = 4000)
+"""
+@__Concat_0='ABCD' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -542,14 +581,17 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(enumerable) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(enumerable) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='A' (Size = 4000)
+"""
+@__Concat_0='A' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -560,14 +602,17 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(enumerable) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(enumerable) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='1234' (Size = 4000)
+"""
+@__Concat_0='1234' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -578,14 +623,17 @@ WHERE @__Concat_0 = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(enumerable) == c.CompanyName).Select(c => c.CustomerID));
+                ss => ss.Set<Customer>().Where(c => string.Concat(enumerable) == c.CompanyName).Select(c => c.CustomerID),
+                assertEmpty: true);
 
             AssertSql(
-                @"@__Concat_0='1' (Size = 4000)
+"""
+@__Concat_0='1' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`");
+WHERE @__Concat_0 = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
