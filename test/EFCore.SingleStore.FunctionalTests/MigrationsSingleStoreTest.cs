@@ -79,9 +79,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_column_computed_with_collation()
+        public override Task Add_column_computed_with_collation(bool stored)
         {
-            return base.Add_column_computed_with_collation();
+            return base.Add_column_computed_with_collation(stored);
         }
 
         [ConditionalFact(Skip = "BLOB/TEXT columns can't have a default value in SingleStore.")]
@@ -364,27 +364,7 @@ SELECT ROW_COUNT();",
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
         public override async Task Alter_sequence_all_settings()
         {
-            await Test(
-                builder => builder.HasSequence<int>("foo"),
-                builder => { },
-                builder => builder.HasSequence<int>("foo")
-                    .StartsAt(-3)
-                    .IncrementsBy(2)
-                    .HasMin(-5)
-                    .HasMax(10)
-                    .IsCyclic(),
-                model =>
-                {
-                    var sequence = Assert.Single(model.Sequences);
-
-                    // Assert.Equal(-3, sequence.StartValue);
-                    Assert.Equal(1, sequence.StartValue); // Restarting doesn't change the scaffolded start value
-
-                    Assert.Equal(2, sequence.IncrementBy);
-                    Assert.Equal(-5, sequence.MinValue);
-                    Assert.Equal(10, sequence.MaxValue);
-                    Assert.True(sequence.IsCyclic);
-                });
+            await base.Alter_sequence_all_settings();
 
             AssertSql(
                 """
@@ -392,7 +372,7 @@ ALTER SEQUENCE `foo` INCREMENT BY 2 MINVALUE -5 MAXVALUE 10 CYCLE;
 """,
                 //
                 """
-ALTER SEQUENCE `foo` RESTART WITH -3;
+ALTER SEQUENCE `foo` START WITH -3 RESTART;
 """);
         }
 
@@ -400,6 +380,15 @@ ALTER SEQUENCE `foo` RESTART WITH -3;
         public override Task Alter_sequence_increment_by()
         {
             return base.Alter_sequence_increment_by();
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override async Task Alter_sequence_restart_with()
+        {
+            await base.Alter_sequence_restart_with();
+
+            AssertSql(
+                @"ALTER SEQUENCE `foo` START WITH 3 RESTART;");
         }
 
         [ConditionalFact(Skip = "SingleStore's ALTER TABLE command doesn't work with comments")]
@@ -621,12 +610,35 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
         public override async Task Rename_sequence()
         {
-            await base.Rename_sequence();
+            if (OperatingSystem.IsWindows())
+            {
+                // On Windows, with `lower_case_table_names = 2`, renaming `TestSequence` to `testsequence` doesn't do anything, because
+                // `TestSequence` is internally being transformed to lower case, before it is processes further.
+                await Test(
+                    builder => { },
+                    builder => builder.HasSequence<int>("TestSequence"),
+                    builder => builder.HasSequence<int>("testsequence2"),
+                    builder => builder.RenameSequence(name: "TestSequence", newName: "testsequence2"),
+                    model =>
+                    {
+                        var sequence = Assert.Single(model.Sequences);
+                        Assert.Equal("testsequence2", sequence.Name);
+                    });
 
-            AssertSql(
-"""
-ALTER TABLE `TestSequence` RENAME `testsequence`;
-""");
+                AssertSql(
+                    """
+                    ALTER TABLE `TestSequence` RENAME `testsequence2`;
+                    """);
+            }
+            else
+            {
+                await base.Rename_sequence();
+
+                AssertSql(
+                    """
+                    ALTER TABLE `TestSequence` RENAME `testsequence`;
+                    """);
+            }
         }
 
         [ConditionalTheory(Skip = "TODO")]

@@ -3,14 +3,17 @@ using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
 public class TPTFiltersInheritanceBulkUpdatesSingleStoreTest : TPTFiltersInheritanceBulkUpdatesTestBase<
     TPTFiltersInheritanceBulkUpdatesSingleStoreFixture>
 {
-    public TPTFiltersInheritanceBulkUpdatesSingleStoreTest(TPTFiltersInheritanceBulkUpdatesSingleStoreFixture fixture)
-        : base(fixture)
+    public TPTFiltersInheritanceBulkUpdatesSingleStoreTest(
+        TPTFiltersInheritanceBulkUpdatesSingleStoreFixture fixture,
+        ITestOutputHelper testOutputHelper)
+        : base(fixture, testOutputHelper)
     {
         ClearLog();
     }
@@ -132,13 +135,6 @@ WHERE (
         AssertExecuteUpdateSql();
     }
 
-    public override async Task Update_where_hierarchy_derived(bool async)
-    {
-        await base.Update_where_hierarchy_derived(async);
-
-        AssertExecuteUpdateSql();
-    }
-
     public override async Task Update_where_using_hierarchy(bool async)
     {
         // We're skipping this test when we're running tests on Managed Service due to the specifics of
@@ -194,6 +190,66 @@ WHERE (
         await base.Update_where_keyless_entity_mapped_to_sql_query(async);
 
         AssertExecuteUpdateSql();
+    }
+
+    public override async Task Update_base_and_derived_types(bool async)
+    {
+        await base.Update_base_and_derived_types(async);
+
+        AssertExecuteUpdateSql();
+    }
+
+    public override async Task Update_base_type(bool async)
+    {
+        await base.Update_base_type(async);
+
+        AssertExecuteUpdateSql(
+            """
+            UPDATE `Animals` AS `a`
+            SET `a`.`Name` = 'Animal'
+            WHERE (`a`.`CountryId` = 1) AND (`a`.`Name` = 'Great spotted kiwi')
+            """);
+    }
+
+    public override async Task Update_base_type_with_OfType(bool async)
+    {
+        await base.Update_base_type_with_OfType(async);
+
+        AssertExecuteUpdateSql(
+            """
+            UPDATE `Animals` AS `a`
+            LEFT JOIN `Kiwi` AS `k` ON `a`.`Id` = `k`.`Id`
+            SET `a`.`Name` = 'NewBird'
+            WHERE (`a`.`CountryId` = 1) AND `k`.`Id` IS NOT NULL
+            """);
+    }
+
+    public override async Task Update_base_property_on_derived_type(bool async)
+    {
+        await base.Update_base_property_on_derived_type(async);
+
+        AssertExecuteUpdateSql(
+            """
+            UPDATE `Animals` AS `a`
+            INNER JOIN `Birds` AS `b` ON `a`.`Id` = `b`.`Id`
+            INNER JOIN `Kiwi` AS `k` ON `a`.`Id` = `k`.`Id`
+            SET `a`.`Name` = 'SomeOtherKiwi'
+            WHERE `a`.`CountryId` = 1
+            """);
+    }
+
+    public override async Task Update_derived_property_on_derived_type(bool async)
+    {
+        await base.Update_derived_property_on_derived_type(async);
+
+        AssertExecuteUpdateSql(
+            """
+            UPDATE `Animals` AS `a`
+            INNER JOIN `Birds` AS `b` ON `a`.`Id` = `b`.`Id`
+            INNER JOIN `Kiwi` AS `k` ON `a`.`Id` = `k`.`Id`
+            SET `k`.`FoundOn` = 0
+            WHERE `a`.`CountryId` = 1
+            """);
     }
 
     protected override void ClearLog()

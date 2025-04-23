@@ -1,33 +1,192 @@
-﻿using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+﻿using System.Threading.Tasks;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
-namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
+namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
+
+public class FunkyDataQuerySingleStoreTest : FunkyDataQueryTestBase<FunkyDataQuerySingleStoreTest.FunkyDataQuerySingleStoreFixture>
 {
-    public class FunkyDataQuerySingleStoreTest : FunkyDataQueryTestBase<FunkyDataQuerySingleStoreTest.FunkyDataQuerySingleStoreFixture>
+    public FunkyDataQuerySingleStoreTest(FunkyDataQuerySingleStoreFixture fixture)
+        : base(fixture)
     {
-        public FunkyDataQuerySingleStoreTest(FunkyDataQuerySingleStoreFixture fixture)
-            : base(fixture)
-        {
-            ClearLog();
-            //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
-        }
+        ClearLog();
+        //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
+    }
 
-        protected override void ClearLog()
-            => Fixture.TestSqlLoggerFactory.Clear();
+    public override async Task String_contains_on_argument_with_wildcard_constant(bool async)
+    {
+        await base.String_contains_on_argument_with_wildcard_constant(async);
 
-        private void AssertSql(params string[] expected)
-            => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
+        AssertSql(
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '%\\%B%'
+""",
+            //
+            """
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '%a\\_%'
+""",
+            //
+            """
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE FALSE
+""",
+            //
+            """
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` IS NOT NULL
+""",
+            //
+            """
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '%\\_Ba\\_%'
+""",
+            //
+            """
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` NOT LIKE '%\\%B\\%a\\%r%' OR (`f`.`FirstName` IS NULL)
+""",
+            //
+            """
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` IS NULL
+""",
+            //
+            """
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+""");
+    }
 
-        public class FunkyDataQuerySingleStoreFixture : FunkyDataQueryFixtureBase
-        {
-            public TestSqlLoggerFactory TestSqlLoggerFactory
-                => (TestSqlLoggerFactory)ServiceProvider.GetRequiredService<ILoggerFactory>();
+    public override async Task String_starts_with_on_argument_with_wildcard_constant(bool async)
+    {
+        await base.String_starts_with_on_argument_with_wildcard_constant(async);
 
-            protected override ITestStoreFactory TestStoreFactory
-                => SingleStoreTestStoreFactory.Instance;
-        }
+        AssertSql(
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '\\%B%'
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '\\_B%'
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE FALSE
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` IS NOT NULL
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '\\_Ba\\_%'
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` NOT LIKE '\\%B\\%a\\%r%' OR (`f`.`FirstName` IS NULL)
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` IS NULL
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+""");
+    }
+
+    public override async Task String_ends_with_on_argument_with_wildcard_constant(bool async)
+    {
+        await base.String_ends_with_on_argument_with_wildcard_constant(async);
+
+        AssertSql(
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '%\\%r'
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '%r\\_'
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE FALSE
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` IS NOT NULL
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` LIKE '%\\_r\\_'
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` NOT LIKE '%a\\%r\\%' OR (`f`.`FirstName` IS NULL)
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+WHERE `f`.`FirstName` IS NULL
+""",
+            //
+"""
+SELECT `f`.`FirstName`
+FROM `FunkyCustomers` AS `f`
+""");
+    }
+
+    protected override void ClearLog()
+        => Fixture.TestSqlLoggerFactory.Clear();
+
+    private void AssertSql(params string[] expected)
+        => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
+
+    public class FunkyDataQuerySingleStoreFixture : FunkyDataQueryFixtureBase
+    {
+        public TestSqlLoggerFactory TestSqlLoggerFactory
+            => (TestSqlLoggerFactory)ServiceProvider.GetRequiredService<ILoggerFactory>();
+
+        protected override ITestStoreFactory TestStoreFactory
+            => SingleStoreTestStoreFactory.Instance;
     }
 }

@@ -6,6 +6,9 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
@@ -148,7 +151,7 @@ ORDER BY `t`.`c` DESC, `t`.`CustomerID`
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `o0`.`OrderID`, `o0`.`ProductID`, `o0`.`Discount`, `o0`.`Quantity`, `o0`.`UnitPrice`
 FROM `Orders` AS `o`
 LEFT JOIN `Order Details` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
-WHERE `o`.`CustomerID` IS NOT NULL AND (`o`.`CustomerID` LIKE 'F%')
+WHERE `o`.`CustomerID` IS LIKE 'F%'
 ORDER BY `o`.`OrderID`, `o0`.`OrderID`
 """);
     }
@@ -249,7 +252,7 @@ SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `c`.`
 FROM `Orders` AS `o`
 LEFT JOIN `Customers` AS `c` ON `o`.`CustomerID` = `c`.`CustomerID`
 LEFT JOIN `Orders` AS `o0` ON `c`.`CustomerID` = `o0`.`CustomerID`
-WHERE `o`.`CustomerID` IS NOT NULL AND (`o`.`CustomerID` LIKE 'F%')
+WHERE `o`.`CustomerID` LIKE 'F%'
 ORDER BY `o`.`OrderID`, `c`.`CustomerID`
 """);
     }
@@ -415,8 +418,7 @@ ORDER BY `o`.`OrderID`, `o0`.`OrderID`
             {
                 AssertInclude(e.c1, a.c1, new ExpectedInclude<Customer>(c => c.Orders));
                 AssertEqual(e.c2, a.c2);
-            },
-            entryCount: 8);
+            });
 
         AssertSql(
 """
@@ -459,8 +461,7 @@ ORDER BY `t1`.`CustomerID`, `t1`.`CustomerID0`
                 .OrderBy(b => b.Customer.CustomerID != null)
                 .ThenBy(b => b.Customer != null ? b.Customer.CustomerID : string.Empty)
                 .ThenBy(b => b.EmployeeID) // Needs to be explicitly ordered by EmployeeID as well
-                .Take(2),
-            entryCount: 6);
+                .Take(2));
 
         AssertSql(
 """
@@ -662,21 +663,53 @@ ORDER BY `c`.`CustomerID`, `o`.`OrderID`
     {
         await base.Include_collection_OrderBy_list_does_not_contains(async);
 
-        AssertSql(
-"""
-@__p_1='1'
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+                """
+                @__p_1='1'
+                SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, NOT (COALESCE(`c`.`CustomerID` IN (
+                        SELECT `l`.`value`
+                        FROM JSON_TABLE('["ALFKI"]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` char(5) PATH '$[0]'
+                        )) AS `l`
+                    ), FALSE)) AS `c`
+                    FROM `Customers` AS `c`
+                    WHERE `c`.`CustomerID` LIKE 'A%'
+                    ORDER BY NOT (COALESCE(`c`.`CustomerID` IN (
+                        SELECT `l`.`value`
+                        FROM JSON_TABLE('["ALFKI"]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` char(5) PATH '$[0]'
+                        )) AS `l`
+                    ), FALSE))
+                    LIMIT 18446744073709551610 OFFSET @__p_1
+                ) AS `t`
+                LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
+                ORDER BY `t`.`c`, `t`.`CustomerID`
+                """);
+        }
+        else
+        {
+            AssertSql(
+                """
+                @__p_1='1'
 
-SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM (
-    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, `c`.`CustomerID` <> 'ALFKI' AS `c`
-    FROM `Customers` AS `c`
-    WHERE `c`.`CustomerID` LIKE 'A%'
-    ORDER BY `c`.`CustomerID` <> 'ALFKI'
-    LIMIT 18446744073709551610 OFFSET @__p_1
-) AS `t`
-LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
-ORDER BY `t`.`c`, `t`.`CustomerID`
-""");
+                SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, `c`.`CustomerID` <> 'ALFKI' AS `c`
+                    FROM `Customers` AS `c`
+                    WHERE `c`.`CustomerID` LIKE 'A%'
+                    ORDER BY `c`.`CustomerID` <> 'ALFKI'
+                    LIMIT 18446744073709551610 OFFSET @__p_1
+                ) AS `t`
+                LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
+                ORDER BY `t`.`c`, `t`.`CustomerID`
+                """);
+        }
     }
 
     public override async Task Include_reference_dependent_already_tracked(bool async)
@@ -1007,7 +1040,38 @@ ORDER BY `t0`.`CustomerID`, `t1`.`OrderID`, `t1`.`OrderID0`
     {
         await base.Include_collection_OrderBy_empty_list_contains(async);
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+                """
+                @__p_1='1'
+                SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, COALESCE(`c`.`CustomerID` IN (
+                        SELECT `l`.`value`
+                        FROM JSON_TABLE('[]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` char(5) PATH '$[0]'
+                        )) AS `l`
+                    ), FALSE) AS `c`
+                    FROM `Customers` AS `c`
+                    WHERE `c`.`CustomerID` LIKE 'A%'
+                    ORDER BY COALESCE(`c`.`CustomerID` IN (
+                        SELECT `l`.`value`
+                        FROM JSON_TABLE('[]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` char(5) PATH '$[0]'
+                        )) AS `l`
+                    ), FALSE)
+                    LIMIT 18446744073709551610 OFFSET @__p_1
+                ) AS `t`
+                LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
+                ORDER BY `t`.`c`, `t`.`CustomerID`
+                """);
+        }
+        else
+        {
+            AssertSql(
 """
 @__p_1='1'
 
@@ -1022,6 +1086,7 @@ FROM (
 LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
 ORDER BY `t`.`c`, `t`.`CustomerID`
 """);
+        }
     }
 
     public override async Task Include_references_and_collection_multi_level(bool async)
@@ -1141,8 +1206,7 @@ ORDER BY `c`.`CustomerID`, `t`.`OrderID`, `t`.`OrderID0`
                 .ThenBy(o => o.Customer != null ? o.Customer.City : string.Empty)
                 .ThenBy(o => o.OrderID) // Needs to be explicitly ordered by EmployeeID as well
                 .Take(5),
-            elementAsserter: (e, a) => AssertInclude(e, a, new ExpectedInclude<Order>(o => o.OrderDetails)),
-            entryCount: 14);
+            elementAsserter: (e, a) => AssertInclude(e, a, new ExpectedInclude<Order>(o => o.OrderDetails)));
 
         AssertSql(
 """
@@ -1176,7 +1240,7 @@ ORDER BY `t`.`c`, `t`.`c0`, `t`.`OrderID`, `t`.`CustomerID0`, `o0`.`OrderID`
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Orders` AS `o`
 LEFT JOIN `Customers` AS `c` ON `o`.`CustomerID` = `c`.`CustomerID`
-WHERE `o`.`CustomerID` IS NOT NULL AND (`o`.`CustomerID` LIKE 'F%')
+WHERE `o`.`CustomerID` LIKE 'F%'
 """);
     }
 
@@ -1322,21 +1386,6 @@ ORDER BY `o`.`OrderID`, `o`.`ProductID`, `o0`.`OrderID`, `c`.`CustomerID`, `p`.`
 """);
     }
 
-    public override async Task Outer_idenfier_correctly_determined_when_doing_include_on_right_side_of_left_join(bool async)
-    {
-        await base.Outer_idenfier_correctly_determined_when_doing_include_on_right_side_of_left_join(async);
-
-        AssertSql(
-"""
-SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `o0`.`OrderID`, `o0`.`ProductID`, `o0`.`Discount`, `o0`.`Quantity`, `o0`.`UnitPrice`
-FROM `Customers` AS `c`
-LEFT JOIN `Orders` AS `o` ON `c`.`CustomerID` = `o`.`CustomerID`
-LEFT JOIN `Order Details` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
-WHERE `c`.`City` = 'Seattle'
-ORDER BY `c`.`CustomerID`, `o`.`OrderID`, `o0`.`OrderID`
-""");
-    }
-
     public override async Task SelectMany_Include_reference_GroupBy_Select(bool async)
     {
         await base.SelectMany_Include_reference_GroupBy_Select(async);
@@ -1399,21 +1448,53 @@ ORDER BY `t`.`OrderID`, `t0`.`OrderID`, `t0`.`OrderID0`, `t0`.`ProductID`, `o3`.
     {
         await base.Include_collection_OrderBy_list_contains(async);
 
-        AssertSql(
-"""
-@__p_1='1'
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+                """
+                @__p_1='1'
+                SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, COALESCE(`c`.`CustomerID` IN (
+                        SELECT `l`.`value`
+                        FROM JSON_TABLE('["ALFKI"]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` char(5) PATH '$[0]'
+                        )) AS `l`
+                    ), FALSE) AS `c`
+                    FROM `Customers` AS `c`
+                    WHERE `c`.`CustomerID` LIKE 'A%'
+                    ORDER BY COALESCE(`c`.`CustomerID` IN (
+                        SELECT `l`.`value`
+                        FROM JSON_TABLE('["ALFKI"]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` char(5) PATH '$[0]'
+                        )) AS `l`
+                    ), FALSE)
+                    LIMIT 18446744073709551610 OFFSET @__p_1
+                ) AS `t`
+                LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
+                ORDER BY `t`.`c`, `t`.`CustomerID`
+                """);
+        }
+        else
+        {
+            AssertSql(
+                """
+                @__p_1='1'
 
-SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM (
-    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, `c`.`CustomerID` = 'ALFKI' AS `c`
-    FROM `Customers` AS `c`
-    WHERE `c`.`CustomerID` LIKE 'A%'
-    ORDER BY `c`.`CustomerID` = 'ALFKI'
-    LIMIT 18446744073709551610 OFFSET @__p_1
-) AS `t`
-LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
-ORDER BY `t`.`c`, `t`.`CustomerID`
-""");
+                SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, `c`.`CustomerID` = 'ALFKI' AS `c`
+                    FROM `Customers` AS `c`
+                    WHERE `c`.`CustomerID` LIKE 'A%'
+                    ORDER BY `c`.`CustomerID` = 'ALFKI'
+                    LIMIT 18446744073709551610 OFFSET @__p_1
+                ) AS `t`
+                LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
+                ORDER BY `t`.`c`, `t`.`CustomerID`
+                """);
+        }
     }
 
     public override async Task Multi_level_includes_are_applied_with_skip(bool async)
@@ -1526,8 +1607,7 @@ FROM `Orders` AS `o`
             {
                 AssertInclude(e.c1, a.c1, new ExpectedInclude<Customer>(c => c.Orders));
                 AssertInclude(e.c2, a.c2, new ExpectedInclude<Customer>(c => c.Orders));
-            },
-            entryCount: 15);
+            });
 
         AssertSql(
 """
@@ -1571,7 +1651,7 @@ ORDER BY `t1`.`CustomerID`, `t1`.`CustomerID0`, `o0`.`OrderID`
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Orders` AS `o`
 LEFT JOIN `Customers` AS `c` ON `o`.`CustomerID` = `c`.`CustomerID`
-WHERE `o`.`CustomerID` IS NOT NULL AND (`o`.`CustomerID` LIKE 'F%')
+WHERE `o`.`CustomerID` LIKE 'F%'
 """);
     }
 
@@ -1801,7 +1881,7 @@ SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `c`.`
 FROM `Orders` AS `o`
 LEFT JOIN `Customers` AS `c` ON `o`.`CustomerID` = `c`.`CustomerID`
 LEFT JOIN `Order Details` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
-WHERE `o`.`CustomerID` IS NOT NULL AND (`o`.`CustomerID` LIKE 'F%')
+WHERE `o`.`CustomerID` LIKE 'F%'
 ORDER BY `o`.`OrderID`, `c`.`CustomerID`, `o0`.`OrderID`
 """);
     }
@@ -1889,21 +1969,53 @@ ORDER BY `t`.`CompanyName` DESC, `t`.`CustomerID`
     {
         await base.Include_collection_OrderBy_empty_list_does_not_contains(async);
 
-        AssertSql(
-"""
-@__p_1='1'
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+                """
+                @__p_1='1'
+                SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, NOT (COALESCE(`c`.`CustomerID` IN (
+                        SELECT `l`.`value`
+                        FROM JSON_TABLE('[]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` char(5) PATH '$[0]'
+                        )) AS `l`
+                    ), FALSE)) AS `c`
+                    FROM `Customers` AS `c`
+                    WHERE `c`.`CustomerID` LIKE 'A%'
+                    ORDER BY NOT (COALESCE(`c`.`CustomerID` IN (
+                        SELECT `l`.`value`
+                        FROM JSON_TABLE('[]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` char(5) PATH '$[0]'
+                        )) AS `l`
+                    ), FALSE))
+                    LIMIT 18446744073709551610 OFFSET @__p_1
+                ) AS `t`
+                LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
+                ORDER BY `t`.`c`, `t`.`CustomerID`
+                """);
+        }
+        else
+        {
+            AssertSql(
+                """
+                @__p_1='1'
 
-SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM (
-    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, TRUE AS `c`
-    FROM `Customers` AS `c`
-    WHERE `c`.`CustomerID` LIKE 'A%'
-    ORDER BY (SELECT 1)
-    LIMIT 18446744073709551610 OFFSET @__p_1
-) AS `t`
-LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
-ORDER BY `t`.`c`, `t`.`CustomerID`
-""");
+                SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, TRUE AS `c`
+                    FROM `Customers` AS `c`
+                    WHERE `c`.`CustomerID` LIKE 'A%'
+                    ORDER BY (SELECT 1)
+                    LIMIT 18446744073709551610 OFFSET @__p_1
+                ) AS `t`
+                LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
+                ORDER BY `t`.`c`, `t`.`CustomerID`
+                """);
+        }
     }
 
     public override async Task Include_multiple_references_then_include_multi_level_reverse(bool async)
@@ -1931,7 +2043,7 @@ SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `c`.`
 FROM `Orders` AS `o`
 LEFT JOIN `Customers` AS `c` ON `o`.`CustomerID` = `c`.`CustomerID`
 LEFT JOIN `Order Details` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
-WHERE `o`.`CustomerID` IS NOT NULL AND (`o`.`CustomerID` LIKE 'F%')
+WHERE `o`.`CustomerID` LIKE 'F%'
 ORDER BY `o`.`OrderID`, `c`.`CustomerID`, `o0`.`OrderID`
 """);
     }
@@ -2003,7 +2115,7 @@ SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `c`.`
 FROM `Orders` AS `o`
 LEFT JOIN `Customers` AS `c` ON `o`.`CustomerID` = `c`.`CustomerID`
 LEFT JOIN `Orders` AS `o0` ON `c`.`CustomerID` = `o0`.`CustomerID`
-WHERE `o`.`CustomerID` IS NOT NULL AND (`o`.`CustomerID` LIKE 'F%')
+WHERE `o`.`CustomerID` LIKE 'F%'
 ORDER BY `o`.`OrderID`, `c`.`CustomerID`
 """);
     }
@@ -2301,6 +2413,21 @@ ORDER BY `c`.`CustomerID`, `t`.`OrderDate` DESC
         await base.Include_collection_with_client_filter(async);
 
         AssertSql();
+    }
+
+    public override async Task Outer_identifier_correctly_determined_when_doing_include_on_right_side_of_left_join(bool async)
+    {
+        await base.Outer_identifier_correctly_determined_when_doing_include_on_right_side_of_left_join(async);
+
+        AssertSql(
+            """
+            SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, `o0`.`OrderID`, `o0`.`ProductID`, `o0`.`Discount`, `o0`.`Quantity`, `o0`.`UnitPrice`
+            FROM `Customers` AS `c`
+            LEFT JOIN `Orders` AS `o` ON `c`.`CustomerID` = `o`.`CustomerID`
+            LEFT JOIN `Order Details` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
+            WHERE `c`.`City` = 'Seattle'
+            ORDER BY `c`.`CustomerID`, `o`.`OrderID`, `o0`.`OrderID`
+            """);
     }
 
     private void AssertSql(params string[] expected)

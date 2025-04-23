@@ -3,12 +3,12 @@ using Microsoft.EntityFrameworkCore.TestModels.InheritanceModel;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
-public class FiltersInheritanceBulkUpdatesSingleStoreFixture : InheritanceBulkUpdatesSingleStoreFixture
+public class TPHFiltersInheritanceBulkUpdatesSingleStoreFixture : TPHInheritanceBulkUpdatesSingleStoreFixture
 {
     protected override string StoreName
         => "FiltersInheritanceBulkUpdatesTest";
 
-    protected override bool EnableFilters
+    public override bool EnableFilters
         => true;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
