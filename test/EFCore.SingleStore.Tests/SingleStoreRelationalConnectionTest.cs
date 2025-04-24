@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Reflection;
 using System.Transactions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
@@ -190,8 +191,10 @@ public class SingleStoreRelationalConnectionTest
         using var connection = CreateConnection();
         using var master = connection.CreateMasterConnection();
 
+        var program_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+
         Assert.Equal(
-            @"Server=localhost;User ID=some_user;Password=some_password;Database=;Pooling=False;Allow User Variables=True;Use Affected Rows=False",
+            $@"Server=localhost;User ID=some_user;Password=some_password;Database=;Pooling=False;Connection Attributes=""_connector_name:SingleStore Entity Framework Core provider,_connector_version:{program_version}"";Use Affected Rows=False",
             master.ConnectionString);
     }
 
