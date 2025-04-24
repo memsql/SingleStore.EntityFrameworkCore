@@ -1,168 +1,168 @@
 cd test/EFCore.SingleStore.FunctionalTests/
 
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TwoDatabasesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TwoDatabasesSingleStoreTest.'
 ((TOTAL_FAILURES = $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.CompositeKeysQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.CompositeKeysQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.Ef6GroupBySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.Ef6GroupBySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.CompositeKeysSplitQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.CompositeKeysSplitQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.DateOnlyQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.DateOnlyQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.EscapesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.EscapesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.EntitySplittingQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.EntitySplittingQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.FromSqlQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.FromSqlQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.FieldsOnlyLoadSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.FieldsOnlyLoadSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.FiltersInheritanceQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.FiltersInheritanceQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.FromSqlSprocQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.FromSqlSprocQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.FunkyDataQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.FunkyDataQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.GearsOfWarFromSqlQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.GearsOfWarFromSqlQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.GearsOfWarQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.GearsOfWarQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.IncludeOneToOneSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.IncludeOneToOneSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.InheritanceQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.InheritanceQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsCollectionsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsCollectionsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftPocoChangeTrackingTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftPocoChangeTrackingTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.BoolIndexingOptimizationDisabledSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.BoolIndexingOptimizationDisabledSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftDomChangeTrackingTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftDomChangeTrackingTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftDomQueryTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftDomQueryTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.InheritanceRelationshipsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.InheritanceRelationshipsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsCollectionsSharedTypeQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsCollectionsSharedTypeQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsCollectionsSplitQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsCollectionsSplitQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsCollectionsSplitSharedTypeQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsCollectionsSplitSharedTypeQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsSharedTypeQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsSharedTypeQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftPocoQueryTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftPocoQueryTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftStringChangeTrackingTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftStringChangeTrackingTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftStringQueryTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonMicrosoftStringQueryTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftDomChangeTrackingTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftDomChangeTrackingTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftDomQueryTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftDomQueryTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftPocoChangeTrackingTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftPocoChangeTrackingTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftPocoQueryTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftPocoQueryTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftStringChangeTrackingTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftStringChangeTrackingTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftStringQueryTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftStringQueryTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ManyToManyHeterogeneousQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ManyToManyHeterogeneousQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.MappingQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.MappingQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.MatchQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.MatchQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindAsTrackingQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindAsTrackingQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindAsNoTrackingQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindAsNoTrackingQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindAggregateQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindAggregateQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindAggregateOperatorsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindAggregateOperatorsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindDbFunctionsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindDbFunctionsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindCompiledQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindCompiledQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindChangeTrackingQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindChangeTrackingQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindGroupByQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindGroupByQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindFunctionsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindFunctionsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindEFPropertyIncludeQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindEFPropertyIncludeQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindKeylessEntitiesQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindKeylessEntitiesQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindJoinQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindJoinQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindIncludeQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindIncludeQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindIncludeNoTrackingQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindIncludeNoTrackingQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindQueryFiltersQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindQueryFiltersQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindMiscellaneousQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindMiscellaneousQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSelectQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSelectQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSetOperationsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSetOperationsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSplitIncludeNoTrackingQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSplitIncludeNoTrackingQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSplitIncludeQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSplitIncludeQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSqlQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindSqlQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindStringIncludeQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindStringIncludeQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindWhereQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindWhereQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NullKeysSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NullKeysSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NullSemanticsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NullSemanticsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.OwnedEntityQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.OwnedEntityQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.OwnedQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.OwnedQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.QueryFilterFuncletizationSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.QueryFilterFuncletizationSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindNavigationsQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindNavigationsQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.SharedTypeQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.SharedTypeQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.QueryNoClientEvalSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.QueryNoClientEvalSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.SimpleQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.SimpleQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.SqlExecutorSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.SqlExecutorSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ToSqlQuerySingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ToSqlQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.WithConstructorsSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.WithConstructorsSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.FiltersInheritanceBulkUpdatesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.FiltersInheritanceBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.InheritanceBulkUpdatesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.InheritanceBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NonSharedModelBulkUpdatesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NonSharedModelBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindBulkUpdatesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPCFiltersInheritanceBulkUpdatesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TPCFiltersInheritanceBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPCInheritanceBulkUpdatesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TPCInheritanceBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTFiltersInheritanceBulkUpdatesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTFiltersInheritanceBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTInheritanceBulkUpdatesSingleStoreTest.'
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTInheritanceBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
 
 cd ../../

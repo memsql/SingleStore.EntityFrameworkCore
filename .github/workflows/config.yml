@@ -3,7 +3,7 @@ name: SingleStore EntityFramework Core
 on: [push]
 
 env:
-  DOTNET_VERSION: 7.0.404
+  DOTNET_VERSION: 8.0.405
   LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
   SQL_USER_PASSWORD: ${{ secrets.SQL_USER_PASSWORD }}
   S2MS_API_KEY: ${{ secrets.S2MS_API_KEY }}
@@ -75,13 +75,13 @@ jobs:
         run: dotnet build SingleStore.EFCore.sln -c Release
 
       - name: Run Unit Tests
-        run: dotnet test test/EFCore.SingleStore.Tests -f net7.0 -c Release --no-build
+        run: dotnet test test/EFCore.SingleStore.Tests -f net8.0 -c Release --no-build
 
       - name: Rebuild migrations
         run: pwsh ./test/EFCore.SingleStore.IntegrationTests/scripts/rebuild.ps1
 
       - name: Run Integration Tests
-        run: dotnet test test/EFCore.SingleStore.IntegrationTests -f net7.0 -c Release --no-build
+        run: dotnet test test/EFCore.SingleStore.IntegrationTests -f net8.0 -c Release --no-build
 
       - name: Run Functional Tests ${{ matrix.singlestore_image }} - ${{ matrix.func_test_script }}
         run: ${{ matrix.func_test_script }}
@@ -121,13 +121,13 @@ jobs:
         run: dotnet build SingleStore.EFCore.sln -c Release
 
       - name: Run EFCore.SingleStore.Tests
-        run: .\.github\workflows\test_setup\run-test-windows.ps1 -test_block EFCore.SingleStore.Tests -target_framework net7.0
+        run: .\.github\workflows\test_setup\run-test-windows.ps1 -test_block EFCore.SingleStore.Tests -target_framework net8.0
 
       - name: Rebuild migrations
         run: .\test\EFCore.SingleStore.IntegrationTests\scripts\rebuild.ps1
 
       - name: Run EFCore.SingleStore.IntegrationTests
-        run: .\.github\workflows\test_setup\run-test-windows.ps1 -test_block EFCore.SingleStore.IntegrationTests -target_framework net7.0
+        run: .\.github\workflows\test_setup\run-test-windows.ps1 -test_block EFCore.SingleStore.IntegrationTests -target_framework net8.0
 
       - name: Run Functional Test Block
         run: ${{ matrix.func_test_block_path }}
