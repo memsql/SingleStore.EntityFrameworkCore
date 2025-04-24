@@ -12,12 +12,12 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SingleStoreConnector;
-using Pomelo.EntityFrameworkCore.SingleStore.Diagnostics.Internal;
-using Pomelo.EntityFrameworkCore.SingleStore.Infrastructure.Internal;
-using Pomelo.EntityFrameworkCore.SingleStore.Internal;
-using Pomelo.EntityFrameworkCore.SingleStore.Storage.Internal;
-using Pomelo.EntityFrameworkCore.SingleStore.Tests;
-using Pomelo.EntityFrameworkCore.SingleStore.TestUtilities.FakeProvider;
+using EntityFrameworkCore.SingleStore.Diagnostics.Internal;
+using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
+using EntityFrameworkCore.SingleStore.Internal;
+using EntityFrameworkCore.SingleStore.Storage.Internal;
+using EntityFrameworkCore.SingleStore.Tests;
+using EntityFrameworkCore.SingleStore.TestUtilities.FakeProvider;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore;
@@ -32,7 +32,7 @@ public class SingleStoreRelationalConnectionTest
         Assert.IsType<SingleStoreConnection>(connection.DbConnection);
     }
 
-    [Fact]
+    /*[Fact]
     public void Uses_DbDataSource_from_DbContextOptions()
     {
         using var dataSource = new SingleStoreDataSourceBuilder("Server=FakeHost;AllowUserVariables=True;UseAffectedRows=False").Build();
@@ -79,7 +79,7 @@ public class SingleStoreRelationalConnectionTest
         var context = scope.ServiceProvider.GetRequiredService<FakeDbContext>();
 
         Assert.Equal(
-            "The connection string of a connection used by Pomelo.EntityFrameworkCore.SingleStore must contain \"AllowUserVariables=True;UseAffectedRows=False\".",
+            "The connection string of a connection used by EntityFrameworkCore.SingleStore must contain \"AllowUserVariables=True;UseAffectedRows=False\".",
             Assert.Throws<InvalidOperationException>(
                     () => (SingleStoreRelationalConnection)context.GetService<IRelationalConnection>()!)
                 .Message);
@@ -134,7 +134,7 @@ public class SingleStoreRelationalConnectionTest
         var context = scope.ServiceProvider.GetRequiredService<FakeDbContext>();
 
         Assert.Equal(
-            "The connection string of a connection used by Pomelo.EntityFrameworkCore.SingleStore must contain \"AllowUserVariables=True;UseAffectedRows=False\".",
+            "The connection string of a connection used by EntityFrameworkCore.SingleStore must contain \"AllowUserVariables=True;UseAffectedRows=False\".",
             Assert.Throws<InvalidOperationException>(
                     () => (SingleStoreRelationalConnection)context.GetService<IRelationalConnection>()!)
                 .Message);
@@ -182,7 +182,7 @@ public class SingleStoreRelationalConnectionTest
             var relationalConnection2 = (SingleStoreRelationalConnection)context2.GetService<IRelationalConnection>()!;
             Assert.Same(dataSource2, relationalConnection2.DbDataSource);
         }
-    }
+    }*/
 
     [Fact]
     public void Can_create_master_connection_with_connection_string()

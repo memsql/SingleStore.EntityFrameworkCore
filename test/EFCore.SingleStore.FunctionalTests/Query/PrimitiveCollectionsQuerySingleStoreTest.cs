@@ -529,7 +529,7 @@ WHERE FALSE
         }
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_ints_Contains(bool async)
     {
         await base.Column_collection_of_ints_Contains(async);
@@ -548,7 +548,7 @@ WHERE 10 IN (
 """);
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_nullable_ints_Contains(bool async)
     {
         await base.Column_collection_of_nullable_ints_Contains(async);
@@ -567,7 +567,7 @@ WHERE 10 IN (
 """);
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_nullable_ints_Contains_null(bool async)
     {
         await base.Column_collection_of_nullable_ints_Contains_null(async);
@@ -592,7 +592,7 @@ WHERE FALSE
 """);
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_nullable_strings_contains_null(bool async)
     {
         await base.Column_collection_of_nullable_strings_contains_null(async);
@@ -605,7 +605,7 @@ WHERE array_position(p."NullableStrings", NULL) IS NOT NULL
 """);
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_bools_Contains(bool async)
     {
         await base.Column_collection_of_bools_Contains(async);

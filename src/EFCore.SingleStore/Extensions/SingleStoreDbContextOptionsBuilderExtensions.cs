@@ -159,14 +159,13 @@ namespace Microsoft.EntityFrameworkCore
         public static DbContextOptionsBuilder UseSingleStore(
             this DbContextOptionsBuilder optionsBuilder,
             DbDataSource dataSource,
-            [NotNull] ServerVersion serverVersion,
             Action<SingleStoreDbContextOptionsBuilder> mySqlOptionsAction = null)
         {
             Check.NotNull(optionsBuilder, nameof(optionsBuilder));
             Check.NotNull(dataSource, nameof(dataSource));
 
             optionsBuilder.AddInterceptors(new MatchInterceptor());
-            ServerVersion serverVersion = SingleStoreServerVersion.LatestSupportedServerVersion;
+            var serverVersion = SingleStoreServerVersion.LatestSupportedServerVersion;
 
             // TODO when know how to use DbDataSource
            /* try
@@ -264,7 +263,7 @@ namespace Microsoft.EntityFrameworkCore
             [CanBeNull] Action<SingleStoreDbContextOptionsBuilder> mySqlOptionsAction = null)
             where TContext : DbContext
             => (DbContextOptionsBuilder<TContext>)UseSingleStore(
-                (DbContextOptionsBuilder)optionsBuilder, dataSource, serverVersion, mySqlOptionsAction);
+                (DbContextOptionsBuilder)optionsBuilder, dataSource, mySqlOptionsAction);
 
         private static SingleStoreOptionsExtension GetOrCreateExtension(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder.Options.FindExtension<SingleStoreOptionsExtension>()

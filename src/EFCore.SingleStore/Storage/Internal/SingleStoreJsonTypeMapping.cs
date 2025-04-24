@@ -38,7 +38,7 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
         protected SingleStoreJsonTypeMapping(
             RelationalTypeMappingParameters parameters,
-            SingleStoreDbType SingleStoreDbType,
+            SingleStoreDbType mySqlDbType,
             bool noBackslashEscapes,
             bool replaceLineBreaksWithCharFunction)
             : base(parameters, mySqlDbType, noBackslashEscapes, replaceLineBreaksWithCharFunction)

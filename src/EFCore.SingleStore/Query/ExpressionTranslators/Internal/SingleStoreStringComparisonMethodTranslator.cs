@@ -399,7 +399,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
             [NotNull] Func<SqlExpression, SqlExpression> prefixSuffixTransform,
             bool startsWith)
         {
-            var stringTypeMapping = ExpressionExtensions.InferTypeMapping(target, prefixSuffix);
+             var stringTypeMapping = ExpressionExtensions.InferTypeMapping(target, prefixSuffix);
             target = _sqlExpressionFactory.ApplyTypeMapping(target, stringTypeMapping);
             prefixSuffix = _sqlExpressionFactory.ApplyTypeMapping(prefixSuffix, stringTypeMapping);
 
@@ -408,7 +408,6 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
                 // The prefix is constant. Aside from null or empty, we escape all special characters (%, _, \)
                 // in C# and send a simple LIKE.
                 return constantPrefixSuffixExpression.Value switch
-                if (constantPrefixSuffixExpression.Value is string constantPrefixSuffixString)
                 {
                     null => _sqlExpressionFactory.Like(targetTransform(target), _sqlExpressionFactory.Constant(null, stringTypeMapping)),
                     "" => _sqlExpressionFactory.Like(targetTransform(target), _sqlExpressionFactory.Constant("%")),
@@ -434,12 +433,11 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
                 return likeExpressionUsingParameter;
             }
 
-
             // TODO: Generally, LEFT & compare is faster than escaping potential pattern characters with REPLACE().
             // However, this might not be the case, if the pattern is constant after all (e.g. `LCASE('fo%o')`), in
             // which case, `something LIKE CONCAT(REPLACE(REPLACE(LCASE('fo%o'), '%', '\\%'), '_', '\\_'), '%')` should
             // be faster than `LEFT(something, CHAR_LENGTH('fo%o')) = LCASE('fo%o')`.
-            // See https://github.com/PomeloFoundation/EntityFrameworkCore.SingleStore/issues/996#issuecomment-607733553
+            // See https://github.com/PomeloFoundation/Pomelo.EntityFrameworkCore.MySql/issues/996#issuecomment-607733553
 
             // The prefix is non-constant, we use LEFT/RIGHT to extract the substring and compare.
             return _sqlExpressionFactory.AndAlso(

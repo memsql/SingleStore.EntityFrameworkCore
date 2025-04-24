@@ -13287,67 +13287,6 @@ ORDER BY `t`.`Nickname`, `t`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 """);
     }
 
-    public override async Task Set_operator_with_navigation_in_projection_groupby_aggregate(bool async)
-    {
-        await base.Set_operator_with_navigation_in_projection_groupby_aggregate(async);
-
-        AssertSql(
-"""
-SELECT `s`.`Name`, (
-    SELECT COALESCE(SUM(CHAR_LENGTH(`c`.`Location`)), 0)
-    FROM (
-        SELECT `g0`.`Nickname`, `g0`.`SquadId`, `g0`.`AssignedCityName`, `g0`.`CityOfBirthName`, `g0`.`FullName`, `g0`.`HasSoulPatch`, `g0`.`LeaderNickname`, `g0`.`LeaderSquadId`, `g0`.`Rank`, 'Gear' AS `Discriminator`
-        FROM `Gears` AS `g0`
-        UNION ALL
-        SELECT `o0`.`Nickname`, `o0`.`SquadId`, `o0`.`AssignedCityName`, `o0`.`CityOfBirthName`, `o0`.`FullName`, `o0`.`HasSoulPatch`, `o0`.`LeaderNickname`, `o0`.`LeaderSquadId`, `o0`.`Rank`, 'Officer' AS `Discriminator`
-        FROM `Officers` AS `o0`
-    ) AS `t3`
-    INNER JOIN `Squads` AS `s0` ON `t3`.`SquadId` = `s0`.`Id`
-    INNER JOIN `Cities` AS `c` ON `t3`.`CityOfBirthName` = `c`.`Name`
-    WHERE 'Marcus' IN (
-        SELECT `t4`.`Nickname`
-        FROM (
-            SELECT `g1`.`Nickname`, `g1`.`SquadId`, `g1`.`AssignedCityName`, `g1`.`CityOfBirthName`, `g1`.`FullName`, `g1`.`HasSoulPatch`, `g1`.`LeaderNickname`, `g1`.`LeaderSquadId`, `g1`.`Rank`, 'Gear' AS `Discriminator`
-            FROM `Gears` AS `g1`
-            UNION ALL
-            SELECT `o1`.`Nickname`, `o1`.`SquadId`, `o1`.`AssignedCityName`, `o1`.`CityOfBirthName`, `o1`.`FullName`, `o1`.`HasSoulPatch`, `o1`.`LeaderNickname`, `o1`.`LeaderSquadId`, `o1`.`Rank`, 'Officer' AS `Discriminator`
-            FROM `Officers` AS `o1`
-            UNION ALL
-            SELECT `g2`.`Nickname`, `g2`.`SquadId`, `g2`.`AssignedCityName`, `g2`.`CityOfBirthName`, `g2`.`FullName`, `g2`.`HasSoulPatch`, `g2`.`LeaderNickname`, `g2`.`LeaderSquadId`, `g2`.`Rank`, 'Gear' AS `Discriminator`
-            FROM `Gears` AS `g2`
-            UNION ALL
-            SELECT `o2`.`Nickname`, `o2`.`SquadId`, `o2`.`AssignedCityName`, `o2`.`CityOfBirthName`, `o2`.`FullName`, `o2`.`HasSoulPatch`, `o2`.`LeaderNickname`, `o2`.`LeaderSquadId`, `o2`.`Rank`, 'Officer' AS `Discriminator`
-            FROM `Officers` AS `o2`
-        ) AS `t4`
-    ) AND ((`s`.`Name` = `s0`.`Name`) OR (`s`.`Name` IS NULL AND (`s0`.`Name` IS NULL)))) AS `SumOfLengths`
-FROM (
-    SELECT `g`.`SquadId`
-    FROM `Gears` AS `g`
-    UNION ALL
-    SELECT `o`.`SquadId`
-    FROM `Officers` AS `o`
-) AS `t`
-INNER JOIN `Squads` AS `s` ON `t`.`SquadId` = `s`.`Id`
-WHERE 'Marcus' IN (
-    SELECT `t0`.`Nickname`
-    FROM (
-        SELECT `g3`.`Nickname`, `g3`.`SquadId`, `g3`.`AssignedCityName`, `g3`.`CityOfBirthName`, `g3`.`FullName`, `g3`.`HasSoulPatch`, `g3`.`LeaderNickname`, `g3`.`LeaderSquadId`, `g3`.`Rank`, 'Gear' AS `Discriminator`
-        FROM `Gears` AS `g3`
-        UNION ALL
-        SELECT `o3`.`Nickname`, `o3`.`SquadId`, `o3`.`AssignedCityName`, `o3`.`CityOfBirthName`, `o3`.`FullName`, `o3`.`HasSoulPatch`, `o3`.`LeaderNickname`, `o3`.`LeaderSquadId`, `o3`.`Rank`, 'Officer' AS `Discriminator`
-        FROM `Officers` AS `o3`
-        UNION ALL
-        SELECT `g4`.`Nickname`, `g4`.`SquadId`, `g4`.`AssignedCityName`, `g4`.`CityOfBirthName`, `g4`.`FullName`, `g4`.`HasSoulPatch`, `g4`.`LeaderNickname`, `g4`.`LeaderSquadId`, `g4`.`Rank`, 'Gear' AS `Discriminator`
-        FROM `Gears` AS `g4`
-        UNION ALL
-        SELECT `o4`.`Nickname`, `o4`.`SquadId`, `o4`.`AssignedCityName`, `o4`.`CityOfBirthName`, `o4`.`FullName`, `o4`.`HasSoulPatch`, `o4`.`LeaderNickname`, `o4`.`LeaderSquadId`, `o4`.`Rank`, 'Officer' AS `Discriminator`
-        FROM `Officers` AS `o4`
-    ) AS `t0`
-)
-GROUP BY `s`.`Name`
-""");
-    }
-
     public override async Task Where_subquery_equality_to_null_with_composite_key_should_match_nulls(bool async)
     {
         await base.Where_subquery_equality_to_null_with_composite_key_should_match_nulls(async);

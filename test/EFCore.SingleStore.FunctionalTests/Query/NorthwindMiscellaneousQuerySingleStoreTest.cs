@@ -236,7 +236,6 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                     ss => ss.Set<OrderDetail>()
                         .Where(w => w.Quantity + 1 == 5 && w.Quantity - 1 == 3 && w.Quantity * 1 == w.Quantity)
                         .OrderBy(o => o.OrderID).ThenBy(o => o.ProductID),
-                    entryCount: 55,
                     assertOrder: true,
                     elementAsserter: (e, a) => { AssertEqual(e, a); });
             }
@@ -448,8 +447,7 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                       where e1.FirstName
                           == (from e2 in ss.Set<Employee>().OrderBy(e => e.EmployeeID)
                               select new { Foo = e2 }).First().Foo.FirstName
-                      select e1,
-                entryCount: 1);
+                      select e1);
         }
 
         public override Task Where_query_composition2_FirstOrDefault(bool async)
@@ -460,8 +458,7 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                     where e1.FirstName
                           == (from e2 in ss.Set<Employee>().OrderBy(e => e.EmployeeID)
                               select e2).FirstOrDefault().FirstName
-                    select e1,
-                entryCount: 1);
+                    select e1);
         }
 
         public override Task Where_query_composition2_FirstOrDefault_with_anonymous(bool async)
@@ -472,8 +469,7 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                     where e1.FirstName
                           == (from e2 in ss.Set<Employee>().OrderBy(e => e.EmployeeID)
                               select new { Foo = e2 }).FirstOrDefault().Foo.FirstName
-                    select e1,
-                entryCount: 1);
+                    select e1);
         }
 
         /// <summary>

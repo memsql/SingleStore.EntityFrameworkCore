@@ -1610,7 +1610,8 @@ LEFT JOIN LATERAL (
     ) AS `t1`
     LEFT JOIN `LevelThree` AS `l0` ON `t1`.`Id` = `l0`.`Level2_Optional_Id`
 ) AS `t0` ON TRUE
-ORDER BY `t`.`Id` DESC, `t0`.`Name` DESC, `t0`.`Id`");
+ORDER BY `t`.`Id` DESC, `t0`.`Name` DESC, `t0`.`Id`
+""");
         }
 
         public override async Task Skip_Take_on_grouping_element_inside_collection_projection(bool async)
@@ -1618,7 +1619,8 @@ ORDER BY `t`.`Id` DESC, `t0`.`Name` DESC, `t0`.`Id`");
             await base.Skip_Take_on_grouping_element_inside_collection_projection(async);
 
             AssertSql(
-                @"SELECT `l`.`Id`, `t2`.`Date`, `t2`.`Id`, `t2`.`Date0`, `t2`.`Name`, `t2`.`OneToMany_Optional_Self_Inverse1Id`, `t2`.`OneToMany_Required_Self_Inverse1Id`, `t2`.`OneToOne_Optional_Self1Id`
+"""
+SELECT `l`.`Id`, `t2`.`Date`, `t2`.`Id`, `t2`.`Date0`, `t2`.`Name`, `t2`.`OneToMany_Optional_Self_Inverse1Id`, `t2`.`OneToMany_Required_Self_Inverse1Id`, `t2`.`OneToOne_Optional_Self1Id`
 FROM `LevelOne` AS `l`
 LEFT JOIN LATERAL (
     SELECT `t`.`Date`, `t0`.`Id`, `t0`.`Date` AS `Date0`, `t0`.`Name`, `t0`.`OneToMany_Optional_Self_Inverse1Id`, `t0`.`OneToMany_Required_Self_Inverse1Id`, `t0`.`OneToOne_Optional_Self1Id`
@@ -1639,7 +1641,7 @@ LEFT JOIN LATERAL (
     ) AS `t0` ON `t`.`Date` = `t0`.`Date`
 ) AS `t2` ON TRUE
 ORDER BY `l`.`Id`, `t2`.`Date`, `t2`.`Date0`, `t2`.`Name`
-"""
+""");
         }
 
         public override async Task Skip_Take_on_grouping_element_with_collection_include(bool async)

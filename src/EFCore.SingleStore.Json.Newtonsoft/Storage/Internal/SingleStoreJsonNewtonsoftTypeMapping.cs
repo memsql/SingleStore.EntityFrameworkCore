@@ -15,10 +15,10 @@ using EntityFrameworkCore.SingleStore.Storage.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Json.Newtonsoft.Storage.Internal
 {
-    public static new SingleStoreJsonNewtonsoftTypeMapping<T> Default { get; } = new("json", null, null, false, true);
-
     public class SingleStoreJsonNewtonsoftTypeMapping<T> : SingleStoreJsonTypeMapping<T>
     {
+        public static new SingleStoreJsonNewtonsoftTypeMapping<T> Default { get; } = new("json", null, null, false, true);
+
         // Called via reflection.
         // ReSharper disable once UnusedMember.Global
         public SingleStoreJsonNewtonsoftTypeMapping(

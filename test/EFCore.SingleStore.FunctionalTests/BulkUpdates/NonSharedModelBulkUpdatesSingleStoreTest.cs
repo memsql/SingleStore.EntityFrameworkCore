@@ -45,12 +45,12 @@ public class NonSharedModelBulkUpdatesSingleStoreTest : NonSharedModelBulkUpdate
         await base.Delete_predicate_based_on_optional_navigation(async);
 
         AssertSql(
-            """
-            DELETE `p`
-            FROM `Posts` AS `p`
-            LEFT JOIN `Blogs` AS `b` ON `p`.`BlogId` = `b`.`Id`
-            WHERE `b`.`Title` LIKE 'Arthur%'
-            """);
+"""
+DELETE `p`
+FROM `Posts` AS `p`
+LEFT JOIN `Blogs` AS `b` ON `p`.`BlogId` = `b`.`Id`
+WHERE `b`.`Title` LIKE 'Arthur%'
+""");
     }
 
     public override async Task Update_non_owned_property_on_entity_with_owned(bool async)
@@ -132,5 +132,5 @@ LEFT JOIN `Context30572_Dependent` AS `c0` ON `c`.`DependentId` = `c0`.`Id`
         => TestSqlLoggerFactory.AssertBaseline(expected);
 
     private void AssertExecuteUpdateSql(params string[] expected)
-        => TestSqlLoggerFactory.AssertBaseline(expected, forUpdate: true);"
+        => TestSqlLoggerFactory.AssertBaseline(expected, forUpdate: true);
 }

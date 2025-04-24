@@ -12,7 +12,7 @@ public class TPCInheritanceBulkUpdatesSingleStoreFixture : TPCInheritanceBulkUpd
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 
-    protected override bool UseGeneratedKeys
+    public override bool UseGeneratedKeys
         => false;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)

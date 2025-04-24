@@ -100,7 +100,6 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure
 
         public virtual bool JsonTableImplementationStable => JsonTable;
         public virtual bool JsonTableImplementationWithoutMySqlBugs => JsonTable;
-        public virtual bool JsonTableImplementationWithoutMariaDbBugs => JsonTable;
         public virtual bool JsonTableImplementationUsingParameterAsSourceWithoutEngineCrash => JsonTable;
         public virtual bool JsonTableImplementationWithAggregate => JsonTable;
     }

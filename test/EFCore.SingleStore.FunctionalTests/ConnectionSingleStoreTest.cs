@@ -88,7 +88,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             using var dataSource = new SingleStoreDataSourceBuilder(SingleStoreTestStore.CreateConnectionString("ConnectionTest")).Build();
 
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
-            optionsBuilder.UseSingleStore(dataSource, AppConfig.ServerVersion, b => b.ApplyConfiguration());
+            optionsBuilder.UseSingleStore(dataSource, b => b.ApplyConfiguration());
             using var context = new GeneralOptionsContext(optionsBuilder.Options);
 
             var relationalConnection = context.GetService<ISingleStoreRelationalConnection>();
@@ -107,7 +107,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 .Initialize(null, (Func<DbContext>)null);
 
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
-            optionsBuilder.UseSingleStore(SingleStoreTestStore.CreateConnectionString("ConnectionTest"), AppConfig.ServerVersion,
+            optionsBuilder.UseSingleStore(SingleStoreTestStore.CreateConnectionString("ConnectionTest"),
                 b => b.ApplyConfiguration());
             using var context = new GeneralOptionsContext(optionsBuilder.Options);
 
@@ -130,7 +130,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             connection.Open();
 
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
-            optionsBuilder.UseSingleStore(connection, AppConfig.ServerVersion, b => b.ApplyConfiguration());
+            optionsBuilder.UseSingleStore(connection, b => b.ApplyConfiguration());
             using var context = new GeneralOptionsContext(optionsBuilder.Options);
 
             var relationalConnection = context.GetService<ISingleStoreRelationalConnection>();
