@@ -439,6 +439,18 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
             return base.Dependent_to_principal_navigation_equal_to_null_for_subquery(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override Task Collection_navigation_equal_to_null_for_subquery_using_ElementAtOrDefault_parameter(bool async)
+        {
+            return base.Collection_navigation_equal_to_null_for_subquery_using_ElementAtOrDefault_parameter(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override Task Collection_navigation_equal_to_null_for_subquery_using_ElementAtOrDefault_constant_one(bool async)
+        {
+            return base.Collection_navigation_equal_to_null_for_subquery_using_ElementAtOrDefault_constant_one(async);
+        }
+
         public override Task Where_query_composition2(bool async)
         {
             return AssertQuery(

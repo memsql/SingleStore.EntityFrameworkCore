@@ -1976,7 +1976,7 @@ LIMIT 1
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Where_subquery_boolean(bool async)
     {
         await base.Where_subquery_boolean(async);
@@ -2000,7 +2000,7 @@ WHERE COALESCE((
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Where_subquery_boolean_with_pushdown(bool async)
     {
         await base.Where_subquery_boolean_with_pushdown(async);
@@ -2133,7 +2133,7 @@ ORDER BY `t`.`Nickname`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Where_subquery_distinct_singleordefault_boolean2(bool async)
     {
         await base.Where_subquery_distinct_singleordefault_boolean2(async);
@@ -4780,7 +4780,7 @@ WHERE (`t`.`SquadId` < 2) AND (`c`.`Name` IS NULL OR (`c`.`Name` = 'Ephyra'))
         }
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Optional_navigation_with_collection_composite_key(bool async)
     {
         await base.Optional_navigation_with_collection_composite_key(async);
@@ -5971,7 +5971,7 @@ ORDER BY `t`.`HasSoulPatch` DESC, `t0`.`Note`, `t`.`Nickname`, `t`.`SquadId`, `t
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Multiple_orderby_with_navigation_expansion_on_one_of_the_order_bys_inside_subquery_complex_orderings(
         bool async)
     {
@@ -6326,7 +6326,7 @@ ORDER BY `s`.`Name`, `s`.`Id`, `t1`.`Nickname`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Correlated_collections_with_FirstOrDefault(bool async)
     {
         await base.Correlated_collections_with_FirstOrDefault(async);
@@ -7240,7 +7240,7 @@ ORDER BY `t0`.`Nickname`, `t0`.`SquadId`, `t1`.`Id`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Project_one_value_type_from_empty_collection(bool async)
     {
         await base.Project_one_value_type_from_empty_collection(async);
@@ -7263,7 +7263,7 @@ WHERE `s`.`Name` = 'Kilo'
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Project_one_value_type_converted_to_nullable_from_empty_collection(bool async)
     {
         await base.Project_one_value_type_converted_to_nullable_from_empty_collection(async);
@@ -7313,7 +7313,7 @@ WHERE `s`.`Name` = 'Kilo'
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Filter_on_subquery_projecting_one_value_type_from_empty_collection(bool async)
     {
         await base.Filter_on_subquery_projecting_one_value_type_from_empty_collection(async);
@@ -7336,7 +7336,7 @@ WHERE (`s`.`Name` = 'Kilo') AND (COALESCE((
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_projecting_single_constant_int(bool async)
     {
         await base.Select_subquery_projecting_single_constant_int(async);
@@ -7358,7 +7358,7 @@ FROM `Squads` AS `s`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_projecting_single_constant_string(bool async)
     {
         await base.Select_subquery_projecting_single_constant_string(async);
@@ -7380,7 +7380,7 @@ FROM `Squads` AS `s`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_projecting_single_constant_bool(bool async)
     {
         await base.Select_subquery_projecting_single_constant_bool(async);
@@ -7707,7 +7707,7 @@ FROM `Officers` AS `o`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_boolean(bool async)
     {
         await base.Select_subquery_boolean(async);
@@ -7730,7 +7730,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_boolean_with_pushdown(bool async)
     {
         await base.Select_subquery_boolean_with_pushdown(async);
@@ -7753,7 +7753,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_int_with_inside_cast_and_coalesce(bool async)
     {
         await base.Select_subquery_int_with_inside_cast_and_coalesce(async);
@@ -7776,7 +7776,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_int_with_outside_cast_and_coalesce(bool async)
     {
         await base.Select_subquery_int_with_outside_cast_and_coalesce(async);
@@ -7799,7 +7799,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_int_with_pushdown_and_coalesce(bool async)
     {
         await base.Select_subquery_int_with_pushdown_and_coalesce(async);
@@ -7822,7 +7822,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_int_with_pushdown_and_coalesce2(bool async)
     {
         await base.Select_subquery_int_with_pushdown_and_coalesce2(async);
@@ -7850,7 +7850,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_boolean_empty(bool async)
     {
         await base.Select_subquery_boolean_empty(async);
@@ -7873,7 +7873,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_boolean_empty_with_pushdown(bool async)
     {
         await base.Select_subquery_boolean_empty_with_pushdown(async);
@@ -7922,7 +7922,7 @@ WHERE `t`.`HasSoulPatch` = TRUE
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_distinct_singleordefault_boolean2(bool async)
     {
         await base.Select_subquery_distinct_singleordefault_boolean2(async);
@@ -7997,7 +7997,7 @@ WHERE `t`.`HasSoulPatch` = TRUE
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_distinct_singleordefault_boolean_empty2(bool async)
     {
         await base.Select_subquery_distinct_singleordefault_boolean_empty2(async);
@@ -8669,7 +8669,7 @@ WHERE (`t`.`FullName` <> 'Dom') AND EXISTS (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Query_with_complex_let_containing_ordering_and_filter_projecting_firstOrDefault_element_of_let(
         bool async)
     {
@@ -10270,7 +10270,7 @@ END
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Conditional_expression_with_test_being_simplified_to_constant_complex(bool isAsync)
     {
         await base.Conditional_expression_with_test_being_simplified_to_constant_complex(isAsync);
@@ -11131,7 +11131,7 @@ ORDER BY `t`.`Nickname`, `t0`.`Id`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task FirstOrDefault_over_int_compared_to_zero(bool async)
     {
         await base.FirstOrDefault_over_int_compared_to_zero(async);
@@ -12283,7 +12283,7 @@ WHERE `l`.`ServerAddress` = CAST('127.0.0.1' AS char)
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task FirstOrDefault_on_empty_collection_of_DateTime_in_subquery(bool async)
     {
         await base.FirstOrDefault_on_empty_collection_of_DateTime_in_subquery(async);
@@ -13111,7 +13111,7 @@ ORDER BY `t`.`Nickname`, `t`.`SquadId`, `t0`.`Nickname`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override Task Set_operator_with_navigation_in_projection_groupby_aggregate(bool async)
     {
         return base.Set_operator_with_navigation_in_projection_groupby_aggregate(async);
@@ -13191,6 +13191,7 @@ LIMIT 1 OFFSET @__p_0
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
     public override async Task Where_subquery_with_ElementAtOrDefault_equality_to_null_with_composite_key(bool async)
     {
         await base.Where_subquery_with_ElementAtOrDefault_equality_to_null_with_composite_key(async);

@@ -24,19 +24,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         protected override bool CanExecuteQueryString
             => true;
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Collection_FirstOrDefault_property_accesses_in_projection(bool async)
         {
             return base.Collection_FirstOrDefault_property_accesses_in_projection(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Contains_over_optional_navigation_with_null_column(bool async)
         {
             return base.Contains_over_optional_navigation_with_null_column(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Contains_over_optional_navigation_with_null_entity_reference(bool async)
         {
             return base.Contains_over_optional_navigation_with_null_entity_reference(async);
@@ -90,7 +90,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.OrderBy_collection_count_ThenBy_reference_navigation(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Project_collection_navigation_count(bool async)
         {
             return base.Project_collection_navigation_count(async);
@@ -102,7 +102,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Subquery_with_Distinct_Skip_FirstOrDefault_without_OrderBy(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Where_navigation_property_to_collection(bool async)
         {
             return base.Where_navigation_property_to_collection(async);

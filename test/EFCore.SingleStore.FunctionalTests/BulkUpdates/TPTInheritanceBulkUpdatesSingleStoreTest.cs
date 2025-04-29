@@ -189,6 +189,7 @@ SET `a`.`Name` = 'SomeOtherKiwi'
 """);
     }
 
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Update_derived_property_on_derived_type(bool async)
     {
         await base.Update_derived_property_on_derived_type(async);
@@ -202,6 +203,7 @@ SET `k`.`FoundOn` = 0
 """);
     }
 
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Update_with_interface_in_property_expression(bool async)
     {
         await base.Update_with_interface_in_property_expression(async);
@@ -214,6 +216,7 @@ SET `c`.`SugarGrams` = 0
 """);
     }
 
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Update_with_interface_in_EF_Property_in_property_expression(bool async)
     {
         await base.Update_with_interface_in_EF_Property_in_property_expression(async);

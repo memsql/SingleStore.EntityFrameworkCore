@@ -25,7 +25,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             fixture.TestSqlLoggerFactory.Clear();
         }
 
-        [ConditionalFact(Skip = "Feature 'Adding an INDEX with multiple columns on a columnstore table where any column in the new index is already in an index' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'Adding an INDEX with multiple columns on a columnstore table where any column in the new index is already in an index' is not supported by SingleStore Distributed.")]
         public override void Identifiers_are_generated_correctly()
         {
             using (var context = CreateContext())

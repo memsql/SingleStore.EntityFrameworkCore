@@ -124,13 +124,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Then_include_collection_order_by_collection_column(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore Distributed")]
         public override Task Include_collection_OrderBy_empty_list_contains(bool async)
         {
             return base.Include_collection_OrderBy_empty_list_contains(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore Distributed")]
         public override Task Include_collection_OrderBy_empty_list_does_not_contains(bool async)
         {
             return base.Include_collection_OrderBy_empty_list_contains(async);

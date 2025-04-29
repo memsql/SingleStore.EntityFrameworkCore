@@ -224,6 +224,7 @@ WHERE (
             """);
     }
 
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Update_derived_property_on_derived_type(bool async)
     {
         await base.Update_derived_property_on_derived_type(async);

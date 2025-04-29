@@ -234,7 +234,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Subquery_projecting_non_nullable_scalar_contains_non_nullable_value_doesnt_need_null_expansion(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Conditional_expression_with_test_being_simplified_to_constant_complex(bool isAsync)
         {
             return base.Conditional_expression_with_test_being_simplified_to_constant_complex(isAsync);
@@ -252,19 +252,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Correlated_collection_with_very_complex_order_by(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Correlated_collections_with_FirstOrDefault(bool async)
         {
             return base.Correlated_collections_with_FirstOrDefault(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task FirstOrDefault_on_empty_collection_of_DateTime_in_subquery(bool async)
         {
             return base.FirstOrDefault_on_empty_collection_of_DateTime_in_subquery(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task FirstOrDefault_over_int_compared_to_zero(bool async)
         {
             return base.FirstOrDefault_over_int_compared_to_zero(async);
@@ -294,13 +294,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Include_with_complex_order_by(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Multiple_orderby_with_navigation_expansion_on_one_of_the_order_bys_inside_subquery_complex_orderings(bool async)
         {
             return base.Multiple_orderby_with_navigation_expansion_on_one_of_the_order_bys_inside_subquery_complex_orderings(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Optional_navigation_with_collection_composite_key(bool async)
         {
             return base.Optional_navigation_with_collection_composite_key(async);
@@ -445,7 +445,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(async);
         }
 
-                public override async Task DateTimeOffset_to_unix_time_milliseconds(bool async)
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override Task Where_subquery_with_ElementAtOrDefault_equality_to_null_with_composite_key(bool async)
+        {
+            return base.Where_subquery_with_ElementAtOrDefault_equality_to_null_with_composite_key(async);
+        }
+
+        public override async Task DateTimeOffset_to_unix_time_milliseconds(bool async)
         {
             await base.DateTimeOffset_to_unix_time_milliseconds(async);
 

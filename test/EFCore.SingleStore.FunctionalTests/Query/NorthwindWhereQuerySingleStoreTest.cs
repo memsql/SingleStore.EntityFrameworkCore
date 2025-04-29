@@ -636,10 +636,30 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 """);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
         public override Task Where_subquery_FirstOrDefault_compared_to_entity(bool async)
         {
             return base.Where_subquery_FirstOrDefault_compared_to_entity(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override Task ElementAt_over_custom_projection_compared_to_not_null(bool async)
+        {
+            return base.ElementAt_over_custom_projection_compared_to_not_null(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task Where_Queryable_AsEnumerable_Contains_negated(bool async)
+        {
+            return base.Where_Queryable_AsEnumerable_Contains_negated(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task ElementAtOrDefault_over_custom_projection_compared_to_null(bool async)
+        {
+            return base.ElementAtOrDefault_over_custom_projection_compared_to_null(async);
         }
 
         public override async Task Where_bitwise_xor(bool async)

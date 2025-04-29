@@ -85,7 +85,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 @"ALTER TABLE `Person` ADD `Pi` decimal(20,7) NOT NULL;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override void AddForeignKeyOperation_without_principal_columns()
         {
             base.AddForeignKeyOperation_without_principal_columns();
@@ -583,7 +583,7 @@ SELECT ROW_COUNT();");
                 Sql);
         }
 
-        [ConditionalFact(Skip = "Feature 'ALTER DATABASE CHARACTER SET' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'ALTER DATABASE CHARACTER SET' is not supported by SingleStore Distributed.")]
         public virtual void AlterDatabaseOperation_with_charset()
         {
             Generate(
@@ -597,7 +597,7 @@ ALTER DATABASE CHARACTER SET utf8mb4;" + EOL,
                 Sql);
         }
 
-        [ConditionalFact(Skip = "Feature 'ALTER DATABASE CHARACTER SET' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'ALTER DATABASE CHARACTER SET' is not supported by SingleStore Distributed.")]
         public virtual void AlterDatabaseOperation_with_collation()
         {
             Generate(
@@ -1001,7 +1001,7 @@ ALTER DATABASE COLLATE latin1_swedish_ci;" + EOL,
                 Sql);
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual void AddForeignKeyOperation_with_long_name()
         {
             Generate(
@@ -1311,7 +1311,7 @@ ALTER DATABASE COLLATE latin1_swedish_ci;" + EOL,
                 ignoreLineEndingDifferences: true);
         }
 
-        [ConditionalFact(Skip = "Feature 'ALTER TABLE COLLATE' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'ALTER TABLE COLLATE' is not supported by SingleStore Distributed.")]
         public virtual void AlterTableOperation_with_collation()
         {
             Generate(
@@ -1346,7 +1346,7 @@ ALTER DATABASE COLLATE latin1_swedish_ci;" + EOL,
                 ignoreLineEndingDifferences: true);
         }
 
-        [ConditionalFact(Skip = "Feature 'ALTER TABLE COLLATE' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'ALTER TABLE COLLATE' is not supported by SingleStore Distributed.")]
         public virtual void AlterTableOperation_with_collation_reset()
         {
             Generate(
@@ -1430,7 +1430,7 @@ DEALLOCATE PREPARE __pomelo_SqlExprExecute;" + EOL,
                 ignoreLineEndingDifferences: true);
         }
 
-        [ConditionalFact(Skip = "Feature 'ALTER TABLE CHARACTER SET' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'ALTER TABLE CHARACTER SET' is not supported by SingleStore Distributed.")]
         public virtual void AlterTableOperation_with_charset()
         {
             Generate(
@@ -1465,7 +1465,7 @@ DEALLOCATE PREPARE __pomelo_SqlExprExecute;" + EOL,
                 ignoreLineEndingDifferences: true);
         }
 
-        [ConditionalFact(Skip = "Feature 'ALTER TABLE CHARACTER SET' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'ALTER TABLE CHARACTER SET' is not supported by SingleStore Distributed.")]
         public virtual void AlterTableOperation_with_charset_reset()
         {
             Generate(

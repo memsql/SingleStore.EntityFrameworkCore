@@ -20,7 +20,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override void Setting_foreign_key_to_a_different_type_throws()
         {
             base.Setting_foreign_key_to_a_different_type_throws();

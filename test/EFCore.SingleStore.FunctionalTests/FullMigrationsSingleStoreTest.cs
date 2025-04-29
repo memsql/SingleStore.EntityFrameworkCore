@@ -164,7 +164,7 @@ COMMIT;
                 ignoreLineEndingDifferences: true);
         }
 
-        [ConditionalFact(Skip = "Feature 'DROP PRIMARY KEY' is not supported by SingleStore")]
+        [ConditionalFact(Skip = "Feature 'DROP PRIMARY KEY' is not supported by SingleStore Distributed")]
         public virtual void Can_generate_idempotent_up_scripts_with_primary_key_related_stored_procedures()
         {
             using var db = Fixture.CreateContext<FullInfrastructureMigrationsFixture.MigrationPrimaryKeyChangeContext>();
@@ -371,7 +371,7 @@ DROP PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`;
                 ignoreLineEndingDifferences: true);
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual void Drop_primary_key_with_recreating_foreign_keys()
         {
             using var db = Fixture.CreateContext<FullInfrastructureMigrationsFixture.MigrationDropPrimaryKeyWithRecreatingForeignKeysContext>();

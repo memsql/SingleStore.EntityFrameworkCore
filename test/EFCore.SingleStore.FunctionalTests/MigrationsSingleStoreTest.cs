@@ -730,7 +730,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                 $@"ALTER TABLE `IceCream` ADD `Name` longtext COLLATE {DefaultCollation} NULL;");
         }
 
-        [ConditionalFact(Skip = "NVARCHAR data type isn't supported by SingleStore.")]
+        [ConditionalFact(Skip = "NVARCHAR data type isn't supported by SingleStore Distributed.")]
         public virtual async Task Create_table_NVARCHAR_UPPERCASE_column()
         {
             await Test(
@@ -1246,7 +1246,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Brand` longtext CHARACTER SET {NonDefaultCharSet2} NULL;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual async Task Drop_unique_constraint_without_recreating_foreign_keys()
         {
             await Test(
@@ -1278,7 +1278,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                 @"ALTER TABLE `Foo` DROP KEY `AK_Foo_FooAK`;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual async Task Drop_unique_constraint_without_recreating_foreign_keys_MigrationBuilder()
         {
             await Test(
@@ -1311,7 +1311,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                 @"ALTER TABLE `Foo` DROP KEY `AK_Foo_FooAK`;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual async Task Drop_unique_constraint_with_recreating_foreign_keys_MigrationBuilder()
         {
             await Test(
@@ -1348,7 +1348,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                 @"ALTER TABLE `Foo` ADD CONSTRAINT `FK_Foo_Bar_BarFK` FOREIGN KEY (`BarFK`) REFERENCES `Bar` (`BarPK`) ON DELETE CASCADE;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override async Task Add_foreign_key()
         {
             await base.Add_foreign_key();
@@ -1359,25 +1359,25 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                 @"ALTER TABLE `Orders` ADD CONSTRAINT `FK_Orders_Customers_CustomerId` FOREIGN KEY (`CustomerId`) REFERENCES `Customers` (`Id`) ON DELETE CASCADE;");
         }
 
-        [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore Distributed.")]
         public override Task Add_check_constraint_with_name()
         {
             return base.Add_check_constraint_with_name();
         }
 
-        [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore Distributed.")]
         public override Task Add_column_with_check_constraint()
         {
             return base.Add_column_with_check_constraint();
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override Task Add_foreign_key_with_name()
         {
             return base.Add_foreign_key_with_name();
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override Task Drop_foreign_key()
         {
             return base.Drop_foreign_key();

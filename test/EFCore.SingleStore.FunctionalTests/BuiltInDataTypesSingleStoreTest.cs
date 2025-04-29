@@ -1511,31 +1511,31 @@ UnicodeDataTypes.StringUnicode ---> [nullable longtext] [MaxLength = 4294967295]
             }
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override void Can_insert_and_read_back_with_binary_key()
         {
            base.Can_insert_and_read_back_with_binary_key();
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override void Can_insert_and_read_back_with_null_binary_foreign_key()
         {
             base.Can_insert_and_read_back_with_null_binary_foreign_key();
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override void Can_insert_and_read_back_with_null_string_foreign_key()
         {
             base.Can_insert_and_read_back_with_null_string_foreign_key();
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override void Can_insert_and_read_back_with_string_key()
         {
            base.Can_insert_and_read_back_with_string_key();
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override void Can_read_back_mapped_enum_from_collection_first_or_default()
         {
             base.Can_read_back_mapped_enum_from_collection_first_or_default();

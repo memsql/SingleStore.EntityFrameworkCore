@@ -123,7 +123,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                         }
                         catch (InvalidOperationException)
                         {
-                            throw new InvalidOperationException("Feature 'more than one FULLTEXT KEY' is not supported by SingleStore.");
+                            throw new InvalidOperationException("Feature 'more than one FULLTEXT KEY' is not supported by SingleStore Distributed.");
                         }
                     }
                 }
@@ -1194,7 +1194,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             MigrationCommandListBuilder builder,
             bool terminate = true)
         {
-            // Feature 'FOREIGN KEY' is not supported by SingleStore.
+            // Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.
         }
 
         protected override void ForeignKeyConstraint(
@@ -1202,7 +1202,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             IModel model,
             MigrationCommandListBuilder builder)
         {
-            // Feature 'FOREIGN KEY' is not supported by SingleStore.
+            // Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.
         }
 
         protected override void PrimaryKeyConstraint(

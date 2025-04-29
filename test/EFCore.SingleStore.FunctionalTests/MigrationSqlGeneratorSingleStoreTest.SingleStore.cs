@@ -25,7 +25,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             AssertSql(@"ALTER TABLE `Cars` DROP KEY `AK_Cars_LicensePlateNumber`;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual void SingleStoreDropUniqueConstraintAndRecreateForeignKeysOperation_temporarily_drops_foreign_keys()
         {
             // A foreign key might reuse the alternate key for its own purposes and prohibit its deletion,
@@ -65,7 +65,7 @@ ALTER TABLE `Cars` ADD CONSTRAINT `FK_Cars_LicensePlates_LicensePlateNumber` FOR
 ALTER TABLE `Cars` DROP PRIMARY KEY;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual void SingleStoreDropPrimaryKeyAndRecreateForeignKeysOperation_temporarily_drops_foreign_keys()
         {
             // A foreign key might reuse the primary key for its own purposes and prohibit its deletion,

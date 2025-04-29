@@ -22,7 +22,7 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
     public abstract class SingleStoreTypeMapping : RelationalTypeMapping
     {
         /// <summary>
-        /// The database type used by SingleStore.
+        /// The database type used by SingleStore Distributed.
         /// </summary>
         public virtual SingleStoreDbType SingleStoreDbType { get; }
 
