@@ -21,7 +21,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public virtual void Match()
         {
             using var context = CreateContext();
-            var count = context.Set<Herb>().Count(herb => EF.Functions.Match(herb.Name, "First") > 0);
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(herb.Name, "First"));
 
             Assert.Equal(3, count);
 

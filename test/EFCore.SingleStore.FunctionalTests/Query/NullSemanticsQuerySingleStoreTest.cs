@@ -59,6 +59,13 @@ FROM `Entities1` AS `e`
 WHERE @__prm_0 = (`e`.`NullableBoolC` IS NOT NULL)");
         }
 
+        [ConditionalTheory(Skip = "LIKE ... ESCAPE is not supported by SingleStore Distributed.")]
+        public override async Task Like_with_escape_char(bool async)
+        {
+            await base.Like_with_escape_char(async);
+        }
+
+
         protected override NullSemanticsContext CreateContext(bool useRelationalNulls = false)
         {
             var options = new DbContextOptionsBuilder(Fixture.CreateOptions());
