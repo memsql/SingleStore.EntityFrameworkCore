@@ -208,6 +208,15 @@ WHERE `l`.`Tenant` IN (2, 3)
                 modelBuilder.Entity<DependentSetFilter>()
                     .Property(e => e.Id)
                     .HasColumnType("bigint");
+                modelBuilder.Entity<DeDupeFilter1>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<DeDupeFilter2>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<DeDupeFilter3>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
             }
         }
     }
