@@ -172,25 +172,15 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
             if (Equals(method, _isMatchMethodInfo) ||
                 Equals(method, _isMatchWithMultiplePropertiesMethodInfo))
             {
-                if (arguments[3] is SqlConstantExpression constant)
-                {
-                    return _sqlExpressionFactory.GreaterThan(
-                        _sqlExpressionFactory.MakeMatch(
-                            arguments[1],
-                            arguments[2]),
-                        _sqlExpressionFactory.Constant(0));
-                }
+                return _sqlExpressionFactory.GreaterThan(
+                    _sqlExpressionFactory.MakeMatch(arguments[1], arguments[2]),
+                    _sqlExpressionFactory.Constant(0));
             }
 
             if (Equals(method, _matchMethodInfo) ||
                 Equals(method, _matchWithMultiplePropertiesMethodInfo))
             {
-                if (arguments[3] is SqlConstantExpression constant)
-                {
-                    return _sqlExpressionFactory.MakeMatch(
-                        arguments[1],
-                        arguments[2]);
-                }
+                return _sqlExpressionFactory.MakeMatch(arguments[1], arguments[2]);
             }
 
             if (_hexMethodInfos.Any(m => Equals(method, m)))

@@ -21,6 +21,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public virtual void Match()
         {
             using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.Match(herb.Name, "First") > 0);
+
+            Assert.Equal(3, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`) AGAINST ('First') > 0.0");
+        }
+
+        [ConditionalFact]
+        public virtual void IsMatch()
+        {
+            using var context = CreateContext();
             var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(herb.Name, "First"));
 
             Assert.Equal(3, count);
@@ -44,10 +57,36 @@ WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First') > 0.0");
         }
 
         [ConditionalFact]
+        public virtual void IsMatch_multiple_columns()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(new []{herb.Name, herb.Garden}, "First"));
+
+            Assert.Equal(5, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First') > 0.0");
+        }
+
+        [ConditionalFact]
         public virtual void Match_keywords_separated()
         {
             using var context = CreateContext();
             var count = context.Set<Herb>().Count(herb => EF.Functions.Match(herb.Name, "First, Second") > 0);
+
+            Assert.Equal(6, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`) AGAINST ('First, Second') > 0.0");
+        }
+
+        [ConditionalFact]
+        public virtual void IsMatch_keywords_separated()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(herb.Name, "First, Second"));
 
             Assert.Equal(6, count);
 
@@ -70,10 +109,36 @@ WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First, Second') > 0.0");
         }
 
         [ConditionalFact]
+        public virtual void IsMatch_keywords_separated_multiple_columns()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(new []{herb.Name, herb.Garden}, "First, Second"));
+
+            Assert.Equal(8, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First, Second') > 0.0");
+        }
+
+        [ConditionalFact]
         public virtual void Match_multiple_keywords()
         {
             using var context = CreateContext();
             var count = context.Set<Herb>().Count(herb => EF.Functions.Match(herb.Name, "First Herb") > 0);
+
+            Assert.Equal(9, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`) AGAINST ('First Herb') > 0.0");
+        }
+
+        [ConditionalFact]
+        public virtual void IsMatch_multiple_keywords()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(herb.Name, "First Herb"));
 
             Assert.Equal(9, count);
 
@@ -96,10 +161,36 @@ WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First Herb') > 0.0");
         }
 
         [ConditionalFact]
+        public virtual void IsMatch_multiple_keywords_multiple_columns()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(new []{herb.Name, herb.Garden}, "First Herb"));
+
+            Assert.Equal(9, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First Herb') > 0.0");
+        }
+
+        [ConditionalFact]
         public virtual void Match_multiple_keywords_separated()
         {
             using var context = CreateContext();
             var count = context.Set<Herb>().Count(herb => EF.Functions.Match(herb.Name, "First, Second") > 0);
+
+            Assert.Equal(6, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`) AGAINST ('First, Second') > 0.0");
+        }
+
+        [ConditionalFact]
+        public virtual void IsMatch_multiple_keywords_separated()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(herb.Name, "First, Second"));
 
             Assert.Equal(6, count);
 
@@ -122,10 +213,36 @@ WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First, Second') > 0.0");
         }
 
         [ConditionalFact]
+        public virtual void IsMatch_multiple_keywords_separated_multiple_columns()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(new []{herb.Name, herb.Garden}, "First, Second"));
+
+            Assert.Equal(8, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First, Second') > 0.0");
+        }
+
+        [ConditionalFact]
         public virtual void Match_with_wildcard()
         {
             using var context = CreateContext();
             var count = context.Set<Herb>().Count(herb => EF.Functions.Match(herb.Name, "First*") > 0);
+
+            Assert.Equal(3, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`) AGAINST ('First*') > 0.0");
+        }
+
+        [ConditionalFact]
+        public virtual void IsMatch_with_wildcard()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(herb.Name, "First*"));
 
             Assert.Equal(3, count);
 
@@ -148,10 +265,36 @@ WHERE MATCH (`h`.`Name`) AGAINST ('First* Herb*') > 0.0");
         }
 
         [ConditionalFact]
+        public virtual void IsMatch_in_boolean_mode_keywords()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(herb.Name, "First* Herb*"));
+
+            Assert.Equal(9, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`) AGAINST ('First* Herb*') > 0.0");
+        }
+
+        [ConditionalFact]
         public virtual void Match_keywords_multiple_columns()
         {
             using var context = CreateContext();
             var count = context.Set<Herb>().Count(herb => EF.Functions.Match(new []{herb.Name, herb.Garden}, "First* Herb*") > 0);
+
+            Assert.Equal(9, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('First* Herb*') > 0.0");
+        }
+
+        [ConditionalFact]
+        public virtual void IsMatch_keywords_multiple_columns()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(new []{herb.Name, herb.Garden}, "First* Herb*"));
 
             Assert.Equal(9, count);
 
@@ -174,10 +317,36 @@ WHERE MATCH (`h`.`Name`) AGAINST ('Herb* -Second') > 0.0");
         }
 
         [ConditionalFact]
+        public virtual void IsMatch_keyword_excluded()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(herb.Name, "Herb* -Second"));
+
+            Assert.Equal(6, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`) AGAINST ('Herb* -Second') > 0.0");
+        }
+
+        [ConditionalFact]
         public virtual void Match_keyword_excluded_multiple_columns()
         {
             using var context = CreateContext();
             var count = context.Set<Herb>().Count(herb => EF.Functions.Match(new []{herb.Name, herb.Garden}, "Herb* -Second") > 0);
+
+            Assert.Equal(4, count);
+
+            AssertSql(@"SELECT COUNT(*)
+FROM `Herb` AS `h`
+WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('Herb* -Second') > 0.0");
+        }
+
+        [ConditionalFact]
+        public virtual void IsMatch_keyword_excluded_multiple_columns()
+        {
+            using var context = CreateContext();
+            var count = context.Set<Herb>().Count(herb => EF.Functions.IsMatch(new []{herb.Name, herb.Garden}, "Herb* -Second"));
 
             Assert.Equal(4, count);
 
