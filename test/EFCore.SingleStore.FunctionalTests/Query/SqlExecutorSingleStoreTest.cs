@@ -51,6 +51,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             AssertSql(
 """
 @CustomerID='ALFKI' (Nullable = false)
+
 CALL `CustOrderHist`(@CustomerID)
 """);
         }
@@ -68,6 +69,7 @@ CALL `CustOrderHist`(@CustomerID)
             AssertSql(
 """
 @p0='ALFKI' (Size = 4000)
+
 CALL `CustOrderHist`(@p0)
 """);
         }

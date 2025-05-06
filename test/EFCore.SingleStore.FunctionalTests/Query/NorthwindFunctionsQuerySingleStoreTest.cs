@@ -1814,6 +1814,7 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND ((CAST(`o`.`OrderDate` AS char) LIKE '%19
             AssertSql(
 """
 @__pattern_0_rewritten='M%' (Size = 30)
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE `c`.`ContactName` LIKE @__pattern_0_rewritten
@@ -1827,6 +1828,7 @@ WHERE `c`.`ContactName` LIKE @__pattern_0_rewritten
             AssertSql(
 """
 @__pattern_0_rewritten='%b' (Size = 30)
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE `c`.`ContactName` LIKE @__pattern_0_rewritten
@@ -2337,6 +2339,7 @@ WHERE (LOCATE('a', `c`.`ContactName`) - 1) = 1
             AssertSql(
 """
 @__pattern_0='a' (Size = 4000)
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE (LOCATE(@__pattern_0, `c`.`ContactName`) - 1) = 1
@@ -2362,6 +2365,7 @@ WHERE (LOCATE('a', `c`.`ContactName`, 3) - 1) = 4
             AssertSql(
 """
 @__start_0='2'
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE (LOCATE('a', `c`.`ContactName`, @__start_0 + 1) - 1) = 4
@@ -2400,7 +2404,7 @@ WHERE `c`.`Region` IS NOT NULL AND (`c`.`Region` <> '')
 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE `o`.`OrderDate` IS NOT NULL AND (DATE(`o`.`OrderDate`) = DATE '1996-09-16')
+WHERE `o`.`OrderDate` IS NOT NULL AND (DATE(`o`.`OrderDate`) = '1996-09-16')
 """);
         }
 

@@ -481,6 +481,7 @@ WHERE ASCII(SUBSTRING(`s`.`Banner5`, 2 + 1, 1)) = 6
             AssertSql(
 """
 @__unixEpochMilliseconds_0='0'
+
 SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`Discriminator`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`, `s1`.`SquadId`, `s1`.`MissionId`
 FROM `Gears` AS `g`
 INNER JOIN `Squads` AS `s` ON `g`.`SquadId` = `s`.`Id`
@@ -501,6 +502,7 @@ ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
             AssertSql(
 """
 @__unixEpochSeconds_0='0'
+
 SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`Discriminator`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`, `s1`.`SquadId`, `s1`.`MissionId`
 FROM `Gears` AS `g`
 INNER JOIN `Squads` AS `s` ON `g`.`SquadId` = `s`.`Id`
