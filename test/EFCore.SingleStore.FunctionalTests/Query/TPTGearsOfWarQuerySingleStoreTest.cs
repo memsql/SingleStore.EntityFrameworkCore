@@ -470,7 +470,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM `SquadMissions` AS `s0`
     INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
-    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochMilliseconds_0 = (TIMESTAMPDIFF(microsecond, TIMESTAMP '1970-01-01 00:00:00', `m`.`Timeline`)) DIV (1000)))
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochMilliseconds_0 = (TIMESTAMPDIFF(microsecond, '1970-01-01 00:00:00', `m`.`Timeline`)) DIV (1000)))
 ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 """);
         }
@@ -494,7 +494,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM `SquadMissions` AS `s0`
     INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
-    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochSeconds_0 = TIMESTAMPDIFF(second, TIMESTAMP '1970-01-01 00:00:00', `m`.`Timeline`)))
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochSeconds_0 = TIMESTAMPDIFF(second, '1970-01-01 00:00:00', `m`.`Timeline`)))
 ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 """);
         }

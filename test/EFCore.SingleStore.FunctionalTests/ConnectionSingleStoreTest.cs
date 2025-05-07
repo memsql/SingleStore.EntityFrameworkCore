@@ -127,7 +127,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 .Initialize(null, (Func<DbContext>)null);
 
             using var connection = new SingleStoreConnection(SingleStoreTestStore.CreateConnectionString("ConnectionTest"));
-            connection.Open();
 
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
             optionsBuilder.UseSingleStore(connection, b => b.ApplyConfiguration());

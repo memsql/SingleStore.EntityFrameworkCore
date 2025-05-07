@@ -30,6 +30,18 @@ public class MaterializationInterceptionSingleStoreTest :
         {
             base.OnModelCreating(modelBuilder);
 
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<TestEntity30244>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+
+            modelBuilder.Entity<TestEntity30244>().OwnsMany(
+                e => e.Settings, b =>
+                {
+                    b.Property<long>("Id").HasColumnType("bigint");
+                });
+
             modelBuilder.Entity<TestEntity30244>().OwnsMany(e => e.Settings);
 
             // TODO: https://github.com/npgsql/efcore.pg/issues/2548

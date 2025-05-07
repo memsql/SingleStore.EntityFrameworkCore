@@ -9010,7 +9010,7 @@ WHERE ((@__start_0 <= CONVERT(`m`.`Timeline`, date)) AND (`m`.`Timeline` < @__en
 
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE ((@__start_0 <= CONVERT(`m`.`Timeline`, date)) AND (`m`.`Timeline` < @__end_1)) AND (`m`.`Timeline` = TIMESTAMP '1902-01-02 08:30:00.123456')
+WHERE ((@__start_0 <= CONVERT(`m`.`Timeline`, date)) AND (`m`.`Timeline` < @__end_1)) AND (`m`.`Timeline` = '1902-01-02 08:30:00.123456')
 """);
         }
     }
@@ -10199,7 +10199,7 @@ WHERE LENGTH(`s`.`Banner`) = 2
 
         AssertSql(
 """
-@__p_0='1'
+@__p_0='2'
 
 SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
 FROM `Squads` AS `s`
@@ -13256,7 +13256,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM `SquadMissions` AS `s0`
     INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
-    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochMilliseconds_0 = (TIMESTAMPDIFF(microsecond, TIMESTAMP '1970-01-01 00:00:00', `m`.`Timeline`)) DIV (1000)))
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochMilliseconds_0 = (TIMESTAMPDIFF(microsecond, '1970-01-01 00:00:00', `m`.`Timeline`)) DIV (1000)))
 ORDER BY `t`.`Nickname`, `t`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 """);
     }
@@ -13283,7 +13283,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM `SquadMissions` AS `s0`
     INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
-    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochSeconds_0 = TIMESTAMPDIFF(second, TIMESTAMP '1970-01-01 00:00:00', `m`.`Timeline`)))
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochSeconds_0 = TIMESTAMPDIFF(second, '1970-01-01 00:00:00', `m`.`Timeline`)))
 ORDER BY `t`.`Nickname`, `t`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 """);
     }
