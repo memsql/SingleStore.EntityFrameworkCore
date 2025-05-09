@@ -1,0 +1,136 @@
+name: SingleStore EntityFramework Core
+
+on: [push]
+
+env:
+  DOTNET_VERSION: 7.0.404
+  SQL_USER_PASSWORD: ${{ secrets.SQL_USER_PASSWORD }}
+
+jobs:
+  test-ubuntu:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        singlestore_image:
+          - singlestore/cluster-in-a-box:alma-8.1.30-e0a67e68e5-4.0.16-1.17.6
+          - singlestore/cluster-in-a-box:alma-8.5.6-b51bc5471a-4.0.17-1.17.8
+          - singlestore/cluster-in-a-box:alma-8.7.12-483e5f8acb-4.1.0-1.17.15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt install snapd
+          sudo apt-get install -y mariadb-client-core-10.6
+          sudo apt-get install -y mariadb-client-10.6
+
+      - name: Install Powershell
+        run: sudo snap install powershell --classic
+
+      - name: Start SingleStore Cluster
+        run: |
+          ./.github/workflows/test_setup/setup_cluster.sh
+        env:
+          SINGLESTORE_IMAGE: ${{ matrix.singlestore_image }}
+
+      - name: Copy test config
+        run: |
+          for dir in EFCore.SingleStore.Tests EFCore.SingleStore.IntegrationTests EFCore.SingleStore.FunctionalTests; do
+            cp ./.github/workflows/test_setup/config.json test/$dir/config.json
+            sed -i "s|SINGLESTORE_HOST|127.0.0.1|g" test/$dir/config.json
+            sed -i "s|SQL_USER_PASSWORD|${SQL_USER_PASSWORD}|g" test/$dir/config.json
+            sed -i "s|SQL_USER_NAME|root|g" test/$dir/config.json
+          done
+
+      - name: Build provider
+        run: dotnet build SingleStore.EFCore.sln -c Release
+
+      - name: Run Unit Tests
+        run: dotnet test test/EFCore.SingleStore.Tests -f net7.0 -c Release --no-build
+
+      - name: Rebuild migrations
+        run: pwsh ./test/EFCore.SingleStore.IntegrationTests/scripts/rebuild.ps1
+
+      - name: Run Integration Tests
+        run: dotnet test test/EFCore.SingleStore.IntegrationTests -f net7.0 -c Release --no-build
+
+      - name: Run Functional Tests
+        run: ./.github/workflows/test_setup/run_functional_tests.sh
+
+  test-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        func_test_block_path:
+          - .\.github\workflows\test_setup\run-functional-tests1.ps1
+          - .\.github\workflows\test_setup\run-functional-tests2.ps1
+          - .\.github\workflows\test_setup\run-functional-tests3.ps1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Python and pip dependencies
+        run: |
+          pip install singlestoredb
+
+      - name: Start SingleStore Cluster
+        run: |
+          python .github\workflows\test_setup\s2ms_cluster.py start singlestoretest
+
+      - name: Fill config for tests
+        run: |
+          python .github\workflows\test_setup\fill_test_config.py EFCore.SingleStore.Tests
+          python .github\workflows\test_setup\fill_test_config.py EFCore.SingleStore.IntegrationTests
+          python .github\workflows\test_setup\fill_test_config.py EFCore.SingleStore.FunctionalTests
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build binaries
+        run: dotnet build SingleStore.EFCore.sln -c Release
+
+      - name: Run EFCore.SingleStore.Tests
+        run: .\.github\workflows\test_setup\run-test-windows.ps1 -test_block EFCore.SingleStore.Tests -target_framework net7.0
+
+      - name: Rebuild migrations
+        run: .\test\EFCore.SingleStore.IntegrationTests\scripts\rebuild.ps1
+
+      - name: Run EFCore.SingleStore.IntegrationTests
+        run: .\.github\workflows\test_setup\run-test-windows.ps1 -test_block EFCore.SingleStore.IntegrationTests -target_framework net7.0
+
+      - name: Run Functional Test Block
+        run: ${{ matrix.func_test_block_path }}
+
+      - name: Terminate Cluster
+        if: always()
+        run: python .github\workflows\test_setup\s2ms_cluster.py terminate
+
+  publish:
+    runs-on: windows-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build
+        run: dotnet build .\src\EFCore.SingleStore\EFCore.SingleStore.csproj -c Release
+
+      - name: Pack NuGet
+        run: dotnet pack .\src\EFCore.SingleStore\EFCore.SingleStore.csproj -c Release -o efcore_provider
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: efcore-provider
+          path: efcore_provider/
