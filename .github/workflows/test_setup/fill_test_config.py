@@ -14,7 +14,7 @@ if __name__ == "__main__":
         hostname = f.read()
     password = os.getenv("SQL_USER_PASSWORD")
 
-    with open("./.circleci/config.json", "r") as f_in:
+    with open("./.github/workflows/test_setup/config.json", "r") as f_in:
         config_content = json.load(f_in)
 
     config_content["Data"]["ConnectionString"] = config_content["Data"]["ConnectionString"].replace("SINGLESTORE_HOST", hostname, 1)

@@ -4,7 +4,9 @@ on: [push]
 
 env:
   DOTNET_VERSION: 7.0.404
+  LICENSE_KEY: ${{ secrets.LICENSE_KEY }}
   SQL_USER_PASSWORD: ${{ secrets.SQL_USER_PASSWORD }}
+  S2MS_API_KEY: ${{ secrets.S2MS_API_KEY }}
 
 jobs:
   test-ubuntu:
