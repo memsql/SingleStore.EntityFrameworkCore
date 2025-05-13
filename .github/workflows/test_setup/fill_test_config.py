@@ -32,5 +32,7 @@ if __name__ == "__main__":
     with open(f"test/{test_block}/config.json", "w") as f_out:
         json.dump(config_content, f_out, indent=4)
 
+    home_dir = os.path.expanduser("~")
+
     with open(os.path.join(home_dir, "CONNECTION_STRING"), "w") as f_conn:
         f_conn.write(config_content["Data"]["ConnectionString"])
