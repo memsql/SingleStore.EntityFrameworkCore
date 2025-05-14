@@ -95,12 +95,6 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore dependencies
-        run: |
-          mkdir -p "$HOME/.nuget/packages"
-          echo "NUGET_PACKAGES=$HOME/.nuget/packages" >> $GITHUB_ENV
-          dotnet restore --source https://api.nuget.org/v3/index.json
-
       - name: Build binaries
         run: dotnet build SingleStore.EFCore.sln -c Release
 
