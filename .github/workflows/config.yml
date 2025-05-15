@@ -12,6 +12,7 @@ jobs:
   test-ubuntu:
     runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         singlestore_image:
           - singlestore/cluster-in-a-box:alma-8.1.30-e0a67e68e5-4.0.16-1.17.6
@@ -85,6 +86,7 @@ jobs:
   test-windows:
     runs-on: windows-latest
     strategy:
+      fail-fast: false
       matrix:
         func_test_block_path:
           - .\.github\workflows\test_setup\run-functional-tests1.ps1
