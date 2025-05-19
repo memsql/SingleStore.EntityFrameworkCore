@@ -18,6 +18,9 @@ jobs:
           - singlestore/cluster-in-a-box:alma-8.1.30-e0a67e68e5-4.0.16-1.17.6
           - singlestore/cluster-in-a-box:alma-8.5.6-b51bc5471a-4.0.17-1.17.8
           - singlestore/cluster-in-a-box:alma-8.7.12-483e5f8acb-4.1.0-1.17.15
+        func_test_script:
+          - .github/workflows/test_setup/run_functional_tests1.sh
+          - .github/workflows/test_setup/run_functional_tests2.sh
     steps:
       - uses: actions/checkout@v4
 
@@ -80,8 +83,8 @@ jobs:
       - name: Run Integration Tests
         run: dotnet test test/EFCore.SingleStore.IntegrationTests -f net7.0 -c Release --no-build
 
-      - name: Run Functional Tests
-        run: ./.github/workflows/test_setup/run_functional_tests.sh
+      - name: Run Functional Tests ${{ matrix.singlestore_image }} - ${{ matrix.func_test_script }}
+        run: ${{ matrix.func_test_script }}
 
   test-windows:
     runs-on: windows-latest
