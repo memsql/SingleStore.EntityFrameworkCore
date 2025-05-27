@@ -1,7 +1,9 @@
 cd test/EFCore.SingleStore.FunctionalTests/
 
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsQuerySingleStoreTest.'
+dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TwoDatabasesSingleStoreTest.'
 ((TOTAL_FAILURES = $? != 0))
+dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexNavigationsQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
 dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.Ef6GroupBySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.CompositeKeysQuerySingleStoreTest.'
@@ -161,8 +163,6 @@ dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPCInh
 dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTFiltersInheritanceBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTInheritanceBulkUpdatesSingleStoreTest.'
-((TOTAL_FAILURES += $? != 0))
-dotnet test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TwoDatabasesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
 
 cd ../../
