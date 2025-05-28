@@ -1,8 +1,0 @@
-{
-  "Data": {
-    "ConnectionString": "server=SINGLESTORE_HOST;user id=SQL_USER_NAME;password=SQL_USER_PASSWORD;port=3306;database=singlestoretest",
-    "ServerVersion": "auto",
-    "CommandTimeout": "600"
-  }
-}
-
