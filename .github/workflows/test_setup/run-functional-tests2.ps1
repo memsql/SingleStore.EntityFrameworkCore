@@ -108,6 +108,16 @@ dotnet.exe test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TP
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPCRelationshipsQuerySingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindBulkUpdatesSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPCFiltersInheritanceBulkUpdatesSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPCInheritanceBulkUpdatesSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTFiltersInheritanceBulkUpdatesSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net7.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTInheritanceBulkUpdatesSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 
 cd ..\..\
 
