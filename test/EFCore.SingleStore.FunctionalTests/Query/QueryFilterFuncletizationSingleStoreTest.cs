@@ -30,7 +30,20 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             {
                 return;
             }
+
             base.Using_DbSet_in_filter_works();
+        }
+
+        public override void Using_multiple_entities_with_filters_reuses_parameters()
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            base.Using_multiple_entities_with_filters_reuses_parameters();
         }
 
         public override void DbContext_list_is_parameterized()
