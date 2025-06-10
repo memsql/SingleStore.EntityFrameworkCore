@@ -147,31 +147,32 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 
         private bool CreateDatabase(Action<DbContext> clean)
         {
+            using var master = new SingleStoreConnection(CreateAdminConnectionString());
+            master.Open();
+
             if (DatabaseExists(Name))
             {
-                if (_scriptPath != null && !TestEnvironment.IsCI)
+                /*if (_scriptPath != null && !TestEnvironment.IsCI)
                 {
                     return false;
-                }
+                }*/
 
                 using (var context = new DbContext(
-                    AddProviderOptions(
-                            new DbContextOptionsBuilder()
-                                .EnableServiceProviderCaching(false))
-                        .Options))
+                           AddProviderOptions(
+                                   new DbContextOptionsBuilder()
+                                       .EnableServiceProviderCaching(false))
+                               .Options))
                 {
                     clean?.Invoke(context);
                     Clean(context);
-                    return true;
                 }
+
+                ExecuteNonQuery(master, $"DROP DATABASE IF EXISTS `{Name}`;");
             }
 
-            using (var master = new SingleStoreConnection(CreateAdminConnectionString()))
-            {
-                master.Open();
-                ExecuteNonQuery(master, GetCreateDatabaseStatement(Name, DatabaseCharSet, DatabaseCollation));
-            }
-
+            ExecuteNonQuery(
+                master,
+                GetCreateDatabaseStatement(Name, DatabaseCharSet, DatabaseCollation));
             return true;
         }
 

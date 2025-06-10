@@ -6,6 +6,7 @@
 
 Milestone | Status               | Release Date
 ----------|----------------------|-------------
+8.0.0| released             | June 2025
 7.0.1| released             | March 2025
 7.0.0| released             | November 2024
 6.0.2| general availability | April 2024
@@ -16,7 +17,7 @@ Milestone | Status               | Release Date
 Ensure that your `.csproj` file contains the following reference:
 
 ```xml
-<PackageReference Include="EntityFrameworkCore.SingleStore" Version="7.0.1" />
+<PackageReference Include="EntityFrameworkCore.SingleStore" Version="8.0.0" />
 ```
 
 ### 2. Services Configuration
