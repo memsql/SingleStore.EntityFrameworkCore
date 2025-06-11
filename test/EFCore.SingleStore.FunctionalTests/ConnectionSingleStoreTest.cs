@@ -123,7 +123,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         public void Can_create_admin_connection_with_connection()
         {
             using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
-                    .GetOrCreate("ConnectionTest"))
+                    .GetOrCreate("ConnectionTestWithConnection"))
                 .Initialize(null, (Func<DbContext>)null);
 
             using var connection = new SingleStoreConnection(SingleStoreTestStore.CreateConnectionString("ConnectionTest"));
