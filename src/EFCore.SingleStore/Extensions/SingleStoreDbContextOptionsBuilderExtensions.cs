@@ -165,11 +165,13 @@ namespace Microsoft.EntityFrameworkCore
             Check.NotNull(dataSource, nameof(dataSource));
 
             optionsBuilder.AddInterceptors(new MatchInterceptor());
-            var serverVersion = SingleStoreServerVersion.LatestSupportedServerVersion;
+            ServerVersion serverVersion;
 
-            // TODO when know how to use DbDataSource
-           /* try
+            try
             {
+                using var connection = dataSource.CreateConnection();
+                connection.Open();
+
                 serverVersion = ServerVersion.AutoDetect(connection.ConnectionString);
             }
             // There might occur different types of Exceptions while trying to AutoDetect() server version.
@@ -179,7 +181,7 @@ namespace Microsoft.EntityFrameworkCore
             catch (Exception)
             {
                 serverVersion = SingleStoreServerVersion.LatestSupportedServerVersion;
-            }*/
+            }
 
             var extension = (SingleStoreOptionsExtension)GetOrCreateExtension(optionsBuilder)
                 .WithServerVersion(serverVersion)
