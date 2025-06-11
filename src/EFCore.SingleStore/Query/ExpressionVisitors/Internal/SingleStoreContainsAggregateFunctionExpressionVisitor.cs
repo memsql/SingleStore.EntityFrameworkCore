@@ -16,24 +16,26 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal;
 public sealed class SingleStoreContainsAggregateFunctionExpressionVisitor : ExpressionVisitor
 {
     // See https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html
+    // See https://docs.singlestore.com/cloud/reference/sql-reference/aggregate-functions/
     private static readonly SortedSet<string> _aggregateFunctions = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
     {
+        "ANY_VALUE",
+        "APPROX_PERCENTILE",
         "AVG",
         "BIT_AND",
         "BIT_OR",
         "BIT_XOR",
         "COUNT",
         "GROUP_CONCAT",
-        "JSON_ARRAYAGG",
-        "JSON_OBJECTAGG",
         "MAX",
+        "MEDIAN",
         "MIN",
+        "MOD",
         "STD",
         "STDDEV",
         "STDDEV_POP",
         "STDDEV_SAMP",
         "SUM",
-        "VAR_POP",
         "VAR_SAMP",
         "VARIANCE",
     };

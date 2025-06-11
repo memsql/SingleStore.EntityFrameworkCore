@@ -399,7 +399,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
             [NotNull] Func<SqlExpression, SqlExpression> prefixSuffixTransform,
             bool startsWith)
         {
-             var stringTypeMapping = ExpressionExtensions.InferTypeMapping(target, prefixSuffix);
+            var stringTypeMapping = ExpressionExtensions.InferTypeMapping(target, prefixSuffix);
             target = _sqlExpressionFactory.ApplyTypeMapping(target, stringTypeMapping);
             prefixSuffix = _sqlExpressionFactory.ApplyTypeMapping(prefixSuffix, stringTypeMapping);
 
