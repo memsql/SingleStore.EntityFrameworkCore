@@ -4,6 +4,8 @@
 
 using System;
 using System.Data.Common;
+using System.Linq;
+using System.Reflection;
 using SingleStoreConnector;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal;
@@ -15,6 +17,7 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         if (connectionString is not null)
         {
             var csb = new SingleStoreConnectionStringBuilder(connectionString);
+            AddConnectionAttributes(csb);
 
             if (!ValidateMandatoryOptions(csb))
             {
@@ -35,6 +38,7 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         if (connection is not null)
         {
             var csb = new SingleStoreConnectionStringBuilder(connection.ConnectionString);
+            AddConnectionAttributes(csb);
 
             if (!ValidateMandatoryOptions(csb))
             {
@@ -65,6 +69,7 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         }
 
         var csb = new SingleStoreConnectionStringBuilder(dataSource.ConnectionString);
+        AddConnectionAttributes(csb);
 
         if (!ValidateMandatoryOptions(csb))
         {
@@ -75,6 +80,26 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         }
 
         return true;
+    }
+
+    static void AddConnectionAttributes(SingleStoreConnectionStringBuilder csb)
+    {
+        var existing = csb.ConnectionAttributes?.TrimEnd(';') ?? "";
+
+        var programVersion = Assembly.GetExecutingAssembly().GetName().Version;
+        var connAttrs = $"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}";
+
+        var existingConnAttrs = existing
+            .Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Select(attr => attr.Trim())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (!existingConnAttrs.Contains(connAttrs))
+        {
+            csb.ConnectionAttributes = string.IsNullOrEmpty(existing)
+                ? connAttrs
+                : $"{existing};{connAttrs}";
+        }
     }
 
     public virtual void ThrowException(Exception innerException = null)

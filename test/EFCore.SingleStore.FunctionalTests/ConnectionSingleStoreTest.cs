@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
@@ -79,6 +81,31 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [Fact]
+        public void UseSingleStore_IncludesConnectorAttributes_InConnectionString()
+        {
+            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+                    .GetOrCreate("ConnectionAttributesTest"))
+                .Initialize(null, (Func<DbContext>)null);
+
+            var cs = SingleStoreTestStore.CreateConnectionString("ConnectionAttributesTest");
+            var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
+            optionsBuilder.UseSingleStore(cs, b => b.ApplyConfiguration());
+
+            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+
+            var conn = (SingleStoreConnection)context.Database.GetDbConnection();
+            var csb  = new SingleStoreConnectionStringBuilder(conn.ConnectionString);
+
+            var parts = csb.ConnectionAttributes
+                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim())
+                .ToArray();
+
+            var programVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            Assert.Contains(parts, p => p.StartsWith($"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}"));
+        }
+
+        [Fact]
         public void Can_create_admin_connection_with_data_source()
         {
             using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
@@ -126,7 +153,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                     .GetOrCreate("ConnectionTestWithConnection"))
                 .Initialize(null, (Func<DbContext>)null);
 
-            using var connection = new SingleStoreConnection(SingleStoreTestStore.CreateConnectionString("ConnectionTest"));
+            using var connection = new SingleStoreConnection(SingleStoreTestStore.CreateConnectionString("ConnectionTestWithConnection"));
 
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
             optionsBuilder.UseSingleStore(connection, b => b.ApplyConfiguration());
