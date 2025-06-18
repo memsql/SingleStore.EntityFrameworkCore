@@ -84,13 +84,13 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
 
     static void AddConnectionAttributes(SingleStoreConnectionStringBuilder csb)
     {
-        var existing = csb.ConnectionAttributes?.TrimEnd(';') ?? "";
+        var existing = csb.ConnectionAttributes?.TrimEnd(',') ?? "";
 
         var programVersion = Assembly.GetExecutingAssembly().GetName().Version;
         var connAttrs = $"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}";
 
         var existingConnAttrs = existing
-            .Split(';', StringSplitOptions.RemoveEmptyEntries)
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(attr => attr.Trim())
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
@@ -98,7 +98,7 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         {
             csb.ConnectionAttributes = string.IsNullOrEmpty(existing)
                 ? connAttrs
-                : $"{existing};{connAttrs}";
+                : $"{existing},{connAttrs}";
         }
     }
 

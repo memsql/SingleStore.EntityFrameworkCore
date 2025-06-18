@@ -24,13 +24,16 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             Assert.True(changed);
             var newCsb = new SingleStoreConnectionStringBuilder(cs);
             var parts = newCsb.ConnectionAttributes
-                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .TrimEnd(',')
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(p => p.Trim())
                 .ToArray();
 
-            Assert.Contains(attrs, parts);
+            Assert.Contains("foo:bar", parts);
+            Assert.Contains("baz:qux", parts);
             var programVersion = Assembly.GetExecutingAssembly().GetName().Version;
-            Assert.Contains(parts, p => p.StartsWith($"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}"));
+            Assert.Contains(parts, p => p.StartsWith("_connector_name:SingleStore Entity Framework Core provider"));
+            Assert.Contains(parts, p => p.StartsWith($"_connector_version:{programVersion}"));
         }
 
         [Fact]
@@ -39,19 +42,18 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             var cs = AppConfig.ConnectionString;
 
             Assert.True(_validator.EnsureMandatoryOptions(ref cs));
-
             Assert.False(_validator.EnsureMandatoryOptions(ref cs));
 
             var programVersion = Assembly.GetExecutingAssembly().GetName().Version;
-
-            var finalAttrs = new SingleStoreConnectionStringBuilder(cs)
+            var parts = new SingleStoreConnectionStringBuilder(cs)
                 .ConnectionAttributes
-                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .TrimEnd(',')
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(p => p.Trim())
-                .Where(p => p.StartsWith($"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}"))
                 .ToArray();
 
-            Assert.Single(finalAttrs);
+            Assert.Equal(1, parts.Count(p => p.StartsWith("_connector_name:SingleStore Entity Framework Core provider")));
+            Assert.Equal(1, parts.Count(p => p.StartsWith($"_connector_version:{programVersion}")));
         }
 
         [Fact]

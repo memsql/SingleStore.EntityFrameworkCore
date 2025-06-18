@@ -97,12 +97,14 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             var csb  = new SingleStoreConnectionStringBuilder(conn.ConnectionString);
 
             var parts = csb.ConnectionAttributes
-                .Split(';', StringSplitOptions.RemoveEmptyEntries)
+                .TrimEnd(',')
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
                 .Select(p => p.Trim())
                 .ToArray();
 
             var programVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            Assert.Contains(parts, p => p.StartsWith($"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}"));
+            Assert.Contains(parts, p => p.StartsWith("_connector_name:SingleStore Entity Framework Core provider"));
+            Assert.Contains(parts, p => p.StartsWith($"_connector_version:{programVersion}"));
         }
 
         [Fact]
