@@ -337,7 +337,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 
             // EF uses unary Equal and NotEqual to represent is-null checking.
             // These need to be surrounded with parenthesis in various cases (e.g. where TRUE = x IS NOT NULL).
-            // See https://github.com/PomeloFoundation/EntityFrameworkCore.SingleStore/issues/1309
+            // See https://github.com/PomeloFoundation/EntityFrameworkCore.MySql/issues/1309
             requiresBrackets = RequiresBrackets(sqlBinaryExpression.Right) ||
                                !requiresBrackets &&
                                sqlBinaryExpression.Right is SqlUnaryExpression sqlUnaryExpression &&

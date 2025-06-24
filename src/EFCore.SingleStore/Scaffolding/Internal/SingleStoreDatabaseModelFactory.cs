@@ -538,7 +538,7 @@ ORDER BY
         /// <summary>
         /// MariaDB 10.2.7+ implements default values differently from MySQL, to support their own default expression
         /// syntax. We convert their column values to MySQL compatible syntax here.
-        /// See https://github.com/PomeloFoundation/EntityFrameworkCore.SingleStore/issues/994#issuecomment-568271740
+        /// See https://github.com/PomeloFoundation/EntityFrameworkCore.MySql/issues/994#issuecomment-568271740
         /// for tables with differences.
         /// </summary>
         protected virtual string ConvertDefaultValueFromMariaDbToSingleStore([NotNull] string defaultValue, out bool isDefaultValueExpression)

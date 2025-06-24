@@ -46,7 +46,7 @@ public class Startup
 }
 ```
 
-View our [Configuration Options Wiki Page](https://github.com/PomeloFoundation/EntityFrameworkCore.MySql/wiki/Configuration-Options) for a list of common options.
+View our [Configuration Options Wiki Page](https://github.com/memsql/SingleStore.EntityFrameworkCore/wiki/Configuration-Options) for a list of common options.
 
 ### 3. Sample Application
 

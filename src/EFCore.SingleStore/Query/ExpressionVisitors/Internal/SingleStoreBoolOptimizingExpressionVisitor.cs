@@ -14,7 +14,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 {
     /// <summary>
     /// "WHERE `boolColumn`" doesn't use available indices, while "WHERE `boolColumn` = TRUE" does.
-    /// See https://github.com/PomeloFoundation/EntityFrameworkCore.SingleStore/issues/1104
+    /// See https://github.com/PomeloFoundation/EntityFrameworkCore.MySql/issues/1104
     /// </summary>
     public class SingleStoreBoolOptimizingExpressionVisitor : SqlExpressionVisitor
     {

@@ -16,7 +16,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
     ///
     /// See https://bugs.mysql.com/bug.php?id=96947
     ///     https://github.com/OData/WebApi/issues/2124
-    ///     https://github.com/PomeloFoundation/EntityFrameworkCore.SingleStore/issues/1293
+    ///     https://github.com/PomeloFoundation/EntityFrameworkCore.MySql/issues/1293
     /// </summary>
     public class SingleStoreBug96947WorkaroundExpressionVisitor : ExpressionVisitor
     {
