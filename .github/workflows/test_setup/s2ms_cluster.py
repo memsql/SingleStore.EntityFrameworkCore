@@ -29,9 +29,9 @@ def retry(func):
 
 def create_workspace(workspace_manager):
     for reg in workspace_manager.regions:
-    if 'US' in reg.name:
-        region = reg
-        break
+        if 'US' in reg.name:
+            region = reg
+            break
 
     w_group_name = WORKSPACE_GROUP_BASE_NAME + "-" + uuid.uuid4().hex
     def create_workspace_group():
