@@ -30,10 +30,6 @@
     <ProjectReference Include="..\EFCore.SingleStore\EFCore.SingleStore.csproj" PrivateAssets="contentfiles;build" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="SingleStoreConnector" Version="1.2.0" />
-  </ItemGroup>
-
   <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->
   <ItemGroup Condition="'$(LocalEFCoreRepository)' == ''">
     <!-- PrivateAssets="none" is set to flow the EF Core analyzer to users referencing this package https://github.com/aspnet/EntityFrameworkCore/pull/11350 -->
@@ -70,6 +66,10 @@
 
   <ItemGroup>
     <None Include="docs\README.md" Pack="true" PackagePath="\"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SingleStoreConnector" Version="1.2.0" />
   </ItemGroup>
 
 </Project>

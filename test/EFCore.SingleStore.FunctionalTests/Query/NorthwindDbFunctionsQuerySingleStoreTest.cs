@@ -1,6 +1,11 @@
+using System;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
+using EntityFrameworkCore.SingleStore.Tests;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -20,7 +25,25 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         public override async Task Like_literal(bool async)
         {
-            await base.Like_literal(async);
+            Expression<Func<Customer, bool>> expectedPredicate;
+            if (AppConfig.ServerVersion.Version.Major >= 9)
+            {
+                // starting from 9.0 SingleStore's standard collation is utf8mb4_bin
+                // it is case‑sensitive, so only uppercase M will match the LIKE pattern
+                expectedPredicate = c => c.ContactName.Contains("M");
+            }
+            else
+            {
+                // older collations are case‑insensitive
+                expectedPredicate = c => c.ContactName.Contains("M") || c.ContactName.Contains("m");
+            }
+
+            await AssertCount(
+                async,
+                ss => ss.Set<Customer>(),
+                ss => ss.Set<Customer>(),
+                c => EF.Functions.Like(c.ContactName, "%M%"),
+                expectedPredicate);
 
             AssertSql(
                 @"SELECT COUNT(*)

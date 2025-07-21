@@ -45,13 +45,6 @@
   </ItemGroup>
 
   <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->
-  <ItemGroup Condition="'$(LocalSingleStoreConnectorRepository)' != ''">
-    <Reference Include="SingleStoreConnector">
-      <HintPath>$(LocalSingleStoreConnectorRepository)\artifacts\bin\SingleStoreConnector\debug_$(SingleStoreConnectorTargetFramework)\SingleStoreConnector.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->
   <!-- TODO: Check, whether the following references are really all in use. -->
   <ItemGroup Condition="'$(LocalEFCoreRepository)' != ''">
     <Reference Include="Microsoft.EntityFrameworkCore">

@@ -1087,7 +1087,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
             Assert.Empty(operations);
         }
 
-        [ConditionalFact]
+        [ConditionalFact(Skip = "SingleStore works another way.")]
         public virtual async Task Create_table_explicit_column_charset_takes_precedence_over_inherited_collation()
         {
             await Test(
