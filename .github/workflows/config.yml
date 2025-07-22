@@ -15,7 +15,6 @@ jobs:
       fail-fast: false
       matrix:
         singlestore_image:
-          - singlestore/cluster-in-a-box:alma-8.1.30-e0a67e68e5-4.0.16-1.17.6
           - singlestore/cluster-in-a-box:alma-8.5.6-b51bc5471a-4.0.17-1.17.8
           - singlestore/cluster-in-a-box:alma-8.7.12-483e5f8acb-4.1.0-1.17.15
         func_test_script:
