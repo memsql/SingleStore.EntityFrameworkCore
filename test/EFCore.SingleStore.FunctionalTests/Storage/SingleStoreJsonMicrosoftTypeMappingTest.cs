@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using EntityFrameworkCore.SingleStore.Internal;
 using EntityFrameworkCore.SingleStore.Json.Microsoft.Storage.Internal;
@@ -100,6 +101,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Storage
         private static readonly SingleStoreTypeMappingSource Mapper = new SingleStoreTypeMappingSource(
             new TypeMappingSourceDependencies(
                 new ValueConverterSelector(new ValueConverterSelectorDependencies()),
+                new JsonValueReaderWriterSource(new JsonValueReaderWriterSourceDependencies()),
                 Array.Empty<ITypeMappingSourcePlugin>()),
             new RelationalTypeMappingSourceDependencies(
                 new [] {new SingleStoreJsonMicrosoftTypeMappingSourcePlugin(new SingleStoreOptions())}),

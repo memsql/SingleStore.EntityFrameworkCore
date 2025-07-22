@@ -14,9 +14,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         {
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(r => r.CustomerID.PadLeft(8) == "   ALFKI"),
-                entryCount: 1);
-
+                ss => ss.Set<Customer>().Where(r => r.CustomerID.PadLeft(8) == "   ALFKI"));
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
@@ -29,8 +27,7 @@ WHERE LPAD(`c`.`CustomerID`, 8, ' ') = '   ALFKI'");
         {
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(r => r.CustomerID.PadLeft(8, 'x') == "xxxALFKI"),
-                entryCount: 1);
+                ss => ss.Set<Customer>().Where(r => r.CustomerID.PadLeft(8, 'x') == "xxxALFKI"));
 
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
@@ -44,8 +41,7 @@ WHERE LPAD(`c`.`CustomerID`, 8, 'x') = 'xxxALFKI'");
         {
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(r => r.CustomerID.PadRight(8) == "ALFKI   "),
-                entryCount: 1);
+                ss => ss.Set<Customer>().Where(r => r.CustomerID.PadRight(8) == "ALFKI   "));
 
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
@@ -59,8 +55,7 @@ WHERE RPAD(`c`.`CustomerID`, 8, ' ') = 'ALFKI   '");
         {
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(r => r.CustomerID.PadRight(8, 'c') == "ALFKIccc"),
-                entryCount: 1);
+                ss => ss.Set<Customer>().Where(r => r.CustomerID.PadRight(8, 'c') == "ALFKIccc"));
 
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`

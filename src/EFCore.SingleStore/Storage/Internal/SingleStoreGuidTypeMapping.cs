@@ -3,19 +3,26 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using SingleStoreConnector;
-using EntityFrameworkCore.SingleStore.Utilities;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
-    public class SingleStoreGuidTypeMapping : GuidTypeMapping, IJsonSpecificTypeMapping
+    public class SingleStoreGuidTypeMapping : GuidTypeMapping, IJsonSpecificTypeMapping, ISingleStoreCSharpRuntimeAnnotationTypeMappingCodeGenerator
     {
-        private readonly SingleStoreGuidFormat _guidFormat;
+        public static new SingleStoreGuidTypeMapping Default { get; } = new(SingleStoreGuidFormat.Char36);
+
+        public virtual SingleStoreGuidFormat GuidFormat { get; }
 
         public SingleStoreGuidTypeMapping(SingleStoreGuidFormat guidFormat)
             : this(new RelationalTypeMappingParameters(
-                    new CoreTypeMappingParameters(typeof(Guid)),
+                    new CoreTypeMappingParameters(
+                        typeof(Guid),
+                        jsonValueReaderWriter: JsonGuidReaderWriter.Instance),
                     GetStoreType(guidFormat),
                     StoreTypePostfix.Size,
                     System.Data.DbType.Guid,
@@ -29,18 +36,21 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         protected SingleStoreGuidTypeMapping(RelationalTypeMappingParameters parameters, SingleStoreGuidFormat guidFormat)
             : base(parameters)
         {
-            _guidFormat = guidFormat;
+            GuidFormat = guidFormat;
         }
 
         protected override RelationalTypeMapping Clone(RelationalTypeMappingParameters parameters)
-            => new SingleStoreGuidTypeMapping(parameters, _guidFormat);
+            => new SingleStoreGuidTypeMapping(parameters, GuidFormat);
+
+        public virtual RelationalTypeMapping Clone(SingleStoreGuidFormat guidFormat)
+            => new SingleStoreGuidTypeMapping(Parameters, guidFormat);
 
         public virtual bool IsCharBasedStoreType
-            => GetStoreType(_guidFormat) == "char";
+            => GetStoreType(GuidFormat) == "char";
 
         protected override string GenerateNonNullSqlLiteral(object value)
         {
-            switch (_guidFormat)
+            switch (GuidFormat)
             {
                 case SingleStoreGuidFormat.Char36:
                     return $"'{value:D}'";
@@ -51,7 +61,7 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
                 case SingleStoreGuidFormat.Binary16:
                 case SingleStoreGuidFormat.TimeSwapBinary16:
                 case SingleStoreGuidFormat.LittleEndianBinary16:
-                    return ByteArrayFormatter.ToHex(GetBytesFromGuid(_guidFormat, (Guid)value));
+                    return "0x" + Convert.ToHexString(GetBytesFromGuid(GuidFormat, (Guid)value));
 
                 case SingleStoreGuidFormat.None:
                 case SingleStoreGuidFormat.Default:
@@ -128,5 +138,50 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         /// </summary>
         public virtual RelationalTypeMapping CloneAsJsonCompatible()
             => new SingleStoreGuidTypeMapping(SingleStoreGuidFormat.Char36);
+
+        void ISingleStoreCSharpRuntimeAnnotationTypeMappingCodeGenerator.Create(
+            CSharpRuntimeAnnotationCodeGeneratorParameters codeGeneratorParameters,
+            CSharpRuntimeAnnotationCodeGeneratorDependencies codeGeneratorDependencies)
+        {
+            var defaultTypeMapping = Default;
+            if (defaultTypeMapping == this)
+            {
+                return;
+            }
+
+            var code = codeGeneratorDependencies.CSharpHelper;
+
+            var cloneParameters = new List<string>();
+
+            if (GuidFormat != defaultTypeMapping.GuidFormat)
+            {
+                cloneParameters.Add($"guidFormat: {code.Literal(GuidFormat, true)}");
+            }
+
+            if (cloneParameters.Any())
+            {
+                var mainBuilder = codeGeneratorParameters.MainBuilder;
+
+                mainBuilder.AppendLine(";");
+
+                mainBuilder
+                    .AppendLine($"{codeGeneratorParameters.TargetName}.TypeMapping = (({code.Reference(GetType())}){codeGeneratorParameters.TargetName}.TypeMapping).Clone(")
+                    .IncrementIndent();
+
+                for (var i = 0; i < cloneParameters.Count; i++)
+                {
+                    if (i > 0)
+                    {
+                        mainBuilder.AppendLine(",");
+                    }
+
+                    mainBuilder.Append(cloneParameters[i]);
+                }
+
+                mainBuilder
+                    .Append(")")
+                    .DecrementIndent();
+            }
+        }
     }
 }

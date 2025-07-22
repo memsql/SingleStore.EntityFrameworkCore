@@ -26,49 +26,49 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         protected override bool CanExecuteQueryString
             => true;
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Client_projection_with_string_initialization_with_scalar_subquery(bool async)
         {
             return base.Client_projection_with_string_initialization_with_scalar_subquery(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Collection_FirstOrDefault_with_nullable_unsigned_int_column(bool async)
         {
             return base.Collection_FirstOrDefault_with_nullable_unsigned_int_column(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task FirstOrDefault_over_empty_collection_of_value_type_returns_correct_results(bool async)
         {
             return base.FirstOrDefault_over_empty_collection_of_value_type_returns_correct_results(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task LastOrDefault_member_access_in_projection_translates_to_server(bool async)
         {
             return base.LastOrDefault_member_access_in_projection_translates_to_server(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Project_single_element_from_collection_with_OrderBy_Distinct_and_FirstOrDefault(bool async)
         {
             return base.Project_single_element_from_collection_with_OrderBy_Distinct_and_FirstOrDefault(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Project_single_element_from_collection_with_OrderBy_Skip_and_FirstOrDefault(bool async)
         {
             return base.Project_single_element_from_collection_with_OrderBy_Skip_and_FirstOrDefault(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Project_uint_through_collection_FirstOrDefault(bool async)
         {
             return base.Project_uint_through_collection_FirstOrDefault(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Projecting_Length_of_a_string_property_after_FirstOrDefault_on_correlated_collection(bool async)
         {
             return base.Projecting_Length_of_a_string_property_after_FirstOrDefault_on_correlated_collection(async);
@@ -80,13 +80,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Projection_AsEnumerable_projection(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Select_nested_collection_multi_level2(bool async)
         {
             return base.Select_nested_collection_multi_level2(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Select_nested_collection_multi_level3(bool async)
         {
             return base.Select_nested_collection_multi_level2(async);
@@ -196,14 +196,72 @@ FROM `Orders` AS `o`");
 FROM `Orders` AS `o`");
         }
 
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationUsingParameterAsSourceWithoutEngineCrash), Skip = "This test/query crashes MySQL 8 even with inlined parameters every single time. Could be related to LATERAL.")]
+        public override async Task Correlated_collection_after_distinct_not_containing_original_identifier(bool async)
+        {
+            await base.Correlated_collection_after_distinct_not_containing_original_identifier(async);
+
+            AssertSql(
+"""
+SELECT `t`.`OrderDate`, `t`.`CustomerID`, `t0`.`Outer1`, `t0`.`Outer2`, `t0`.`Inner`, `t0`.`OrderDate`
+FROM (
+    SELECT DISTINCT `o`.`OrderDate`, `o`.`CustomerID`
+    FROM `Orders` AS `o`
+) AS `t`
+LEFT JOIN LATERAL (
+    SELECT `t`.`OrderDate` AS `Outer1`, `t`.`CustomerID` AS `Outer2`, `o0`.`OrderID` AS `Inner`, `o0`.`OrderDate`
+    FROM `Orders` AS `o0`
+    WHERE ((`o0`.`CustomerID` = `t`.`CustomerID`) OR (`o0`.`CustomerID` IS NULL AND (`t`.`CustomerID` IS NULL))) AND `o0`.`OrderID` IN (
+        SELECT `f`.`value`
+        FROM JSON_TABLE('[10248,10249,10250]', '$[*]' COLUMNS (
+            `key` FOR ORDINALITY,
+            `value` int PATH '$[0]'
+        )) AS `f`
+    )
+) AS `t0` ON TRUE
+ORDER BY `t`.`OrderDate`, `t`.`CustomerID`
+""");
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationUsingParameterAsSourceWithoutEngineCrash), Skip = "This test/query crashes MySQL 8 even with inlined parameters every single time. Could be related to LATERAL.")]
+        public override async Task Correlated_collection_after_groupby_with_complex_projection_not_containing_original_identifier(bool async)
+        {
+            await base.Correlated_collection_after_groupby_with_complex_projection_not_containing_original_identifier(async);
+
+            AssertSql(
+"""
+                SELECT `t0`.`CustomerID`, `t0`.`Complex`, `t1`.`Outer`, `t1`.`Inner`, `t1`.`OrderDate`
+                FROM (
+                    SELECT `t`.`CustomerID`, `t`.`Complex`
+                    FROM (
+                        SELECT `o`.`CustomerID`, EXTRACT(month FROM `o`.`OrderDate`) AS `Complex`
+                        FROM `Orders` AS `o`
+                    ) AS `t`
+                    GROUP BY `t`.`CustomerID`, `t`.`Complex`
+                ) AS `t0`
+                LEFT JOIN LATERAL (
+                    SELECT `t0`.`CustomerID` AS `Outer`, `o0`.`OrderID` AS `Inner`, `o0`.`OrderDate`
+                    FROM `Orders` AS `o0`
+                    WHERE ((`o0`.`CustomerID` = `t0`.`CustomerID`) OR (`o0`.`CustomerID` IS NULL AND (`t0`.`CustomerID` IS NULL))) AND `o0`.`OrderID` IN (
+                        SELECT `f`.`value`
+                        FROM JSON_TABLE('[10248,10249,10250]', '$[*]' COLUMNS (
+                            `key` FOR ORDINALITY,
+                            `value` int PATH '$[0]'
+                        )) AS `f`
+                    )
+                ) AS `t1` ON TRUE
+                ORDER BY `t0`.`CustomerID`, `t0`.`Complex`
+""");
+        }
+
         public override async Task Correlated_collection_after_distinct_with_complex_projection_not_containing_original_identifier(bool async)
         {
             // Identifier set for Distinct. Issue #24440.
-            Assert.Equal(
-                RelationalStrings.InsufficientInformationToIdentifyElementOfCollectionJoin,
-                (await Assert.ThrowsAsync<InvalidOperationException>(
+            var message = (await Assert.ThrowsAsync<InvalidOperationException>(
                     () => base.Correlated_collection_after_distinct_with_complex_projection_not_containing_original_identifier(async)))
-                .Message);
+                .Message;
+
+            Assert.Equal(RelationalStrings.InsufficientInformationToIdentifyElementOfCollectionJoin, message);
 
             AssertSql();
         }

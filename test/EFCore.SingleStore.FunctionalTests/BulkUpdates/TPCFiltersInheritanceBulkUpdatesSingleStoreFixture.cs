@@ -5,6 +5,6 @@ public class TPCFiltersInheritanceBulkUpdatesSingleStoreFixture : TPCInheritance
     protected override string StoreName
         => "TPCFiltersInheritanceBulkUpdatesTest";
 
-    protected override bool EnableFilters
+    public override bool EnableFilters
         => true;
 }

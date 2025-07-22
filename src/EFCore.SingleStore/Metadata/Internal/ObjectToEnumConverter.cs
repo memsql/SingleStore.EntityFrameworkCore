@@ -13,7 +13,7 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Internal
         /// be setup without provider specific dependencies.
         /// </summary>
         /// <remarks>
-        /// See https://github.com/PomeloFoundation/EntityFrameworkCore.SingleStore/issues/1205 for further information.
+        /// See https://github.com/PomeloFoundation/EntityFrameworkCore.MySql/issues/1205 for further information.
         /// </remarks>
         public static T? GetEnumValue<T>(object value)
             where T : struct

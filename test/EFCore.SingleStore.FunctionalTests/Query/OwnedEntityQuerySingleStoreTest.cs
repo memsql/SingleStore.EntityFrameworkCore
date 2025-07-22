@@ -240,7 +240,7 @@ LEFT JOIN (
             Assert.True(new[] { "US", "CA" }.SequenceEqual(warehouseModel.DestinationCountryCodes));
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         [MemberData("IsAsyncData", new object[] { })]
         public override async Task Projecting_owned_collection_and_aggregate(bool async)
         {

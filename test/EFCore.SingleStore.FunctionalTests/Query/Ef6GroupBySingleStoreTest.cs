@@ -752,7 +752,7 @@ ORDER BY `t`.`FirstName`, `t0`.`Id`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Whats_new_2021_sample_7(bool async)
     {
         await base.Whats_new_2021_sample_7(async);
@@ -800,7 +800,7 @@ GROUP BY `p`.`Category`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Whats_new_2021_sample_9(bool async)
     {
         await base.Whats_new_2021_sample_9(async);
@@ -829,7 +829,7 @@ GROUP BY `p`.`Category`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Whats_new_2021_sample_4(bool async)
     {
         await base.Whats_new_2021_sample_4(async);

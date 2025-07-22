@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using JetBrains.Annotations;
@@ -20,29 +19,29 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
     {
         // boolean
         private readonly SingleStoreBoolTypeMapping _bit1 = new SingleStoreBoolTypeMapping("bit", size: 1);
-        private readonly SingleStoreBoolTypeMapping _tinyint1 = new SingleStoreBoolTypeMapping("tinyint", size: 1);
+        private readonly SingleStoreBoolTypeMapping _tinyint1 = SingleStoreBoolTypeMapping.Default;
 
         // bit
-        private readonly ULongTypeMapping _bit = new ULongTypeMapping("bit", DbType.UInt64);
+        private readonly SingleStoreULongTypeMapping _bit = new SingleStoreULongTypeMapping("bit");
 
         // integers
-        private readonly SByteTypeMapping _tinyint = new SByteTypeMapping("tinyint", DbType.SByte);
-        private readonly ByteTypeMapping _utinyint = new ByteTypeMapping("tinyint unsigned", DbType.Byte);
-        private readonly ShortTypeMapping _smallint = new ShortTypeMapping("smallint", DbType.Int16);
-        private readonly UShortTypeMapping _usmallint = new UShortTypeMapping("smallint unsigned", DbType.UInt16);
-        private readonly IntTypeMapping _int = new IntTypeMapping("int", DbType.Int32);
-        private readonly UIntTypeMapping _uint = new UIntTypeMapping("int unsigned", DbType.UInt32);
-        private readonly LongTypeMapping _bigint = new LongTypeMapping("bigint", DbType.Int64);
-        private readonly ULongTypeMapping _ubigint = new ULongTypeMapping("bigint unsigned", DbType.UInt64);
+        private readonly SingleStoreSByteTypeMapping _tinyint = SingleStoreSByteTypeMapping.Default;
+        private readonly SingleStoreByteTypeMapping _utinyint = SingleStoreByteTypeMapping.Default;
+        private readonly SingleStoreShortTypeMapping _smallint = SingleStoreShortTypeMapping.Default;
+        private readonly SingleStoreUShortTypeMapping _usmallint = SingleStoreUShortTypeMapping.Default;
+        private readonly SingleStoreIntTypeMapping _int = SingleStoreIntTypeMapping.Default;
+        private readonly SingleStoreUIntTypeMapping _uint = SingleStoreUIntTypeMapping.Default;
+        private readonly SingleStoreLongTypeMapping _bigint = SingleStoreLongTypeMapping.Default;
+        private readonly SingleStoreULongTypeMapping _ubigint = SingleStoreULongTypeMapping.Default;
 
         // decimals
-        private readonly SingleStoreDecimalTypeMapping _decimal = new SingleStoreDecimalTypeMapping("decimal", precision: 65, scale: 30);
-        private readonly SingleStoreDoubleTypeMapping _double = new SingleStoreDoubleTypeMapping("double", DbType.Double);
-        private readonly SingleStoreFloatTypeMapping _float = new SingleStoreFloatTypeMapping("float", DbType.Single);
+        private readonly SingleStoreDecimalTypeMapping _decimal = SingleStoreDecimalTypeMapping.Default;
+        private readonly SingleStoreDoubleTypeMapping _double = SingleStoreDoubleTypeMapping.Default;
+        private readonly SingleStoreFloatTypeMapping _float = SingleStoreFloatTypeMapping.Default;
 
         // binary
         private readonly RelationalTypeMapping _binary = new SingleStoreByteArrayTypeMapping(fixedLength: true);
-        private readonly RelationalTypeMapping _varbinary = new SingleStoreByteArrayTypeMapping();
+        private readonly RelationalTypeMapping _varbinary = SingleStoreByteArrayTypeMapping.Default;
 
         //
         // String mappings depend on the SingleStoreOptions.NoBackslashEscapes setting:
@@ -61,14 +60,14 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         private SingleStoreStringTypeMapping _enum;
 
         // DateTime
-        private readonly SingleStoreYearTypeMapping _year = new SingleStoreYearTypeMapping("year");
-        private readonly SingleStoreDateTypeMapping _dateDateOnly = new SingleStoreDateTypeMapping("date", typeof(DateOnly));
+        private readonly SingleStoreYearTypeMapping _year = SingleStoreYearTypeMapping.Default;
+        private readonly SingleStoreDateTypeMapping _dateDateOnly = SingleStoreDateTypeMapping.Default;
         private readonly SingleStoreDateTypeMapping _dateDateTime = new SingleStoreDateTypeMapping("date", typeof(DateTime));
-        private readonly SingleStoreTimeTypeMapping _timeTimeOnly = new SingleStoreTimeTypeMapping("time", typeof(TimeOnly));
+        private readonly SingleStoreTimeTypeMapping _timeTimeOnly = SingleStoreTimeTypeMapping.Default;
         private readonly SingleStoreTimeTypeMapping _timeTimeSpan = new SingleStoreTimeTypeMapping("time", typeof(TimeSpan));
-        private readonly SingleStoreDateTimeTypeMapping _dateTime = new SingleStoreDateTimeTypeMapping("datetime");
+        private readonly SingleStoreDateTimeTypeMapping _dateTime = SingleStoreDateTimeTypeMapping.Default;
         private readonly SingleStoreDateTimeTypeMapping _timeStamp = new SingleStoreDateTimeTypeMapping("timestamp");
-        private readonly SingleStoreDateTimeOffsetTypeMapping _dateTimeOffset = new SingleStoreDateTimeOffsetTypeMapping("datetime");
+        private readonly SingleStoreDateTimeOffsetTypeMapping _dateTimeOffset = SingleStoreDateTimeOffsetTypeMapping.Default;
         private readonly SingleStoreDateTimeOffsetTypeMapping _timeStampOffset = new SingleStoreDateTimeOffsetTypeMapping("timestamp");
 
         private readonly RelationalTypeMapping _binaryRowVersion
@@ -93,8 +92,8 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         private SingleStoreJsonTypeMapping<string> _jsonDefaultString;
 
         // Scaffolding type mappings
-        private readonly SingleStoreCodeGenerationMemberAccessTypeMapping _codeGenerationMemberAccess = new SingleStoreCodeGenerationMemberAccessTypeMapping();
-        private readonly SingleStoreCodeGenerationServerVersionCreationTypeMapping _codeGenerationServerVersionCreation = new SingleStoreCodeGenerationServerVersionCreationTypeMapping();
+        private readonly SingleStoreCodeGenerationMemberAccessTypeMapping _codeGenerationMemberAccess = SingleStoreCodeGenerationMemberAccessTypeMapping.Default;
+        private readonly SingleStoreCodeGenerationServerVersionCreationTypeMapping _codeGenerationServerVersionCreation = SingleStoreCodeGenerationServerVersionCreationTypeMapping.Default;
 
         private Dictionary<string, RelationalTypeMapping[]> _storeTypeMappings;
         private Dictionary<Type, RelationalTypeMapping> _clrTypeMappings;
@@ -120,23 +119,23 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             // String mappings depend on the SingleStoreOptions.NoBackslashEscapes setting:
             //
 
-            _charUnicode = new SingleStoreStringTypeMapping("char", _options, StoreTypePostfix.Size, fixedLength: true);
-            _varcharUnicode = new SingleStoreStringTypeMapping("varchar", _options, StoreTypePostfix.Size);
-            _tinytextUnicode = new SingleStoreStringTypeMapping("tinytext", _options, StoreTypePostfix.None);
-            _textUnicode = new SingleStoreStringTypeMapping("text", _options, StoreTypePostfix.None);
-            _mediumtextUnicode = new SingleStoreStringTypeMapping("mediumtext", _options, StoreTypePostfix.None);
-            _longtextUnicode = new SingleStoreStringTypeMapping("longtext", _options, StoreTypePostfix.None);
+            _charUnicode = new SingleStoreStringTypeMapping("char", StoreTypePostfix.Size, fixedLength: true, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
+            _varcharUnicode = new SingleStoreStringTypeMapping("varchar", StoreTypePostfix.Size, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
+            _tinytextUnicode = new SingleStoreStringTypeMapping("tinytext", StoreTypePostfix.None, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
+            _textUnicode = new SingleStoreStringTypeMapping("text", StoreTypePostfix.None, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
+            _mediumtextUnicode = new SingleStoreStringTypeMapping("mediumtext", StoreTypePostfix.None, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
+            _longtextUnicode = new SingleStoreStringTypeMapping("longtext", StoreTypePostfix.None, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
 
-            _nchar = new SingleStoreStringTypeMapping("nchar", _options, StoreTypePostfix.Size, fixedLength: true);
-            _nvarchar = new SingleStoreStringTypeMapping("nvarchar", _options, StoreTypePostfix.Size);
+            _nchar = new SingleStoreStringTypeMapping("nchar", StoreTypePostfix.Size, fixedLength: true, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
+            _nvarchar = new SingleStoreStringTypeMapping("nvarchar", StoreTypePostfix.Size, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
 
-            _enum = new SingleStoreStringTypeMapping("enum", _options, StoreTypePostfix.None);
+            _enum = new SingleStoreStringTypeMapping("enum", StoreTypePostfix.None, noBackslashEscapes: _options.NoBackslashEscapes, replaceLineBreaksWithCharFunction: _options.ReplaceLineBreaksWithCharFunction);
 
             _guid = SingleStoreGuidTypeMapping.IsValidGuidFormat(_options.ConnectionSettings.GuidFormat)
                 ? new SingleStoreGuidTypeMapping(_options.ConnectionSettings.GuidFormat)
                 : null;
 
-            _jsonDefaultString = new SingleStoreJsonTypeMapping<string>("json", null, null, _options);
+            _jsonDefaultString = new SingleStoreJsonTypeMapping<string>("json", null, null, _options.NoBackslashEscapes, _options.ReplaceLineBreaksWithCharFunction);
 
             _storeTypeMappings
                 = new Dictionary<string, RelationalTypeMapping[]>(StringComparer.OrdinalIgnoreCase)
@@ -227,24 +226,24 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
                     // datetimes
                     { typeof(DateOnly), _dateDateOnly },
-                    { typeof(TimeOnly), _timeTimeOnly.Clone(_options.DefaultDataTypeMappings.ClrTimeOnlyPrecision, null) },
+                    { typeof(TimeOnly), _timeTimeOnly.WithPrecisionAndScale(_options.DefaultDataTypeMappings.ClrTimeOnlyPrecision, null) },
                     { typeof(TimeSpan), _options.DefaultDataTypeMappings.ClrTimeSpan switch
                         {
-                            SingleStoreTimeSpanType.Time6 => _timeTimeSpan.Clone(6, null),
+                            SingleStoreTimeSpanType.Time6 => _timeTimeSpan.WithPrecisionAndScale(6, null),
                             SingleStoreTimeSpanType.Time => _timeTimeSpan,
                             _ => _timeTimeSpan
                         }},
                     { typeof(DateTime), _options.DefaultDataTypeMappings.ClrDateTime switch
                         {
-                            SingleStoreDateTimeType.DateTime6 =>_dateTime.Clone(6, null),
-                            SingleStoreDateTimeType.Timestamp6 => _timeStamp.Clone(6, null),
+                            SingleStoreDateTimeType.DateTime6 =>_dateTime.WithPrecisionAndScale(6, null),
+                            SingleStoreDateTimeType.Timestamp6 => _timeStamp.WithPrecisionAndScale(6, null),
                             SingleStoreDateTimeType.Timestamp => _timeStamp,
                             _ => _dateTime,
                         }},
                     { typeof(DateTimeOffset), _options.DefaultDataTypeMappings.ClrDateTimeOffset switch
                         {
-                            SingleStoreDateTimeType.DateTime6 =>_dateTimeOffset.Clone(6, null),
-                            SingleStoreDateTimeType.Timestamp6 => _timeStampOffset.Clone(6, null),
+                            SingleStoreDateTimeType.DateTime6 =>_dateTimeOffset.WithPrecisionAndScale(6, null),
+                            SingleStoreDateTimeType.Timestamp6 => _timeStampOffset.WithPrecisionAndScale(6, null),
                             SingleStoreDateTimeType.Timestamp => _timeStampOffset,
                             _ => _dateTimeOffset,
                         }},
@@ -327,9 +326,9 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
                 {
                     return clrType == null
                         ? mappings[0]
-                            .Clone(in mappingInfo)
+                            .WithTypeMappingInfo(in mappingInfo)
                         : mappings.FirstOrDefault(m => m.ClrType == clrType)
-                            ?.Clone(in mappingInfo);
+                            ?.WithTypeMappingInfo(in mappingInfo);
                 }
 
                 if (storeTypeName.Equals("json", StringComparison.OrdinalIgnoreCase) &&
@@ -351,14 +350,14 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
                     {
                         if (clrType == typeof(decimal))
                         {
-                            return mapping.Clone(mappingInfo.Precision.Value, mappingInfo.Scale);
+                            return mapping.WithPrecisionAndScale(mappingInfo.Precision.Value, mappingInfo.Scale);
                         }
 
                         if (clrType == typeof(DateTime) ||
                             clrType == typeof(DateTimeOffset) ||
                             clrType == typeof(TimeSpan))
                         {
-                            return mapping.Clone(mappingInfo.Precision.Value, null);
+                            return mapping.WithPrecisionAndScale(mappingInfo.Precision.Value, null);
                         }
                     }
 
@@ -384,10 +383,14 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
                     // If a string column size is bigger than it can/might be, we automatically adjust it to a variable one with an
                     // unlimited size.
-                    if (size > 65_553 / _options.DefaultCharSet.MaxBytesPerChar)
+                    if (size > 65_535 / _options.DefaultCharSet.MaxBytesPerChar)
                     {
                         size = null;
                         isFixedLength = false;
+                    }
+                    else if (size < 0) // specifying HasMaxLength(-1) is valid and should lead to an unbounded string/text.
+                    {
+                        size = null;
                     }
 
                     mapping = isFixedLength
@@ -398,7 +401,7 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
                     return size == null
                         ? mapping
-                        : mapping.Clone($"{mapping.StoreTypeNameBase}({size})", size);
+                        : mapping.WithStoreTypeAndSize($"{mapping.StoreTypeNameBase}({size})", size);
                 }
 
                 if (clrType == typeof(byte[]))
@@ -415,6 +418,12 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
                                    ? _options.ServerVersion.MaxKeyLength
                                    : (int?)null);
 
+                    // Specifying HasMaxLength(-1) is valid and should lead to an unbounded byte array/blob.
+                    if (size < 0)
+                    {
+                        size = null;
+                    }
+
                     return new SingleStoreByteArrayTypeMapping(
                         size: size,
                         fixedLength: mappingInfo.IsFixedLength == true);
@@ -429,9 +438,14 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             return null;
         }
 
-        protected override string ParseStoreTypeName(string storeTypeName, out bool? unicode, out int? size, out int? precision, out int? scale)
+        protected override string ParseStoreTypeName(
+            string storeTypeName,
+            ref bool? unicode,
+            ref int? size,
+            ref int? precision,
+            ref int? scale)
         {
-            var storeTypeBaseName = base.ParseStoreTypeName(storeTypeName, out unicode, out size, out precision, out scale);
+            var storeTypeBaseName = base.ParseStoreTypeName(storeTypeName, ref unicode, ref size, ref precision, ref scale);
 
             if (storeTypeBaseName is not null)
             {

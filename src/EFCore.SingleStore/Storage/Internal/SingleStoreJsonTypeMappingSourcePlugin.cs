@@ -44,7 +44,8 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
                         storeTypeName,
                         GetValueConverter(clrType),
                         GetValueComparer(clrType),
-                        Options)
+                        Options.NoBackslashEscapes,
+                        Options.ReplaceLineBreaksWithCharFunction)
                     : null;
             }
 

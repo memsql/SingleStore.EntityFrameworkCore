@@ -5,6 +5,7 @@
 using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
@@ -21,6 +22,8 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
     {
         private readonly bool _isDefaultValueCompatible;
 
+        public static SingleStoreDateTypeMapping Default { get; } = new("date", typeof(DateOnly));
+
         /// <summary>
         ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
         ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
@@ -30,7 +33,9 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         public SingleStoreDateTypeMapping([NotNull] string storeType, Type clrType, bool isDefaultValueCompatible = true)
             : this(
                 new RelationalTypeMappingParameters(
-                    new CoreTypeMappingParameters(clrType),
+                    new CoreTypeMappingParameters(
+                        clrType,
+                        jsonValueReaderWriter: JsonDateOnlyReaderWriter.Instance),
                     storeType,
                     dbType: System.Data.DbType.Date),
                 isDefaultValueCompatible)

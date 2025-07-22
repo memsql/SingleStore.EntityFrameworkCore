@@ -17,7 +17,6 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
     public class SingleStoreParameterBasedSqlProcessor : RelationalParameterBasedSqlProcessor
     {
         private readonly ISingleStoreOptions _options;
-        private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
 
         public SingleStoreParameterBasedSqlProcessor(
             RelationalParameterBasedSqlProcessorDependencies dependencies,
@@ -25,7 +24,6 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             ISingleStoreOptions options)
             : base(dependencies, useRelationalNulls)
         {
-            _sqlExpressionFactory = (SingleStoreSqlExpressionFactory)Dependencies.SqlExpressionFactory;
             _options = options;
         }
 
@@ -49,7 +47,14 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                 queryExpression = new SingleStoreBoolOptimizingExpressionVisitor(Dependencies.SqlExpressionFactory).Visit(queryExpression);
             }
 
-            queryExpression = new SingleStoreHavingExpressionVisitor(_sqlExpressionFactory).Visit(queryExpression);
+            queryExpression = new SingleStoreHavingExpressionVisitor((SingleStoreSqlExpressionFactory)Dependencies.SqlExpressionFactory).Visit(queryExpression);
+
+            queryExpression = new SingleStoreParameterInliningExpressionVisitor(
+                Dependencies.TypeMappingSource,
+                Dependencies.SqlExpressionFactory,
+                _options).Process(queryExpression, parametersValues, out var canCache3);
+
+            canCache &= canCache3;
 
             // Run the compatibility checks as late in the query pipeline (before the actual SQL translation happens) as reasonable.
             queryExpression = new SingleStoreCompatibilityExpressionVisitor(_options).Visit(queryExpression);

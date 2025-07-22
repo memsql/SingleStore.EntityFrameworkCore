@@ -10,38 +10,53 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SingleStoreConnector;
-using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Storage.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Json.Microsoft.Storage.Internal
 {
     public class SingleStoreJsonMicrosoftTypeMapping<T> : SingleStoreJsonTypeMapping<T>
     {
+        public static new SingleStoreJsonMicrosoftTypeMapping<T> Default { get; } = new("json", null, null, false, true);
+
         // Called via reflection.
         // ReSharper disable once UnusedMember.Global
         public SingleStoreJsonMicrosoftTypeMapping(
             [NotNull] string storeType,
             [CanBeNull] ValueConverter valueConverter,
             [CanBeNull] ValueComparer valueComparer,
-            [NotNull] ISingleStoreOptions options)
+            bool noBackslashEscapes,
+            bool replaceLineBreaksWithCharFunction)
             : base(
                 storeType,
                 valueConverter,
                 valueComparer,
-                options)
+                noBackslashEscapes,
+                replaceLineBreaksWithCharFunction)
         {
         }
 
         protected SingleStoreJsonMicrosoftTypeMapping(
             RelationalTypeMappingParameters parameters,
             SingleStoreDbType mySqlDbType,
-            ISingleStoreOptions options)
-            : base(parameters, mySqlDbType, options)
+            bool noBackslashEscapes,
+            bool replaceLineBreaksWithCharFunction)
+            : base(
+                parameters,
+                mySqlDbType,
+                noBackslashEscapes,
+                replaceLineBreaksWithCharFunction)
         {
         }
 
         protected override RelationalTypeMapping Clone(RelationalTypeMappingParameters parameters)
-            => new SingleStoreJsonMicrosoftTypeMapping<T>(parameters, SingleStoreDbType, Options);
+            => new SingleStoreJsonMicrosoftTypeMapping<T>(parameters, SingleStoreDbType, NoBackslashEscapes, ReplaceLineBreaksWithCharFunction);
+
+        protected override RelationalTypeMapping Clone(bool? noBackslashEscapes = null, bool? replaceLineBreaksWithCharFunction = null)
+            => new SingleStoreJsonMicrosoftTypeMapping<T>(
+                Parameters,
+                SingleStoreDbType,
+                noBackslashEscapes ?? NoBackslashEscapes,
+                replaceLineBreaksWithCharFunction ?? ReplaceLineBreaksWithCharFunction);
 
         public override Expression GenerateCodeLiteral(object value)
             => value switch

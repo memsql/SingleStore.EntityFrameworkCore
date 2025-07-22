@@ -20,6 +20,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         public class StoreGeneratedSingleStoreFixture : StoreGeneratedSingleStoreFixtureBase
         {
+            protected override string StoreName
+                => "StoreGeneratedTest";
+
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
 
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)

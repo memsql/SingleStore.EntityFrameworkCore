@@ -38,46 +38,54 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             };
 
             public override
-                List<(Type Type,
-                    Type ReadonlyExtensions,
+                Dictionary<Type,
+                    (Type ReadonlyExtensions,
                     Type MutableExtensions,
                     Type ConventionExtensions,
                     Type ConventionBuilderExtensions,
                     Type RuntimeExtensions)> MetadataExtensionTypes { get; }
                 = new()
                 {
-                    (
+                    {
                         typeof(IReadOnlyModel),
-                        typeof(SingleStoreModelExtensions),
-                        typeof(SingleStoreModelExtensions),
-                        typeof(SingleStoreModelExtensions),
-                        typeof(SingleStoreModelBuilderExtensions),
-                        null
-                    ),
-                    (
+                        (
+                            typeof(SingleStoreModelExtensions),
+                            typeof(SingleStoreModelExtensions),
+                            typeof(SingleStoreModelExtensions),
+                            typeof(SingleStoreModelBuilderExtensions),
+                            null
+                        )
+                    },
+                    {
                         typeof(IReadOnlyEntityType),
-                        typeof(SingleStoreEntityTypeExtensions),
-                        typeof(SingleStoreEntityTypeExtensions),
-                        typeof(SingleStoreEntityTypeExtensions),
-                        typeof(SingleStoreEntityTypeBuilderExtensions),
-                        null
-                    ),
-                    (
+                        (
+                            typeof(SingleStoreEntityTypeExtensions),
+                            typeof(SingleStoreEntityTypeExtensions),
+                            typeof(SingleStoreEntityTypeExtensions),
+                            typeof(SingleStoreEntityTypeBuilderExtensions),
+                            null
+                        )
+                    },
+                    {
                         typeof(IReadOnlyProperty),
-                        typeof(SingleStorePropertyExtensions),
-                        typeof(SingleStorePropertyExtensions),
-                        typeof(SingleStorePropertyExtensions),
-                        typeof(SingleStorePropertyBuilderExtensions),
-                        null
-                    ),
-                    (
+                        (
+                            typeof(SingleStorePropertyExtensions),
+                            typeof(SingleStorePropertyExtensions),
+                            typeof(SingleStorePropertyExtensions),
+                            typeof(SingleStorePropertyBuilderExtensions),
+                            null
+                        )
+                    },
+                    {
                         typeof(IReadOnlyIndex),
-                        typeof(SingleStoreIndexExtensions),
-                        typeof(SingleStoreIndexExtensions),
-                        typeof(SingleStoreIndexExtensions),
-                        typeof(SingleStoreIndexBuilderExtensions),
-                        null
-                    )
+                        (
+                            typeof(SingleStoreIndexExtensions),
+                            typeof(SingleStoreIndexExtensions),
+                            typeof(SingleStoreIndexExtensions),
+                            typeof(SingleStoreIndexBuilderExtensions),
+                            null
+                        )
+                    },
                 };
 
             public override HashSet<MethodInfo> UnmatchedMetadataMethods { get; } = new()

@@ -206,7 +206,6 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                 async,
                 ss => ss.Set<Customer>().OrderBy(c => c.Orders.OrderBy(o => o.OrderID).FirstOrDefault()).ThenBy(c => c.CustomerID),
                 ss => ss.Set<Customer>().OrderBy(c => c.Orders.FirstOrDefault() == null ? (int?)null : c.Orders.OrderBy(o => o.OrderID).FirstOrDefault().OrderID).ThenBy(c => c.CustomerID),
-                entryCount: 91,
                 assertOrder: true);
         }
 
@@ -237,7 +236,6 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                     ss => ss.Set<OrderDetail>()
                         .Where(w => w.Quantity + 1 == 5 && w.Quantity - 1 == 3 && w.Quantity * 1 == w.Quantity)
                         .OrderBy(o => o.OrderID).ThenBy(o => o.ProductID),
-                    entryCount: 55,
                     assertOrder: true,
                     elementAsserter: (e, a) => { AssertEqual(e, a); });
             }
@@ -441,6 +439,18 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
             return base.Dependent_to_principal_navigation_equal_to_null_for_subquery(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override Task Collection_navigation_equal_to_null_for_subquery_using_ElementAtOrDefault_parameter(bool async)
+        {
+            return base.Collection_navigation_equal_to_null_for_subquery_using_ElementAtOrDefault_parameter(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override Task Collection_navigation_equal_to_null_for_subquery_using_ElementAtOrDefault_constant_one(bool async)
+        {
+            return base.Collection_navigation_equal_to_null_for_subquery_using_ElementAtOrDefault_constant_one(async);
+        }
+
         public override Task Where_query_composition2(bool async)
         {
             return AssertQuery(
@@ -449,8 +459,7 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                       where e1.FirstName
                           == (from e2 in ss.Set<Employee>().OrderBy(e => e.EmployeeID)
                               select new { Foo = e2 }).First().Foo.FirstName
-                      select e1,
-                entryCount: 1);
+                      select e1);
         }
 
         public override Task Where_query_composition2_FirstOrDefault(bool async)
@@ -461,8 +470,7 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                     where e1.FirstName
                           == (from e2 in ss.Set<Employee>().OrderBy(e => e.EmployeeID)
                               select e2).FirstOrDefault().FirstName
-                    select e1,
-                entryCount: 1);
+                    select e1);
         }
 
         public override Task Where_query_composition2_FirstOrDefault_with_anonymous(bool async)
@@ -473,8 +481,7 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                     where e1.FirstName
                           == (from e2 in ss.Set<Employee>().OrderBy(e => e.EmployeeID)
                               select new { Foo = e2 }).FirstOrDefault().Foo.FirstName
-                    select e1,
-                entryCount: 1);
+                    select e1);
         }
 
         /// <summary>

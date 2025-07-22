@@ -234,7 +234,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Subquery_projecting_non_nullable_scalar_contains_non_nullable_value_doesnt_need_null_expansion(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Conditional_expression_with_test_being_simplified_to_constant_complex(bool isAsync)
         {
             return base.Conditional_expression_with_test_being_simplified_to_constant_complex(isAsync);
@@ -252,19 +252,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Correlated_collection_with_very_complex_order_by(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Correlated_collections_with_FirstOrDefault(bool async)
         {
             return base.Correlated_collections_with_FirstOrDefault(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task FirstOrDefault_on_empty_collection_of_DateTime_in_subquery(bool async)
         {
             return base.FirstOrDefault_on_empty_collection_of_DateTime_in_subquery(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task FirstOrDefault_over_int_compared_to_zero(bool async)
         {
             return base.FirstOrDefault_over_int_compared_to_zero(async);
@@ -294,13 +294,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Include_with_complex_order_by(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Multiple_orderby_with_navigation_expansion_on_one_of_the_order_bys_inside_subquery_complex_orderings(bool async)
         {
             return base.Multiple_orderby_with_navigation_expansion_on_one_of_the_order_bys_inside_subquery_complex_orderings(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Optional_navigation_with_collection_composite_key(bool async)
         {
             return base.Optional_navigation_with_collection_composite_key(async);
@@ -443,6 +443,84 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override Task Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(bool async)
         {
             return base.Correlated_collection_with_groupby_with_complex_grouping_key_not_projecting_identifier_column_with_group_aggregate_in_final_projection(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override Task Where_subquery_with_ElementAtOrDefault_equality_to_null_with_composite_key(bool async)
+        {
+            return base.Where_subquery_with_ElementAtOrDefault_equality_to_null_with_composite_key(async);
+        }
+
+        public override async Task DateTimeOffset_to_unix_time_milliseconds(bool async)
+        {
+            await base.DateTimeOffset_to_unix_time_milliseconds(async);
+
+        AssertSql(
+"""
+@__unixEpochMilliseconds_0='0'
+
+SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, CASE
+    WHEN `o`.`Nickname` IS NOT NULL THEN 'Officer'
+END AS `Discriminator`, `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`, `s1`.`SquadId`, `s1`.`MissionId`
+FROM `Gears` AS `g`
+LEFT JOIN `Officers` AS `o` ON (`g`.`Nickname` = `o`.`Nickname`) AND (`g`.`SquadId` = `o`.`SquadId`)
+INNER JOIN `Squads` AS `s` ON `g`.`SquadId` = `s`.`Id`
+LEFT JOIN `SquadMissions` AS `s1` ON `s`.`Id` = `s1`.`SquadId`
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `SquadMissions` AS `s0`
+    INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochMilliseconds_0 = (TIMESTAMPDIFF(microsecond, '1970-01-01 00:00:00', `m`.`Timeline`)) DIV (1000)))
+ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
+""");
+        }
+
+        public override async Task DateTimeOffset_to_unix_time_seconds(bool async)
+        {
+            await base.DateTimeOffset_to_unix_time_seconds(async);
+
+            AssertSql(
+"""
+@__unixEpochSeconds_0='0'
+
+SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, CASE
+    WHEN `o`.`Nickname` IS NOT NULL THEN 'Officer'
+END AS `Discriminator`, `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`, `s1`.`SquadId`, `s1`.`MissionId`
+FROM `Gears` AS `g`
+LEFT JOIN `Officers` AS `o` ON (`g`.`Nickname` = `o`.`Nickname`) AND (`g`.`SquadId` = `o`.`SquadId`)
+INNER JOIN `Squads` AS `s` ON `g`.`SquadId` = `s`.`Id`
+LEFT JOIN `SquadMissions` AS `s1` ON `s`.`Id` = `s1`.`SquadId`
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `SquadMissions` AS `s0`
+    INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochSeconds_0 = TIMESTAMPDIFF(second, '1970-01-01 00:00:00', `m`.`Timeline`)))
+ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
+""");
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.LimitWithNonConstantValue))]
+        public override async Task Where_subquery_with_ElementAt_using_column_as_index(bool async)
+        {
+            await base.Where_subquery_with_ElementAt_using_column_as_index(async);
+
+            AssertSql("");
+        }
+
+        public override async Task Where_datetimeoffset_hour_component(bool async)
+        {
+            await AssertQuery(
+                async,
+                ss => from m in ss.Set<Mission>()
+                    where m.Timeline.Hour == /* 10 */ 8
+                    select m);
+
+            AssertSql(
+                """
+                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
+                FROM `Missions` AS `m`
+                WHERE EXTRACT(hour FROM `m`.`Timeline`) = 8
+                """);
         }
 
         private string AssertSql(string expected)

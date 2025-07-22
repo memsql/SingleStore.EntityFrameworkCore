@@ -8,6 +8,7 @@ using System.Data.Common;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SingleStoreConnector;
 
@@ -21,7 +22,7 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
     public abstract class SingleStoreTypeMapping : RelationalTypeMapping
     {
         /// <summary>
-        /// The database type used by SingleStore.
+        /// The database type used by SingleStore Distributed.
         /// </summary>
         public virtual SingleStoreDbType SingleStoreDbType { get; }
 
@@ -34,10 +35,20 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             bool unicode = false,
             int? size = null,
             ValueConverter valueConverter = null,
-            ValueComparer valueComparer = null)
+            ValueComparer valueComparer = null,
+            JsonValueReaderWriter jsonValueReaderWriter = null)
             : base(
                 new RelationalTypeMappingParameters(
-                    new CoreTypeMappingParameters(clrType, valueConverter, valueComparer), storeType, StoreTypePostfix.None, dbType, unicode, size))
+                    new CoreTypeMappingParameters(
+                        clrType,
+                        valueConverter,
+                        valueComparer,
+                        jsonValueReaderWriter: jsonValueReaderWriter),
+                    storeType,
+                    StoreTypePostfix.None,
+                    dbType,
+                    unicode,
+                    size))
             => SingleStoreDbType = mySqlDbType;
 
         /// <summary>

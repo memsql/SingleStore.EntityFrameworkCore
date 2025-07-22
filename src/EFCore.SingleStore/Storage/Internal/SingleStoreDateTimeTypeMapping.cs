@@ -6,6 +6,7 @@ using System;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.Json;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
@@ -19,6 +20,8 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
     public class SingleStoreDateTimeTypeMapping : DateTimeTypeMapping, IDefaultValueCompatibilityAware
     {
         private readonly bool _isDefaultValueCompatible;
+
+        public static new SingleStoreDateTimeTypeMapping Default { get; } = new("datetime");
 
         /// <summary>
         ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
@@ -35,7 +38,11 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             bool isDefaultValueCompatible = true)
             : this(
                 new RelationalTypeMappingParameters(
-                    new CoreTypeMappingParameters(clrType ?? typeof(DateTime), converter, comparer),
+                    new CoreTypeMappingParameters(
+                        clrType ?? typeof(DateTime),
+                        converter,
+                        comparer,
+                        jsonValueReaderWriter: JsonDateTimeReaderWriter.Instance),
                     storeType,
                     StoreTypePostfix.Precision,
                     System.Data.DbType.DateTime,

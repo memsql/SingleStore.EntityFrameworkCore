@@ -4,6 +4,7 @@
 
 using EntityFrameworkCore.SingleStore.Scaffolding.Internal;
 using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Design.Internal;
 using Microsoft.EntityFrameworkCore.Scaffolding;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -15,6 +16,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
         {
             serviceCollection.AddEntityFrameworkSingleStore();
             new EntityFrameworkRelationalDesignServicesBuilder(serviceCollection)
+                .TryAdd<ICSharpRuntimeAnnotationCodeGenerator, SingleStoreCSharpRuntimeAnnotationCodeGenerator>()
                 .TryAdd<IAnnotationCodeGenerator, SingleStoreAnnotationCodeGenerator>()
                 .TryAdd<IDatabaseModelFactory, SingleStoreDatabaseModelFactory>()
                 .TryAdd<IProviderConfigurationCodeGenerator, SingleStoreCodeGenerator>()

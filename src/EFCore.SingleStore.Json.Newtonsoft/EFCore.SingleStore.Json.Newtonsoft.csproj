@@ -2,8 +2,7 @@
 
   <PropertyGroup>
     <Description>JSON support using Newtonsoft.Json (JSON.NET) for SingleStore provider for Entity Framework Core.</Description>
-    <TargetFrameworks>$(SingleStoreTargetFrameworks)</TargetFrameworks>
-    <MinClientVersion>3.6</MinClientVersion>
+    <TargetFramework>$(SingleStoreTargetFramework)</TargetFramework>
     <AssemblyName>EntityFrameworkCore.SingleStore.Json.Newtonsoft</AssemblyName>
     <RootNamespace>EntityFrameworkCore.SingleStore.Json.Newtonsoft</RootNamespace>
     <IsPackable>true</IsPackable>
@@ -34,7 +33,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" />
     <PackageReference Include="Newtonsoft.Json" />
-    <PackageReference Include="SingleStoreConnector" Version="1.1.4" />
+    <PackageReference Include="SingleStoreConnector" Version="1.2.0" />
   </ItemGroup>
 
   <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->
@@ -43,13 +42,6 @@
   <ItemGroup Condition="'$(LocalEFCoreRepository)' == ''">
     <!-- PrivateAssets="none" is set to flow the EF Core analyzer to users referencing this package https://github.com/aspnet/EntityFrameworkCore/pull/11350 -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" PrivateAssets="none" />
-  </ItemGroup>
-
-  <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->
-  <ItemGroup Condition="'$(LocalSingleStoreConnectorRepository)' != ''">
-    <Reference Include="SingleStoreConnector">
-      <HintPath>$(LocalSingleStoreConnectorRepository)\src\SingleStoreConnector\bin\Debug\$(TargetFramework)\SingleStoreConnector.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <!-- TODO: Can be removed because it is already contained in EFCore.SingleStore. -->

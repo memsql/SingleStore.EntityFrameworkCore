@@ -13,7 +13,7 @@ public class TPCInheritanceQuerySingleStoreFixture : TPCInheritanceQueryFixture
         => SingleStoreTestStoreFactory.Instance;
 
     // TODO: Add sequence support for server implementations that have them.
-    protected override bool UseGeneratedKeys
+    public override bool UseGeneratedKeys
         => false;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)

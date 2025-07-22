@@ -9,7 +9,7 @@ using Xunit;
 
 #if FIXED_TEST_ORDER
 
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
+[assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true, MaxParallelThreads = 1)]
 [assembly: TestCollectionOrderer("EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Xunit.SingleStoreTestCollectionOrderer", "EntityFrameworkCore.SingleStore.FunctionalTests")]
 [assembly: TestCaseOrderer("EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Xunit.SingleStoreTestCaseOrderer", "EntityFrameworkCore.SingleStore.FunctionalTests")]
 

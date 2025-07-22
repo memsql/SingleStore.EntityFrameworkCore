@@ -12,7 +12,7 @@ namespace EntityFrameworkCore.SingleStore.Metadata.Conventions
     /// <summary>
     ///     A convention that configures the character set for an entity based on the applied <see cref="SingleStoreCharSetAttribute" />.
     /// </summary>
-    public class TableCharSetAttributeConvention : EntityTypeAttributeConventionBase<SingleStoreCharSetAttribute>
+    public class TableCharSetAttributeConvention : TypeAttributeConventionBase<SingleStoreCharSetAttribute>
     {
         /// <summary>
         ///     Creates a new instance of <see cref="TableCharSetAttributeConvention" />.

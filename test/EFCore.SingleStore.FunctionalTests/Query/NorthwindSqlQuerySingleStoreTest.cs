@@ -35,16 +35,16 @@ public class NorthwindSqlQuerySingleStoreTest : NorthwindSqlQueryTestBase<Northw
         await base.SqlQuery_composed_Contains(async);
 
         AssertSql(
-            """
-            SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-            FROM `Orders` AS `o`
-            WHERE EXISTS (
-                SELECT 1
-                FROM (
-                    SELECT `ProductID` AS `Value` FROM `Products`
-                ) AS `t`
-                WHERE CAST(`t`.`Value` AS signed) = `o`.`OrderID`)
-            """);
+"""
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+FROM `Orders` AS `o`
+WHERE `o`.`OrderID` IN (
+    SELECT `t`.`Value`
+    FROM (
+        SELECT `ProductID` AS `Value` FROM `Products`
+    ) AS `t`
+)
+""");
     }
 
     public override async Task SqlQuery_composed_Join(bool async)

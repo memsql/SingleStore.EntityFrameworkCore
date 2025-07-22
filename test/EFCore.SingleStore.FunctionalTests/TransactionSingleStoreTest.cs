@@ -25,31 +25,31 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         protected override bool SavepointsSupported => false;
 
-        [ConditionalTheory(Skip = "Feature 'SAVEPOINT' is not supported by SingleStore.")]
+        [ConditionalTheory(Skip = "Feature 'SAVEPOINT' is not supported by SingleStore Distributed.")]
         public override async Task Savepoint_can_be_released(bool async)
         {
             await base.Savepoint_can_be_released(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'SAVEPOINT' is not supported by SingleStore.")]
+        [ConditionalTheory(Skip = "Feature 'SAVEPOINT' is not supported by SingleStore Distributed.")]
         public override async Task Savepoint_can_be_rolled_back(bool async)
         {
             await base.Savepoint_can_be_rolled_back(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'SAVEPOINT' is not supported by SingleStore.")]
+        [ConditionalTheory(Skip = "Feature 'SAVEPOINT' is not supported by SingleStore Distributed.")]
         public override async Task Savepoint_name_is_quoted(bool async)
         {
             await base.Savepoint_name_is_quoted(async);
         }
 
-        [ConditionalFact(Skip = "Feature 'XaTransactions' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'XaTransactions' is not supported by SingleStore Distributed.")]
         public override void BeginTransaction_throws_if_ambient_transaction_started()
         {
             base.BeginTransaction_throws_if_ambient_transaction_started();
         }
 
-        [ConditionalFact(Skip = "Feature 'XaTransactions' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'XaTransactions' is not supported by SingleStore Distributed.")]
         public override void EnlistTransaction_throws_if_ambient_transaction_started()
         {
             base.EnlistTransaction_throws_if_ambient_transaction_started();

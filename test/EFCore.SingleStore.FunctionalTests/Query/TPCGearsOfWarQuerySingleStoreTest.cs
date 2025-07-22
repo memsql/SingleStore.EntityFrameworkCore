@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore.TestModels.GearsOfWarModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
@@ -25,54 +26,6 @@ public class TPCGearsOfWarQuerySingleStoreTest : TPCGearsOfWarQueryRelationalTes
 
     protected override bool CanExecuteQueryString
         => true;
-
-    public override async Task Negate_on_binary_expression(bool async)
-    {
-        await base.Negate_on_binary_expression(async);
-
-        AssertSql(
-"""
-SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
-FROM `Squads` AS `s`
-WHERE `s`.`Id` = -(`s`.`Id` + `s`.`Id`)
-""");
-    }
-
-    public override async Task Negate_on_column(bool async)
-    {
-        await base.Negate_on_column(async);
-
-        AssertSql(
-"""
-SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
-FROM `Squads` AS `s`
-WHERE `s`.`Id` = -`s`.`Id`
-""");
-    }
-
-    public override async Task Double_negate_on_column(bool async)
-    {
-        await base.Double_negate_on_column(async);
-
-        AssertSql(
-"""
-SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
-FROM `Squads` AS `s`
-WHERE -(-`s`.`Id`) = `s`.`Id`
-""");
-    }
-
-    public override async Task Negate_on_like_expression(bool async)
-    {
-        await base.Negate_on_like_expression(async);
-
-        AssertSql(
-"""
-SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
-FROM `Squads` AS `s`
-WHERE `s`.`Name` IS NOT NULL AND NOT (`s`.`Name` LIKE 'us%')
-""");
-    }
 
     public override async Task Entity_equality_empty(bool async)
     {
@@ -1286,7 +1239,7 @@ FROM (
 ) AS `t`
 WHERE CASE
     WHEN `t`.`LeaderNickname` IS NULL THEN NULL
-    ELSE `t`.`LeaderNickname` IS NOT NULL AND (`t`.`LeaderNickname` LIKE '%us')
+    ELSE (`t`.`LeaderNickname` LIKE '%us') AND `t`.`LeaderNickname` IS NOT NULL
 END = TRUE
 """);
     }
@@ -2023,7 +1976,7 @@ LIMIT 1
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Where_subquery_boolean(bool async)
     {
         await base.Where_subquery_boolean(async);
@@ -2047,7 +2000,7 @@ WHERE COALESCE((
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Where_subquery_boolean_with_pushdown(bool async)
     {
         await base.Where_subquery_boolean_with_pushdown(async);
@@ -2180,7 +2133,7 @@ ORDER BY `t`.`Nickname`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Where_subquery_distinct_singleordefault_boolean2(bool async)
     {
         await base.Where_subquery_distinct_singleordefault_boolean2(async);
@@ -2882,12 +2835,30 @@ WHERE `c`.`Location` = @__value_0
     {
         await base.Non_unicode_string_literals_in_contains_is_used_for_non_unicode_column(async);
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+"""
+SELECT `c`.`Name`, `c`.`Location`, `c`.`Nation`
+FROM `Cities` AS `c`
+WHERE EXISTS (
+    SELECT 1
+    FROM JSON_TABLE('["Unknown","Jacinto\\u0027s location","Ephyra\\u0027s location"]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` longtext PATH '$[0]'
+    )) AS `c0`
+    WHERE (`c0`.`value` = `c`.`Location`) OR (`c0`.`value` IS NULL AND (`c`.`Location` IS NULL)))
+""");
+        }
+        else
+        {
+            AssertSql(
 """
 SELECT `c`.`Name`, `c`.`Location`, `c`.`Nation`
 FROM `Cities` AS `c`
 WHERE `c`.`Location` IN ('Unknown', 'Jacinto''s location', 'Ephyra''s location')
 """);
+        }
     }
 
     public override async Task Non_unicode_string_literals_is_used_for_non_unicode_column_with_subquery(bool async)
@@ -3333,7 +3304,7 @@ WHERE (`t0`.`HasSoulPatch` = TRUE) OR (`t`.`Note` LIKE '%Cole%')
 
         AssertSql(
 """
-SELECT (`t0`.`HasSoulPatch` = TRUE) AND (`t`.`Note` LIKE '%Cole%')
+SELECT (`t0`.`HasSoulPatch` = TRUE) AND ((`t`.`Note` LIKE '%Cole%') AND `t`.`Note` IS NOT NULL)
 FROM `Tags` AS `t`
 LEFT JOIN (
     SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`HasSoulPatch`
@@ -3515,16 +3486,13 @@ LEFT JOIN (
     SELECT `o`.`Nickname`, `o`.`SquadId`
     FROM `Officers` AS `o`
 ) AS `t0` ON (`t`.`GearNickName` = `t0`.`Nickname`) AND (`t`.`GearSquadId` = `t0`.`SquadId`)
-WHERE ((`t`.`Note` <> 'K.I.A.') OR `t`.`Note` IS NULL) AND EXISTS (
-    SELECT 1
-    FROM (
-        SELECT `g0`.`Nickname`, `g0`.`SquadId`, `g0`.`AssignedCityName`, `g0`.`CityOfBirthName`, `g0`.`FullName`, `g0`.`HasSoulPatch`, `g0`.`LeaderNickname`, `g0`.`LeaderSquadId`, `g0`.`Rank`, 'Gear' AS `Discriminator`
-        FROM `Gears` AS `g0`
-        UNION ALL
-        SELECT `o0`.`Nickname`, `o0`.`SquadId`, `o0`.`AssignedCityName`, `o0`.`CityOfBirthName`, `o0`.`FullName`, `o0`.`HasSoulPatch`, `o0`.`LeaderNickname`, `o0`.`LeaderSquadId`, `o0`.`Rank`, 'Officer' AS `Discriminator`
-        FROM `Officers` AS `o0`
-    ) AS `t1`
-    WHERE `t1`.`SquadId` = `t0`.`SquadId`)
+WHERE ((`t`.`Note` <> 'K.I.A.') OR `t`.`Note` IS NULL) AND `t0`.`SquadId` IN (
+    SELECT `g0`.`SquadId`
+    FROM `Gears` AS `g0`
+    UNION ALL
+    SELECT `o0`.`SquadId`
+    FROM `Officers` AS `o0`
+)
 """);
     }
 
@@ -3808,13 +3776,17 @@ WHERE EXTRACT(day FROM `m`.`Timeline`) = 2
 
     public override async Task Where_datetimeoffset_hour_component(bool async)
     {
-        await base.Where_datetimeoffset_hour_component(async);
+        await AssertQuery(
+            async,
+            ss => from m in ss.Set<Mission>()
+                where m.Timeline.Hour == /* 10 */ 8
+                select m);
 
         AssertSql(
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE EXTRACT(hour FROM `m`.`Timeline`) = 10
+WHERE EXTRACT(hour FROM `m`.`Timeline`) = 8
 """);
     }
 
@@ -4057,7 +4029,7 @@ LIMIT 1
 """
 SELECT `s`.`Name`
 FROM `Squads` AS `s`
-WHERE NOT (EXISTS (
+WHERE NOT EXISTS (
     SELECT 1
     FROM (
         SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
@@ -4067,7 +4039,7 @@ WHERE NOT (EXISTS (
         FROM `Officers` AS `o`
     ) AS `t`
     LEFT JOIN `Tags` AS `t0` ON (`t`.`Nickname` = `t0`.`GearNickName`) AND (`t`.`SquadId` = `t0`.`GearSquadId`)
-    WHERE (`s`.`Id` = `t`.`SquadId`) AND (`t0`.`Note` = 'Dom''s Tag')))
+    WHERE (`s`.`Id` = `t`.`SquadId`) AND (`t0`.`Note` = 'Dom''s Tag'))
 """);
     }
 
@@ -4095,12 +4067,30 @@ SELECT NOT EXISTS (
     {
         await base.Contains_with_local_nullable_guid_list_closure(async);
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
 """
 SELECT `t`.`Id`, `t`.`GearNickName`, `t`.`GearSquadId`, `t`.`IssueDate`, `t`.`Note`
 FROM `Tags` AS `t`
-WHERE `t`.`Id` IN ('d2c26679-562b-44d1-ab96-23d1775e0926', '23cbcf9b-ce14-45cf-aafa-2c2667ebfdd3', 'ab1b82d7-88db-42bd-a132-7eef9aa68af4')
+WHERE `t`.`Id` IN (
+    SELECT `i`.`value`
+    FROM JSON_TABLE('["d2c26679-562b-44d1-ab96-23d1775e0926","23cbcf9b-ce14-45cf-aafa-2c2667ebfdd3","ab1b82d7-88db-42bd-a132-7eef9aa68af4"]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` char(36) PATH '$[0]'
+    )) AS `i`
+)
 """);
+        }
+        else
+        {
+            AssertSql(
+"""
+SELECT `t`.`Id`, `t`.`GearNickName`, `t`.`GearSquadId`, `t`.`IssueDate`, `t`.`Note`
+FROM `Tags` AS `t`
+WHERE `t`.`Id` IN ('df36f493-463f-4123-83f9-6b135deeb7ba', '23cbcf9b-ce14-45cf-aafa-2c2667ebfdd3', 'ab1b82d7-88db-42bd-a132-7eef9aa68af4')
+""");
+        }
     }
 
     public override async Task Unnecessary_include_doesnt_get_added_complex_when_projecting_EF_Property(bool async)
@@ -4750,7 +4740,9 @@ ORDER BY `t`.`Nickname`, `t0`.`Nickname`
     {
         await base.Contains_on_nullable_array_produces_correct_sql(async);
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
 """
 SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
 FROM (
@@ -4761,11 +4753,34 @@ FROM (
     FROM `Officers` AS `o`
 ) AS `t`
 LEFT JOIN `Cities` AS `c` ON `t`.`AssignedCityName` = `c`.`Name`
-WHERE (`t`.`SquadId` < 2) AND ((`c`.`Name` = 'Ephyra') OR `c`.`Name` IS NULL)
+WHERE (`t`.`SquadId` < 2) AND EXISTS (
+    SELECT 1
+    FROM JSON_TABLE('["Ephyra",null]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` varchar(255) PATH '$[0]'
+    )) AS `c0`
+    WHERE (`c0`.`value` = `c`.`Name`) OR (`c0`.`value` IS NULL AND (`c`.`Name` IS NULL)))
 """);
+        }
+        else
+        {
+            AssertSql(
+"""
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+LEFT JOIN `Cities` AS `c` ON `t`.`AssignedCityName` = `c`.`Name`
+WHERE (`t`.`SquadId` < 2) AND (`c`.`Name` IS NULL OR (`c`.`Name` = 'Ephyra'))
+""");
+        }
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Optional_navigation_with_collection_composite_key(bool async)
     {
         await base.Optional_navigation_with_collection_composite_key(async);
@@ -5956,7 +5971,7 @@ ORDER BY `t`.`HasSoulPatch` DESC, `t0`.`Note`, `t`.`Nickname`, `t`.`SquadId`, `t
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Multiple_orderby_with_navigation_expansion_on_one_of_the_order_bys_inside_subquery_complex_orderings(
         bool async)
     {
@@ -6311,7 +6326,7 @@ ORDER BY `s`.`Name`, `s`.`Id`, `t1`.`Nickname`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Correlated_collections_with_FirstOrDefault(bool async)
     {
         await base.Correlated_collections_with_FirstOrDefault(async);
@@ -7225,7 +7240,7 @@ ORDER BY `t0`.`Nickname`, `t0`.`SquadId`, `t1`.`Id`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Project_one_value_type_from_empty_collection(bool async)
     {
         await base.Project_one_value_type_from_empty_collection(async);
@@ -7248,7 +7263,7 @@ WHERE `s`.`Name` = 'Kilo'
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Project_one_value_type_converted_to_nullable_from_empty_collection(bool async)
     {
         await base.Project_one_value_type_converted_to_nullable_from_empty_collection(async);
@@ -7298,7 +7313,7 @@ WHERE `s`.`Name` = 'Kilo'
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Filter_on_subquery_projecting_one_value_type_from_empty_collection(bool async)
     {
         await base.Filter_on_subquery_projecting_one_value_type_from_empty_collection(async);
@@ -7321,7 +7336,7 @@ WHERE (`s`.`Name` = 'Kilo') AND (COALESCE((
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_projecting_single_constant_int(bool async)
     {
         await base.Select_subquery_projecting_single_constant_int(async);
@@ -7343,7 +7358,7 @@ FROM `Squads` AS `s`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_projecting_single_constant_string(bool async)
     {
         await base.Select_subquery_projecting_single_constant_string(async);
@@ -7365,7 +7380,7 @@ FROM `Squads` AS `s`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_projecting_single_constant_bool(bool async)
     {
         await base.Select_subquery_projecting_single_constant_bool(async);
@@ -7692,7 +7707,7 @@ FROM `Officers` AS `o`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_boolean(bool async)
     {
         await base.Select_subquery_boolean(async);
@@ -7715,7 +7730,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_boolean_with_pushdown(bool async)
     {
         await base.Select_subquery_boolean_with_pushdown(async);
@@ -7738,7 +7753,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_int_with_inside_cast_and_coalesce(bool async)
     {
         await base.Select_subquery_int_with_inside_cast_and_coalesce(async);
@@ -7761,7 +7776,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_int_with_outside_cast_and_coalesce(bool async)
     {
         await base.Select_subquery_int_with_outside_cast_and_coalesce(async);
@@ -7784,7 +7799,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_int_with_pushdown_and_coalesce(bool async)
     {
         await base.Select_subquery_int_with_pushdown_and_coalesce(async);
@@ -7807,7 +7822,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_int_with_pushdown_and_coalesce2(bool async)
     {
         await base.Select_subquery_int_with_pushdown_and_coalesce2(async);
@@ -7835,7 +7850,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_boolean_empty(bool async)
     {
         await base.Select_subquery_boolean_empty(async);
@@ -7858,7 +7873,7 @@ FROM (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_boolean_empty_with_pushdown(bool async)
     {
         await base.Select_subquery_boolean_empty_with_pushdown(async);
@@ -7907,7 +7922,7 @@ WHERE `t`.`HasSoulPatch` = TRUE
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_distinct_singleordefault_boolean2(bool async)
     {
         await base.Select_subquery_distinct_singleordefault_boolean2(async);
@@ -7982,7 +7997,7 @@ WHERE `t`.`HasSoulPatch` = TRUE
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Select_subquery_distinct_singleordefault_boolean_empty2(bool async)
     {
         await base.Select_subquery_distinct_singleordefault_boolean_empty2(async);
@@ -8075,7 +8090,31 @@ ORDER BY `c`.`Name`, `t`.`Nickname` DESC
     {
         await base.Correlated_collection_with_complex_order_by_funcletized_to_constant_bool(async);
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+"""
+SELECT `t`.`Nickname`, `t`.`SquadId`, `w`.`Name`, `w`.`Id`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`FullName`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`FullName`
+    FROM `Officers` AS `o`
+) AS `t`
+LEFT JOIN `Weapons` AS `w` ON `t`.`FullName` = `w`.`OwnerFullName`
+ORDER BY COALESCE(`t`.`Nickname` IN (
+    SELECT `n`.`value`
+    FROM JSON_TABLE('[]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` varchar(255) PATH '$[0]'
+    )) AS `n`
+), FALSE) DESC, `t`.`Nickname`, `t`.`SquadId`
+""");
+        }
+        else
+        {
+            AssertSql(
 """
 SELECT `t`.`Nickname`, `t`.`SquadId`, `w`.`Name`, `w`.`Id`
 FROM (
@@ -8088,6 +8127,7 @@ FROM (
 LEFT JOIN `Weapons` AS `w` ON `t`.`FullName` = `w`.`OwnerFullName`
 ORDER BY `t`.`Nickname`, `t`.`SquadId`
 """);
+        }
     }
 
     public override async Task Double_order_by_on_nullable_bool_coming_from_optional_navigation(bool async)
@@ -8112,7 +8152,7 @@ ORDER BY `w0`.`IsAutomatic`, `w0`.`Id`
 SELECT `w0`.`Id`, `w0`.`AmmunitionType`, `w0`.`IsAutomatic`, `w0`.`Name`, `w0`.`OwnerFullName`, `w0`.`SynergyWithId`
 FROM `Weapons` AS `w`
 LEFT JOIN `Weapons` AS `w0` ON `w`.`SynergyWithId` = `w0`.`Id`
-ORDER BY `w0`.`Name` LIKE '%Lancer'
+ORDER BY (`w0`.`Name` LIKE '%Lancer') AND `w0`.`Name` IS NOT NULL
 """);
     }
 
@@ -8629,7 +8669,7 @@ WHERE (`t`.`FullName` <> 'Dom') AND EXISTS (
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Query_with_complex_let_containing_ordering_and_filter_projecting_firstOrDefault_element_of_let(
         bool async)
     {
@@ -8943,7 +8983,27 @@ WHERE (
             ss => ss.Set<Mission>().Where(
                 m => start <= m.Timeline.Date && m.Timeline < end && dates.Contains(m.Timeline)));
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+"""
+@__start_0='1902-01-01T10:00:00.1234567+01:30'
+@__end_1='1902-01-03T10:00:00.1234567+01:30'
+
+SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
+FROM `Missions` AS `m`
+WHERE ((@__start_0 <= CONVERT(`m`.`Timeline`, date)) AND (`m`.`Timeline` < @__end_1)) AND `m`.`Timeline` IN (
+    SELECT `d`.`value`
+    FROM JSON_TABLE('["1902-01-02T10:00:00.1234567+01:30"]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` datetime(6) PATH '$[0]'
+    )) AS `d`
+)
+""");
+        }
+        else
+        {
+            AssertSql(
 """
 @__start_0='1902-01-01T08:30:00.1234560+00:00'
 @__end_1='1902-01-03T08:30:00.1234560+00:00'
@@ -8952,6 +9012,7 @@ SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`
 FROM `Missions` AS `m`
 WHERE ((@__start_0 <= CONVERT(`m`.`Timeline`, date)) AND (`m`.`Timeline` < @__end_1)) AND (`m`.`Timeline` = '1902-01-02 08:30:00.123456')
 """);
+        }
     }
 
     [ConditionalTheory(Skip = "TODO: Does not work as expected, probably due to some test definition issues.")]
@@ -9460,10 +9521,11 @@ FROM (
         FROM `Officers` AS `o`
     ) AS `t`
     INNER JOIN `Squads` AS `s` ON `t`.`SquadId` = `s`.`Id`
-    WHERE EXISTS (
-        SELECT 1
+    WHERE `s`.`Id` IN (
+        SELECT `s0`.`Id`
         FROM `Squads` AS `s0`
-        WHERE (`s0`.`Id` = @__squadId_0) AND (`s0`.`Id` = `s`.`Id`))
+        WHERE `s0`.`Id` = @__squadId_0
+    )
     UNION ALL
     SELECT `t1`.`Nickname`, `t1`.`SquadId`, `t1`.`AssignedCityName`, `t1`.`CityOfBirthName`, `t1`.`FullName`, `t1`.`HasSoulPatch`, `t1`.`LeaderNickname`, `t1`.`LeaderSquadId`, `t1`.`Rank`, `t1`.`Discriminator`
     FROM (
@@ -9474,10 +9536,11 @@ FROM (
         FROM `Officers` AS `o0`
     ) AS `t1`
     INNER JOIN `Squads` AS `s1` ON `t1`.`SquadId` = `s1`.`Id`
-    WHERE EXISTS (
-        SELECT 1
+    WHERE `s1`.`Id` IN (
+        SELECT `s2`.`Id`
         FROM `Squads` AS `s2`
-        WHERE (`s2`.`Id` = @__squadId_0) AND (`s2`.`Id` = `s1`.`Id`))
+        WHERE `s2`.`Id` = @__squadId_0
+    )
 ) AS `t0`
 ORDER BY `t0`.`FullName`
 """);
@@ -9807,17 +9870,41 @@ ORDER BY `t`.`Nickname`
     {
         await base.OrderBy_Contains_empty_list(async);
 
-        AssertSql(
-"""
-SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
-FROM (
-    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
-    FROM `Gears` AS `g`
-    UNION ALL
-    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
-    FROM `Officers` AS `o`
-) AS `t`
-""");
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+AssertSql(
+    """
+    SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+    FROM (
+        SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+        FROM `Gears` AS `g`
+        UNION ALL
+        SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+        FROM `Officers` AS `o`
+    ) AS `t`
+    ORDER BY `t`.`SquadId` IN (
+        SELECT `i`.`value`
+        FROM JSON_TABLE('[]', '$[*]' COLUMNS (
+            `key` FOR ORDINALITY,
+            `value` int PATH '$[0]'
+        )) AS `i`
+    )
+    """);
+        }
+        else
+        {
+AssertSql(
+    """
+    SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+    FROM (
+        SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+        FROM `Gears` AS `g`
+        UNION ALL
+        SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+        FROM `Officers` AS `o`
+    ) AS `t`
+    """);
+        }
     }
 
     public override async Task Where_with_enum_flags_parameter(bool async)
@@ -9883,31 +9970,37 @@ WHERE FALSE
 
         AssertSql(
 """
-SELECT `l`.`Id`, `l`.`CapitalName`, `l`.`Name`, `l`.`ServerAddress`, `l`.`CommanderName`, `l`.`Eradicated`
-FROM `LocustHordes` AS `l`
-LEFT JOIN `Cities` AS `c` ON `l`.`CapitalName` = `c`.`Name`
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+LEFT JOIN `Cities` AS `c` ON `t`.`AssignedCityName` = `c`.`Name`
 WHERE (`c`.`Name` = (
     SELECT `c0`.`Name`
     FROM (
-        SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
-        FROM `Gears` AS `g`
+        SELECT `g0`.`Nickname`, `g0`.`SquadId`, `g0`.`AssignedCityName`, `g0`.`CityOfBirthName`, `g0`.`FullName`, `g0`.`HasSoulPatch`, `g0`.`LeaderNickname`, `g0`.`LeaderSquadId`, `g0`.`Rank`, 'Gear' AS `Discriminator`
+        FROM `Gears` AS `g0`
         UNION ALL
-        SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
-        FROM `Officers` AS `o`
-    ) AS `t`
-    INNER JOIN `Cities` AS `c0` ON `t`.`CityOfBirthName` = `c0`.`Name`
-    ORDER BY `t`.`Nickname`
+        SELECT `o0`.`Nickname`, `o0`.`SquadId`, `o0`.`AssignedCityName`, `o0`.`CityOfBirthName`, `o0`.`FullName`, `o0`.`HasSoulPatch`, `o0`.`LeaderNickname`, `o0`.`LeaderSquadId`, `o0`.`Rank`, 'Officer' AS `Discriminator`
+        FROM `Officers` AS `o0`
+    ) AS `t0`
+    INNER JOIN `Cities` AS `c0` ON `t0`.`CityOfBirthName` = `c0`.`Name`
+    ORDER BY `t0`.`Nickname`
     LIMIT 1)) OR (`c`.`Name` IS NULL AND ((
     SELECT `c0`.`Name`
     FROM (
-        SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
-        FROM `Gears` AS `g`
+        SELECT `g0`.`Nickname`, `g0`.`SquadId`, `g0`.`AssignedCityName`, `g0`.`CityOfBirthName`, `g0`.`FullName`, `g0`.`HasSoulPatch`, `g0`.`LeaderNickname`, `g0`.`LeaderSquadId`, `g0`.`Rank`, 'Gear' AS `Discriminator`
+        FROM `Gears` AS `g0`
         UNION ALL
-        SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
-        FROM `Officers` AS `o`
-    ) AS `t`
-    INNER JOIN `Cities` AS `c0` ON `t`.`CityOfBirthName` = `c0`.`Name`
-    ORDER BY `t`.`Nickname`
+        SELECT `o0`.`Nickname`, `o0`.`SquadId`, `o0`.`AssignedCityName`, `o0`.`CityOfBirthName`, `o0`.`FullName`, `o0`.`HasSoulPatch`, `o0`.`LeaderNickname`, `o0`.`LeaderSquadId`, `o0`.`Rank`, 'Officer' AS `Discriminator`
+        FROM `Officers` AS `o0`
+    ) AS `t0`
+    INNER JOIN `Cities` AS `c0` ON `t0`.`CityOfBirthName` = `c0`.`Name`
+    ORDER BY `t0`.`Nickname`
     LIMIT 1) IS NULL))
 """);
     }
@@ -10096,7 +10189,7 @@ WHERE LOCATE(0x01, `s`.`Banner`) > 0
 """
 SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
 FROM `Squads` AS `s`
-WHERE LENGTH(`s`.`Banner`) = 1
+WHERE LENGTH(`s`.`Banner`) = 2
 """);
     }
 
@@ -10106,7 +10199,7 @@ WHERE LENGTH(`s`.`Banner`) = 1
 
         AssertSql(
 """
-@__p_0='1'
+@__p_0='2'
 
 SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
 FROM `Squads` AS `s`
@@ -10177,7 +10270,7 @@ END
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Conditional_expression_with_test_being_simplified_to_constant_complex(bool isAsync)
     {
         await base.Conditional_expression_with_test_being_simplified_to_constant_complex(isAsync);
@@ -10185,7 +10278,7 @@ END
         AssertSql(
 """
 @__prm_0='True'
-@__prm2_1='Dom's Lancer' (Size = 4000)
+@__prm2_1='Marcus' Lancer' (Size = 4000)
 
 SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
 FROM (
@@ -10361,7 +10454,7 @@ FROM (
     SELECT `l0`.`Name`, `l0`.`LocustHordeId`, `l0`.`ThreatLevel`, `l0`.`ThreatLevelByte`, `l0`.`ThreatLevelNullableByte`, `l0`.`DefeatedByNickname`, `l0`.`DefeatedBySquadId`, `l0`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
     FROM `LocustCommanders` AS `l0`
 ) AS `t`
-WHERE CAST(`t`.`ThreatLevel` AS signed) >= (5 + CAST(`t`.`ThreatLevel` AS signed))
+WHERE CAST(`t`.`ThreatLevel` AS signed) <= (5 + CAST(`t`.`ThreatLevel` AS signed))
 """);
     }
 
@@ -10429,7 +10522,7 @@ WHERE EXTRACT(hour FROM `m`.`Duration`) = 1
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE EXTRACT(minute FROM `m`.`Duration`) = 1
+WHERE EXTRACT(minute FROM `m`.`Duration`) = 2
 """);
     }
 
@@ -10441,7 +10534,7 @@ WHERE EXTRACT(minute FROM `m`.`Duration`) = 1
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE EXTRACT(second FROM `m`.`Duration`) = 1
+WHERE EXTRACT(second FROM `m`.`Duration`) = 3
 """);
     }
 
@@ -10453,7 +10546,7 @@ WHERE EXTRACT(second FROM `m`.`Duration`) = 1
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE (EXTRACT(microsecond FROM `m`.`Duration`)) DIV (1000) = 1
+WHERE (EXTRACT(microsecond FROM `m`.`Duration`)) DIV (1000) = 456
 """);
     }
 
@@ -10471,16 +10564,13 @@ FROM (
     SELECT `l0`.`Name`, `l0`.`LocustHordeId`, `l0`.`ThreatLevel`, `l0`.`ThreatLevelByte`, `l0`.`ThreatLevelNullableByte`, `l0`.`DefeatedByNickname`, `l0`.`DefeatedBySquadId`, `l0`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
     FROM `LocustCommanders` AS `l0`
 ) AS `t`
-WHERE EXISTS (
-    SELECT 1
-    FROM (
-        SELECT `l1`.`Name`, `l1`.`LocustHordeId`, `l1`.`ThreatLevel`, `l1`.`ThreatLevelByte`, `l1`.`ThreatLevelNullableByte`, NULL AS `DefeatedByNickname`, NULL AS `DefeatedBySquadId`, NULL AS `HighCommandId`, 'LocustLeader' AS `Discriminator`
-        FROM `LocustLeaders` AS `l1`
-        UNION ALL
-        SELECT `l2`.`Name`, `l2`.`LocustHordeId`, `l2`.`ThreatLevel`, `l2`.`ThreatLevelByte`, `l2`.`ThreatLevelNullableByte`, `l2`.`DefeatedByNickname`, `l2`.`DefeatedBySquadId`, `l2`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
-        FROM `LocustCommanders` AS `l2`
-    ) AS `t0`
-    WHERE `t0`.`ThreatLevelByte` = `t`.`ThreatLevelByte`)
+WHERE `t`.`ThreatLevelByte` IN (
+    SELECT `l1`.`ThreatLevelByte`
+    FROM `LocustLeaders` AS `l1`
+    UNION ALL
+    SELECT `l2`.`ThreatLevelByte`
+    FROM `LocustCommanders` AS `l2`
+)
 """);
     }
 
@@ -10501,10 +10591,10 @@ FROM (
 WHERE EXISTS (
     SELECT 1
     FROM (
-        SELECT `l1`.`Name`, `l1`.`LocustHordeId`, `l1`.`ThreatLevel`, `l1`.`ThreatLevelByte`, `l1`.`ThreatLevelNullableByte`, NULL AS `DefeatedByNickname`, NULL AS `DefeatedBySquadId`, NULL AS `HighCommandId`, 'LocustLeader' AS `Discriminator`
+        SELECT `l1`.`ThreatLevelNullableByte`
         FROM `LocustLeaders` AS `l1`
         UNION ALL
-        SELECT `l2`.`Name`, `l2`.`LocustHordeId`, `l2`.`ThreatLevel`, `l2`.`ThreatLevelByte`, `l2`.`ThreatLevelNullableByte`, `l2`.`DefeatedByNickname`, `l2`.`DefeatedBySquadId`, `l2`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
+        SELECT `l2`.`ThreatLevelNullableByte`
         FROM `LocustCommanders` AS `l2`
     ) AS `t0`
     WHERE (`t0`.`ThreatLevelNullableByte` = `t`.`ThreatLevelNullableByte`) OR (`t0`.`ThreatLevelNullableByte` IS NULL AND (`t`.`ThreatLevelNullableByte` IS NULL)))
@@ -10528,10 +10618,10 @@ FROM (
 WHERE EXISTS (
     SELECT 1
     FROM (
-        SELECT `l1`.`Name`, `l1`.`LocustHordeId`, `l1`.`ThreatLevel`, `l1`.`ThreatLevelByte`, `l1`.`ThreatLevelNullableByte`, NULL AS `DefeatedByNickname`, NULL AS `DefeatedBySquadId`, NULL AS `HighCommandId`, 'LocustLeader' AS `Discriminator`
+        SELECT `l1`.`ThreatLevelNullableByte`
         FROM `LocustLeaders` AS `l1`
         UNION ALL
-        SELECT `l2`.`Name`, `l2`.`LocustHordeId`, `l2`.`ThreatLevel`, `l2`.`ThreatLevelByte`, `l2`.`ThreatLevelNullableByte`, `l2`.`DefeatedByNickname`, `l2`.`DefeatedBySquadId`, `l2`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
+        SELECT `l2`.`ThreatLevelNullableByte`
         FROM `LocustCommanders` AS `l2`
     ) AS `t0`
     WHERE `t0`.`ThreatLevelNullableByte` IS NULL)
@@ -10555,10 +10645,10 @@ FROM (
 WHERE EXISTS (
     SELECT 1
     FROM (
-        SELECT `l1`.`Name`, `l1`.`LocustHordeId`, `l1`.`ThreatLevel`, `l1`.`ThreatLevelByte`, `l1`.`ThreatLevelNullableByte`, NULL AS `DefeatedByNickname`, NULL AS `DefeatedBySquadId`, NULL AS `HighCommandId`, 'LocustLeader' AS `Discriminator`
+        SELECT `l1`.`ThreatLevelNullableByte`
         FROM `LocustLeaders` AS `l1`
         UNION ALL
-        SELECT `l2`.`Name`, `l2`.`LocustHordeId`, `l2`.`ThreatLevel`, `l2`.`ThreatLevelByte`, `l2`.`ThreatLevelNullableByte`, `l2`.`DefeatedByNickname`, `l2`.`DefeatedBySquadId`, `l2`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
+        SELECT `l2`.`ThreatLevelNullableByte`
         FROM `LocustCommanders` AS `l2`
     ) AS `t0`
     WHERE `t0`.`ThreatLevelNullableByte` IS NULL)
@@ -10608,16 +10698,13 @@ JOIN LATERAL (
         SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
         FROM `Officers` AS `o`
     ) AS `t0`
-    WHERE EXISTS (
-        SELECT 1
-        FROM (
-            SELECT `l1`.`Name`, `l1`.`LocustHordeId`, `l1`.`ThreatLevel`, `l1`.`ThreatLevelByte`, `l1`.`ThreatLevelNullableByte`, NULL AS `DefeatedByNickname`, NULL AS `DefeatedBySquadId`, NULL AS `HighCommandId`, 'LocustLeader' AS `Discriminator`
-            FROM `LocustLeaders` AS `l1`
-            UNION ALL
-            SELECT `l2`.`Name`, `l2`.`LocustHordeId`, `l2`.`ThreatLevel`, `l2`.`ThreatLevelByte`, `l2`.`ThreatLevelNullableByte`, `l2`.`DefeatedByNickname`, `l2`.`DefeatedBySquadId`, `l2`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
-            FROM `LocustCommanders` AS `l2`
-        ) AS `t2`
-        WHERE `t2`.`ThreatLevelByte` = `t`.`ThreatLevelByte`)
+    WHERE `t`.`ThreatLevelByte` IN (
+        SELECT `l1`.`ThreatLevelByte`
+        FROM `LocustLeaders` AS `l1`
+        UNION ALL
+        SELECT `l2`.`ThreatLevelByte`
+        FROM `LocustCommanders` AS `l2`
+    )
 ) AS `t1` ON TRUE
 """);
     }
@@ -10646,16 +10733,13 @@ JOIN LATERAL (
         SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
         FROM `Officers` AS `o`
     ) AS `t0`
-    WHERE NOT (EXISTS (
-        SELECT 1
-        FROM (
-            SELECT `l1`.`Name`, `l1`.`LocustHordeId`, `l1`.`ThreatLevel`, `l1`.`ThreatLevelByte`, `l1`.`ThreatLevelNullableByte`, NULL AS `DefeatedByNickname`, NULL AS `DefeatedBySquadId`, NULL AS `HighCommandId`, 'LocustLeader' AS `Discriminator`
-            FROM `LocustLeaders` AS `l1`
-            UNION ALL
-            SELECT `l2`.`Name`, `l2`.`LocustHordeId`, `l2`.`ThreatLevel`, `l2`.`ThreatLevelByte`, `l2`.`ThreatLevelNullableByte`, `l2`.`DefeatedByNickname`, `l2`.`DefeatedBySquadId`, `l2`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
-            FROM `LocustCommanders` AS `l2`
-        ) AS `t2`
-        WHERE `t2`.`ThreatLevelByte` = `t`.`ThreatLevelByte`))
+    WHERE `t`.`ThreatLevelByte` NOT IN (
+        SELECT `l1`.`ThreatLevelByte`
+        FROM `LocustLeaders` AS `l1`
+        UNION ALL
+        SELECT `l2`.`ThreatLevelByte`
+        FROM `LocustCommanders` AS `l2`
+    )
 ) AS `t1` ON TRUE
 """);
     }
@@ -10686,10 +10770,10 @@ JOIN LATERAL (
     WHERE EXISTS (
         SELECT 1
         FROM (
-            SELECT `l1`.`Name`, `l1`.`LocustHordeId`, `l1`.`ThreatLevel`, `l1`.`ThreatLevelByte`, `l1`.`ThreatLevelNullableByte`, NULL AS `DefeatedByNickname`, NULL AS `DefeatedBySquadId`, NULL AS `HighCommandId`, 'LocustLeader' AS `Discriminator`
+            SELECT `l1`.`ThreatLevelNullableByte`
             FROM `LocustLeaders` AS `l1`
             UNION ALL
-            SELECT `l2`.`Name`, `l2`.`LocustHordeId`, `l2`.`ThreatLevel`, `l2`.`ThreatLevelByte`, `l2`.`ThreatLevelNullableByte`, `l2`.`DefeatedByNickname`, `l2`.`DefeatedBySquadId`, `l2`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
+            SELECT `l2`.`ThreatLevelNullableByte`
             FROM `LocustCommanders` AS `l2`
         ) AS `t2`
         WHERE (`t2`.`ThreatLevelNullableByte` = `t`.`ThreatLevelNullableByte`) OR (`t2`.`ThreatLevelNullableByte` IS NULL AND (`t`.`ThreatLevelNullableByte` IS NULL)))
@@ -10720,16 +10804,16 @@ JOIN LATERAL (
         SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
         FROM `Officers` AS `o`
     ) AS `t0`
-    WHERE NOT (EXISTS (
+    WHERE NOT EXISTS (
         SELECT 1
         FROM (
-            SELECT `l1`.`Name`, `l1`.`LocustHordeId`, `l1`.`ThreatLevel`, `l1`.`ThreatLevelByte`, `l1`.`ThreatLevelNullableByte`, NULL AS `DefeatedByNickname`, NULL AS `DefeatedBySquadId`, NULL AS `HighCommandId`, 'LocustLeader' AS `Discriminator`
+            SELECT `l1`.`ThreatLevelNullableByte`
             FROM `LocustLeaders` AS `l1`
             UNION ALL
-            SELECT `l2`.`Name`, `l2`.`LocustHordeId`, `l2`.`ThreatLevel`, `l2`.`ThreatLevelByte`, `l2`.`ThreatLevelNullableByte`, `l2`.`DefeatedByNickname`, `l2`.`DefeatedBySquadId`, `l2`.`HighCommandId`, 'LocustCommander' AS `Discriminator`
+            SELECT `l2`.`ThreatLevelNullableByte`
             FROM `LocustCommanders` AS `l2`
         ) AS `t2`
-        WHERE (`t2`.`ThreatLevelNullableByte` = `t`.`ThreatLevelNullableByte`) OR (`t2`.`ThreatLevelNullableByte` IS NULL AND (`t`.`ThreatLevelNullableByte` IS NULL))))
+        WHERE (`t2`.`ThreatLevelNullableByte` = `t`.`ThreatLevelNullableByte`) OR (`t2`.`ThreatLevelNullableByte` IS NULL AND (`t`.`ThreatLevelNullableByte` IS NULL)))
 ) AS `t1` ON TRUE
 """);
     }
@@ -10813,13 +10897,32 @@ LIMIT @__p_0
     {
         await base.Enum_array_contains(async);
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
 """
 SELECT `w`.`Id`, `w`.`AmmunitionType`, `w`.`IsAutomatic`, `w`.`Name`, `w`.`OwnerFullName`, `w`.`SynergyWithId`
 FROM `Weapons` AS `w`
 LEFT JOIN `Weapons` AS `w0` ON `w`.`SynergyWithId` = `w0`.`Id`
-WHERE `w0`.`Id` IS NOT NULL AND ((`w0`.`AmmunitionType` = 1) OR `w0`.`AmmunitionType` IS NULL)
+WHERE `w0`.`Id` IS NOT NULL AND EXISTS (
+    SELECT 1
+    FROM JSON_TABLE('[null,1]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `t`
+    WHERE (`t`.`value` = `w0`.`AmmunitionType`) OR (`t`.`value` IS NULL AND (`w0`.`AmmunitionType` IS NULL)))
 """);
+        }
+        else
+        {
+            AssertSql(
+"""
+SELECT `w`.`Id`, `w`.`AmmunitionType`, `w`.`IsAutomatic`, `w`.`Name`, `w`.`OwnerFullName`, `w`.`SynergyWithId`
+FROM `Weapons` AS `w`
+LEFT JOIN `Weapons` AS `w0` ON `w`.`SynergyWithId` = `w0`.`Id`
+WHERE `w0`.`Id` IS NOT NULL AND (`w0`.`AmmunitionType` IS NULL OR (`w0`.`AmmunitionType` = 1))
+""");
+        }
     }
 
     public override async Task CompareTo_used_with_non_unicode_string_column_and_constant(bool async)
@@ -11028,7 +11131,7 @@ ORDER BY `t`.`Nickname`, `t0`.`Id`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task FirstOrDefault_over_int_compared_to_zero(bool async)
     {
         await base.FirstOrDefault_over_int_compared_to_zero(async);
@@ -11037,7 +11140,7 @@ ORDER BY `t`.`Nickname`, `t0`.`Id`
 """
 SELECT `s`.`Name`
 FROM `Squads` AS `s`
-WHERE (`s`.`Name` = 'Kilo') AND (COALESCE((
+WHERE (`s`.`Name` = 'Delta') AND (COALESCE((
     SELECT `t`.`SquadId`
     FROM (
         SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
@@ -11047,6 +11150,7 @@ WHERE (`s`.`Name` = 'Kilo') AND (COALESCE((
         FROM `Officers` AS `o`
     ) AS `t`
     WHERE (`s`.`Id` = `t`.`SquadId`) AND (`t`.`HasSoulPatch` = TRUE)
+    ORDER BY `t`.`FullName`
     LIMIT 1), 0) <> 0)
 """);
     }
@@ -11886,7 +11990,30 @@ ORDER BY `t2`.`Nickname`, `t2`.`SquadId`, `t2`.`HasSoulPatch0`
     {
         await base.Where_bool_column_and_Contains(async);
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+"""
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+WHERE (`t`.`HasSoulPatch` = TRUE) AND `t`.`HasSoulPatch` IN (
+    SELECT `v`.`value`
+    FROM JSON_TABLE('[false,true]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` tinyint(1) PATH '$[0]'
+    )) AS `v`
+)
+""");
+        }
+        else
+        {
+            AssertSql(
 """
 SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
 FROM (
@@ -11898,13 +12025,37 @@ FROM (
 ) AS `t`
 WHERE (`t`.`HasSoulPatch` = TRUE) AND `t`.`HasSoulPatch` IN (FALSE, TRUE)
 """);
+        }
     }
 
     public override async Task Where_bool_column_or_Contains(bool async)
     {
         await base.Where_bool_column_or_Contains(async);
 
-        AssertSql(
+        if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+        {
+            AssertSql(
+"""
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+WHERE (`t`.`HasSoulPatch` = TRUE) AND `t`.`HasSoulPatch` IN (
+    SELECT `v`.`value`
+    FROM JSON_TABLE('[false,true]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` tinyint(1) PATH '$[0]'
+    )) AS `v`
+)
+""");
+        }
+        else
+        {
+            AssertSql(
 """
 SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
 FROM (
@@ -11916,6 +12067,7 @@ FROM (
 ) AS `t`
 WHERE (`t`.`HasSoulPatch` = TRUE) AND `t`.`HasSoulPatch` IN (FALSE, TRUE)
 """);
+        }
     }
 
     public override async Task Enum_matching_take_value_gets_different_type_mapping(bool async)
@@ -12131,7 +12283,7 @@ WHERE `l`.`ServerAddress` = CAST('127.0.0.1' AS char)
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task FirstOrDefault_on_empty_collection_of_DateTime_in_subquery(bool async)
     {
         await base.FirstOrDefault_on_empty_collection_of_DateTime_in_subquery(async);
@@ -12854,7 +13006,7 @@ CROSS JOIN (
 """
 SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
 FROM `Squads` AS `s`
-WHERE NOT (EXISTS (
+WHERE NOT EXISTS (
     SELECT 1
     FROM (
         SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
@@ -12863,7 +13015,7 @@ WHERE NOT (EXISTS (
         SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
         FROM `Officers` AS `o`
     ) AS `t`
-    WHERE `s`.`Id` = `t`.`SquadId`))
+    WHERE `s`.`Id` = `t`.`SquadId`)
 """);
     }
 
@@ -12881,10 +13033,10 @@ FROM (
     SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
     FROM `Officers` AS `o`
 ) AS `t`
-WHERE NOT (EXISTS (
+WHERE NOT EXISTS (
     SELECT 1
     FROM `Weapons` AS `w`
-    WHERE `t`.`FullName` = `w`.`OwnerFullName`))
+    WHERE `t`.`FullName` = `w`.`OwnerFullName`)
 """);
     }
 
@@ -12959,10 +13111,223 @@ ORDER BY `t`.`Nickname`, `t`.`SquadId`, `t0`.`Nickname`
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override Task Set_operator_with_navigation_in_projection_groupby_aggregate(bool async)
     {
         return base.Set_operator_with_navigation_in_projection_groupby_aggregate(async);
+    }
+
+    public override async Task ToString_string_property_projection(bool async)
+    {
+        await base.ToString_string_property_projection(async);
+
+        AssertSql(
+"""
+SELECT `w`.`Name`
+FROM `Weapons` AS `w`
+""");
+    }
+
+    public override async Task ElementAt_basic_with_OrderBy(bool async)
+    {
+        await base.ElementAt_basic_with_OrderBy(async);
+
+        AssertSql(
+"""
+@__p_0='0'
+
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+ORDER BY `t`.`FullName`
+LIMIT 1 OFFSET @__p_0
+""");
+    }
+
+    public override async Task ElementAtOrDefault_basic_with_OrderBy(bool async)
+    {
+        await base.ElementAtOrDefault_basic_with_OrderBy(async);
+
+        AssertSql(
+"""
+@__p_0='1'
+
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+ORDER BY `t`.`FullName`
+LIMIT 1 OFFSET @__p_0
+""");
+    }
+
+    public override async Task ElementAtOrDefault_basic_with_OrderBy_parameter(bool async)
+    {
+        await base.ElementAtOrDefault_basic_with_OrderBy_parameter(async);
+
+        AssertSql(
+"""
+@__p_0='2'
+
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+ORDER BY `t`.`FullName`
+LIMIT 1 OFFSET @__p_0
+""");
+    }
+
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+    public override async Task Where_subquery_with_ElementAtOrDefault_equality_to_null_with_composite_key(bool async)
+    {
+        await base.Where_subquery_with_ElementAtOrDefault_equality_to_null_with_composite_key(async);
+
+        AssertSql(
+"""
+SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
+FROM `Squads` AS `s`
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM (
+        SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+        FROM `Gears` AS `g`
+        UNION ALL
+        SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+        FROM `Officers` AS `o`
+    ) AS `t`
+    WHERE `s`.`Id` = `t`.`SquadId`
+    ORDER BY `t`.`Nickname`
+    LIMIT 18446744073709551610 OFFSET 2)
+""");
+    }
+
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.LimitWithNonConstantValue))]
+    public override async Task Where_subquery_with_ElementAt_using_column_as_index(bool async)
+    {
+        await base.Where_subquery_with_ElementAt_using_column_as_index(async);
+
+        AssertSql("");
+    }
+
+    public override async Task Using_indexer_on_byte_array_and_string_in_projection(bool async)
+    {
+        await base.Using_indexer_on_byte_array_and_string_in_projection(async);
+
+        AssertSql(
+"""
+SELECT `s`.`Id`, ASCII(SUBSTRING(`s`.`Banner`, 0 + 1, 1)), `s`.`Name`
+FROM `Squads` AS `s`
+""");
+    }
+
+    public override async Task DateTimeOffset_to_unix_time_milliseconds(bool async)
+    {
+        await base.DateTimeOffset_to_unix_time_milliseconds(async);
+
+        AssertSql(
+"""
+@__unixEpochMilliseconds_0='0'
+
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`, `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`, `s1`.`SquadId`, `s1`.`MissionId`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+INNER JOIN `Squads` AS `s` ON `t`.`SquadId` = `s`.`Id`
+LEFT JOIN `SquadMissions` AS `s1` ON `s`.`Id` = `s1`.`SquadId`
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `SquadMissions` AS `s0`
+    INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochMilliseconds_0 = (TIMESTAMPDIFF(microsecond, '1970-01-01 00:00:00', `m`.`Timeline`)) DIV (1000)))
+ORDER BY `t`.`Nickname`, `t`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
+""");
+    }
+
+    public override async Task DateTimeOffset_to_unix_time_seconds(bool async)
+    {
+        await base.DateTimeOffset_to_unix_time_seconds(async);
+
+        AssertSql(
+"""
+@__unixEpochSeconds_0='0'
+
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`, `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`, `s1`.`SquadId`, `s1`.`MissionId`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+INNER JOIN `Squads` AS `s` ON `t`.`SquadId` = `s`.`Id`
+LEFT JOIN `SquadMissions` AS `s1` ON `s`.`Id` = `s1`.`SquadId`
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `SquadMissions` AS `s0`
+    INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochSeconds_0 = TIMESTAMPDIFF(second, '1970-01-01 00:00:00', `m`.`Timeline`)))
+ORDER BY `t`.`Nickname`, `t`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
+""");
+    }
+
+    public override async Task Where_subquery_equality_to_null_with_composite_key_should_match_nulls(bool async)
+    {
+        await base.Where_subquery_equality_to_null_with_composite_key_should_match_nulls(async);
+
+        AssertSql(
+"""
+SELECT `s`.`Id`, `s`.`Banner`, `s`.`Banner5`, `s`.`InternalNumber`, `s`.`Name`
+FROM `Squads` AS `s`
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM (
+        SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+        FROM `Gears` AS `g`
+        UNION ALL
+        SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+        FROM `Officers` AS `o`
+    ) AS `t`
+    WHERE (`s`.`Id` = `t`.`SquadId`) AND (`t`.`FullName` = 'Anthony Carmine'))
+""");
+    }
+
+    public override async Task Where_subquery_equality_to_null_without_composite_key_should_match_null(bool async)
+    {
+        await base.Where_subquery_equality_to_null_without_composite_key_should_match_null(async);
+
+        AssertSql(
+"""
+SELECT `t`.`Nickname`, `t`.`SquadId`, `t`.`AssignedCityName`, `t`.`CityOfBirthName`, `t`.`FullName`, `t`.`HasSoulPatch`, `t`.`LeaderNickname`, `t`.`LeaderSquadId`, `t`.`Rank`, `t`.`Discriminator`
+FROM (
+    SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`AssignedCityName`, `g`.`CityOfBirthName`, `g`.`FullName`, `g`.`HasSoulPatch`, `g`.`LeaderNickname`, `g`.`LeaderSquadId`, `g`.`Rank`, 'Gear' AS `Discriminator`
+    FROM `Gears` AS `g`
+    UNION ALL
+    SELECT `o`.`Nickname`, `o`.`SquadId`, `o`.`AssignedCityName`, `o`.`CityOfBirthName`, `o`.`FullName`, `o`.`HasSoulPatch`, `o`.`LeaderNickname`, `o`.`LeaderSquadId`, `o`.`Rank`, 'Officer' AS `Discriminator`
+    FROM `Officers` AS `o`
+) AS `t`
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM `Weapons` AS `w`
+    WHERE (`t`.`FullName` = `w`.`OwnerFullName`) AND (`w`.`Name` = 'Hammer of Dawn'))
+""");
     }
 
     private void AssertSql(params string[] expected)

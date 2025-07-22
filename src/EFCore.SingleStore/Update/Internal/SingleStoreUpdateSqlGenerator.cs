@@ -215,7 +215,7 @@ namespace EntityFrameworkCore.SingleStore.Update.Internal
             {
                 // CHECK: Is this branch ever hit and then returns something different than null, or can we just rely on
                 // `modification.Column?.Table`?
-                return (property.DeclaringEntityType.GetTableName(), property.DeclaringEntityType.GetSchema());
+                return (property.DeclaringType.GetTableName(), property.DeclaringType.GetSchema());
             }
         }
     }

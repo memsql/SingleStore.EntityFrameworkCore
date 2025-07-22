@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Storage.Internal;
 using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 
@@ -68,6 +72,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 {
                     dbConnAttrs.Add(new Tuple<string, string>(reader.GetString(0), reader.GetString(1)));
                 }
+
                 Tuple<string, string> expectedPair = new Tuple<string, string>("my_key_1", "my_val_1");
                 Assert.Contains(expectedPair, dbConnAttrs);
                 expectedPair = new Tuple<string, string>("my_key_2", "my_val_2");
@@ -75,28 +80,126 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             }
         }
 
+        [Fact]
+        public void UseSingleStore_IncludesConnectorAttributes_InConnectionString()
+        {
+            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+                    .GetOrCreate("ConnectionAttributesTest"))
+                .Initialize(null, (Func<DbContext>)null);
+
+            var cs = SingleStoreTestStore.CreateConnectionString("ConnectionAttributesTest");
+            var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
+            optionsBuilder.UseSingleStore(cs, b => b.ApplyConfiguration());
+
+            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+
+            var conn = (SingleStoreConnection)context.Database.GetDbConnection();
+            var csb  = new SingleStoreConnectionStringBuilder(conn.ConnectionString);
+
+            var parts = csb.ConnectionAttributes
+                .TrimEnd(',')
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(p => p.Trim())
+                .ToArray();
+
+            var programVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
+            Assert.Contains(parts, p => p.StartsWith("_connector_name:SingleStore Entity Framework Core provider"));
+            Assert.Contains(parts, p => p.StartsWith($"_connector_version:{programVersion}"));
+        }
+
+        [Fact]
+        public void Can_create_admin_connection_with_data_source()
+        {
+            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+                    .GetOrCreate("ConnectionTest"))
+                .Initialize(null, (Func<DbContext>)null);
+
+            using var dataSource = new SingleStoreDataSourceBuilder(SingleStoreTestStore.CreateConnectionString("ConnectionTest")).Build();
+
+            var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
+            optionsBuilder.UseSingleStore(dataSource, b => b.ApplyConfiguration());
+            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+
+            var relationalConnection = context.GetService<ISingleStoreRelationalConnection>();
+            using var masterConnection = relationalConnection.CreateMasterConnection();
+
+            Assert.Equal(string.Empty, new SingleStoreConnectionStringBuilder(masterConnection.ConnectionString).Database);
+
+            masterConnection.Open();
+        }
+
+        [Fact]
+        public void Can_create_admin_connection_with_connection_string()
+        {
+            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+                    .GetOrCreate("ConnectionTest"))
+                .Initialize(null, (Func<DbContext>)null);
+
+            var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
+            optionsBuilder.UseSingleStore(SingleStoreTestStore.CreateConnectionString("ConnectionTest"),
+                b => b.ApplyConfiguration());
+            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+
+            var relationalConnection = context.GetService<ISingleStoreRelationalConnection>();
+            using var masterConnection = relationalConnection.CreateMasterConnection();
+
+            Assert.Equal(string.Empty, new SingleStoreConnectionStringBuilder(masterConnection.ConnectionString).Database);
+
+            masterConnection.Open();
+        }
+
+        [Fact]
+        public void Can_create_admin_connection_with_connection()
+        {
+            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+                    .GetOrCreate("ConnectionTestWithConnection"))
+                .Initialize(null, (Func<DbContext>)null);
+
+            using var connection = new SingleStoreConnection(SingleStoreTestStore.CreateConnectionString("ConnectionTestWithConnection"));
+
+            var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
+            optionsBuilder.UseSingleStore(connection, b => b.ApplyConfiguration());
+            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+
+            var relationalConnection = context.GetService<ISingleStoreRelationalConnection>();
+            using var masterConnection = relationalConnection.CreateMasterConnection();
+
+            Assert.Equal(string.Empty, new SingleStoreConnectionStringBuilder(masterConnection.ConnectionString).Database);
+
+            masterConnection.Open();
+        }
+
         private readonly IServiceProvider _serviceProvider = new ServiceCollection()
             .AddEntityFrameworkSingleStore()
             .BuildServiceProvider();
 
-        protected ConnectionMysqlContext CreateContext(string connectionString)
-            => new ConnectionMysqlContext(_serviceProvider, connectionString);
-    }
+        protected ConnectionSingleStoreContext CreateContext(string connectionString)
+            => new ConnectionSingleStoreContext(_serviceProvider, connectionString);
 
-    public class ConnectionMysqlContext : DbContext
-    {
-        private readonly IServiceProvider _serviceProvider;
-        private readonly string _connectionString;
 
-        public ConnectionMysqlContext(IServiceProvider serviceProvider, string connectionString)
+        public class ConnectionSingleStoreContext : DbContext
         {
-            _serviceProvider = serviceProvider;
-            _connectionString = connectionString;
+            private readonly IServiceProvider _serviceProvider;
+            private readonly string _connectionString;
+
+            public ConnectionSingleStoreContext(IServiceProvider serviceProvider, string connectionString)
+            {
+                _serviceProvider = serviceProvider;
+                _connectionString = connectionString;
+            }
+
+            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+                => optionsBuilder
+                    .UseSingleStore(_connectionString)
+                    .UseInternalServiceProvider(_serviceProvider);
         }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            => optionsBuilder
-                .UseSingleStore(_connectionString)
-                .UseInternalServiceProvider(_serviceProvider);
+        public class GeneralOptionsContext : DbContext
+        {
+            public GeneralOptionsContext(DbContextOptions<GeneralOptionsContext> options)
+                : base(options)
+            {
+            }
+        }
     }
 }

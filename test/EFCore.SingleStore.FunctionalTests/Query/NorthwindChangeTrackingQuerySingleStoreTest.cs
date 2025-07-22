@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestModels.Northwind;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
@@ -47,7 +48,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         }
 
         protected override NorthwindContext CreateNoTrackingContext()
-            => new NorthwindRelationalContext(
+            => new NorthwindSingleStoreContext(
                 new DbContextOptionsBuilder(Fixture.CreateOptions())
                     .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking).Options);
     }

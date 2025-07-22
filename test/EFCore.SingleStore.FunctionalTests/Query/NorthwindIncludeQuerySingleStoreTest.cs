@@ -43,8 +43,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                     .ThenBy(o => o.Customer != null ? o.Customer.City : string.Empty)
                     .ThenBy(o => o.OrderID)
                     .Take(5),
-                elementAsserter: (e, a) => AssertInclude(e, a, new ExpectedInclude<Order>(o => o.OrderDetails)),
-                entryCount: 14);
+                elementAsserter: (e, a) => AssertInclude(e, a, new ExpectedInclude<Order>(o => o.OrderDetails)));
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
@@ -62,8 +61,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 {
                     AssertInclude(e.c1, a.c1, new ExpectedInclude<Customer>(c => c.Orders));
                     AssertInclude(e.c2, a.c2, new ExpectedInclude<Customer>(c => c.Orders));
-                },
-                entryCount: 15);
+                });
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
@@ -81,8 +79,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 {
                     AssertInclude(e.c1, a.c1, new ExpectedInclude<Customer>(c => c.Orders));
                     AssertEqual(e.c2, a.c2);
-                },
-                entryCount: 8);
+                });
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
@@ -127,13 +124,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Then_include_collection_order_by_collection_column(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore Distributed")]
         public override Task Include_collection_OrderBy_empty_list_contains(bool async)
         {
             return base.Include_collection_OrderBy_empty_list_contains(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'scalar subselect inside the GROUP/ORDER BY of a pushed down query' is not supported by SingleStore Distributed")]
         public override Task Include_collection_OrderBy_empty_list_does_not_contains(bool async)
         {
             return base.Include_collection_OrderBy_empty_list_contains(async);
@@ -148,8 +145,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                     .OrderBy(b => b.Customer.CustomerID != null)
                     .ThenBy(b => b.Customer != null ? b.Customer.CustomerID : string.Empty)
                     .ThenBy(b => b.EmployeeID) // Needs to be explicitly ordered by EmployeeID as well
-                    .Take(2),
-                entryCount: 6);
+                    .Take(2));
         }
 
         private void AssertSql(params string[] expected)

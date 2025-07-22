@@ -79,9 +79,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_column_computed_with_collation()
+        public override Task Add_column_computed_with_collation(bool stored)
         {
-            return base.Add_column_computed_with_collation();
+            return base.Add_column_computed_with_collation(stored);
         }
 
         [ConditionalFact(Skip = "BLOB/TEXT columns can't have a default value in SingleStore.")]
@@ -364,27 +364,7 @@ SELECT ROW_COUNT();",
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
         public override async Task Alter_sequence_all_settings()
         {
-            await Test(
-                builder => builder.HasSequence<int>("foo"),
-                builder => { },
-                builder => builder.HasSequence<int>("foo")
-                    .StartsAt(-3)
-                    .IncrementsBy(2)
-                    .HasMin(-5)
-                    .HasMax(10)
-                    .IsCyclic(),
-                model =>
-                {
-                    var sequence = Assert.Single(model.Sequences);
-
-                    // Assert.Equal(-3, sequence.StartValue);
-                    Assert.Equal(1, sequence.StartValue); // Restarting doesn't change the scaffolded start value
-
-                    Assert.Equal(2, sequence.IncrementBy);
-                    Assert.Equal(-5, sequence.MinValue);
-                    Assert.Equal(10, sequence.MaxValue);
-                    Assert.True(sequence.IsCyclic);
-                });
+            await base.Alter_sequence_all_settings();
 
             AssertSql(
                 """
@@ -392,7 +372,7 @@ ALTER SEQUENCE `foo` INCREMENT BY 2 MINVALUE -5 MAXVALUE 10 CYCLE;
 """,
                 //
                 """
-ALTER SEQUENCE `foo` RESTART WITH -3;
+ALTER SEQUENCE `foo` START WITH -3 RESTART;
 """);
         }
 
@@ -400,6 +380,15 @@ ALTER SEQUENCE `foo` RESTART WITH -3;
         public override Task Alter_sequence_increment_by()
         {
             return base.Alter_sequence_increment_by();
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override async Task Alter_sequence_restart_with()
+        {
+            await base.Alter_sequence_restart_with();
+
+            AssertSql(
+                @"ALTER SEQUENCE `foo` START WITH 3 RESTART;");
         }
 
         [ConditionalFact(Skip = "SingleStore's ALTER TABLE command doesn't work with comments")]
@@ -621,12 +610,35 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
         public override async Task Rename_sequence()
         {
-            await base.Rename_sequence();
+            if (OperatingSystem.IsWindows())
+            {
+                // On Windows, with `lower_case_table_names = 2`, renaming `TestSequence` to `testsequence` doesn't do anything, because
+                // `TestSequence` is internally being transformed to lower case, before it is processes further.
+                await Test(
+                    builder => { },
+                    builder => builder.HasSequence<int>("TestSequence"),
+                    builder => builder.HasSequence<int>("testsequence2"),
+                    builder => builder.RenameSequence(name: "TestSequence", newName: "testsequence2"),
+                    model =>
+                    {
+                        var sequence = Assert.Single(model.Sequences);
+                        Assert.Equal("testsequence2", sequence.Name);
+                    });
 
-            AssertSql(
-"""
-ALTER TABLE `TestSequence` RENAME `testsequence`;
-""");
+                AssertSql(
+                    """
+                    ALTER TABLE `TestSequence` RENAME `testsequence2`;
+                    """);
+            }
+            else
+            {
+                await base.Rename_sequence();
+
+                AssertSql(
+                    """
+                    ALTER TABLE `TestSequence` RENAME `testsequence`;
+                    """);
+            }
         }
 
         [ConditionalTheory(Skip = "TODO")]
@@ -718,7 +730,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 $@"ALTER TABLE `IceCream` ADD `Name` longtext COLLATE {DefaultCollation} NULL;");
         }
 
-        [ConditionalFact(Skip = "NVARCHAR data type isn't supported by SingleStore.")]
+        [ConditionalFact(Skip = "NVARCHAR data type isn't supported by SingleStore Distributed.")]
         public virtual async Task Create_table_NVARCHAR_UPPERCASE_column()
         {
             await Test(
@@ -1075,7 +1087,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
             Assert.Empty(operations);
         }
 
-        [ConditionalFact]
+        [ConditionalFact(Skip = "SingleStore works another way.")]
         public virtual async Task Create_table_explicit_column_charset_takes_precedence_over_inherited_collation()
         {
             await Test(
@@ -1234,7 +1246,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Brand` longtext CHARACTER SET {NonDefaultCharSet2} NULL;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual async Task Drop_unique_constraint_without_recreating_foreign_keys()
         {
             await Test(
@@ -1266,7 +1278,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 @"ALTER TABLE `Foo` DROP KEY `AK_Foo_FooAK`;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual async Task Drop_unique_constraint_without_recreating_foreign_keys_MigrationBuilder()
         {
             await Test(
@@ -1299,7 +1311,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 @"ALTER TABLE `Foo` DROP KEY `AK_Foo_FooAK`;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public virtual async Task Drop_unique_constraint_with_recreating_foreign_keys_MigrationBuilder()
         {
             await Test(
@@ -1336,7 +1348,7 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 @"ALTER TABLE `Foo` ADD CONSTRAINT `FK_Foo_Bar_BarFK` FOREIGN KEY (`BarFK`) REFERENCES `Bar` (`BarPK`) ON DELETE CASCADE;");
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override async Task Add_foreign_key()
         {
             await base.Add_foreign_key();
@@ -1347,25 +1359,25 @@ ALTER TABLE `TestSequence` RENAME `testsequence`;
                 @"ALTER TABLE `Orders` ADD CONSTRAINT `FK_Orders_Customers_CustomerId` FOREIGN KEY (`CustomerId`) REFERENCES `Customers` (`Id`) ON DELETE CASCADE;");
         }
 
-        [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore Distributed.")]
         public override Task Add_check_constraint_with_name()
         {
             return base.Add_check_constraint_with_name();
         }
 
-        [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'Check constraints' is not supported by SingleStore Distributed.")]
         public override Task Add_column_with_check_constraint()
         {
             return base.Add_column_with_check_constraint();
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override Task Add_foreign_key_with_name()
         {
             return base.Add_foreign_key_with_name();
         }
 
-        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public override Task Drop_foreign_key()
         {
             return base.Drop_foreign_key();

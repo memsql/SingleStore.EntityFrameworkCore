@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.ComplexNavigationsModel;
 using EntityFrameworkCore.SingleStore.Infrastructure;
-using EntityFrameworkCore.SingleStore.Tests;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
@@ -25,19 +24,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         protected override bool CanExecuteQueryString
             => true;
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Collection_FirstOrDefault_property_accesses_in_projection(bool async)
         {
             return base.Collection_FirstOrDefault_property_accesses_in_projection(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Contains_over_optional_navigation_with_null_column(bool async)
         {
             return base.Contains_over_optional_navigation_with_null_column(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Contains_over_optional_navigation_with_null_entity_reference(bool async)
         {
             return base.Contains_over_optional_navigation_with_null_entity_reference(async);
@@ -91,7 +90,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.OrderBy_collection_count_ThenBy_reference_navigation(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Project_collection_navigation_count(bool async)
         {
             return base.Project_collection_navigation_count(async);
@@ -103,7 +102,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Subquery_with_Distinct_Skip_FirstOrDefault_without_OrderBy(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Where_navigation_property_to_collection(bool async)
         {
             return base.Where_navigation_property_to_collection(async);
@@ -175,6 +174,19 @@ LEFT JOIN LATERAL (
     ) AS `t` ON TRUE
     WHERE `l`.`Id` = `l0`.`OneToMany_Optional_Inverse2Id`
 ) AS `t0` ON TRUE");
+        }
+
+        public override async Task Method_call_on_optional_navigation_translates_to_null_conditional_properly_for_arguments(bool async)
+        {
+            await base.Method_call_on_optional_navigation_translates_to_null_conditional_properly_for_arguments(async);
+
+            AssertSql(
+                """
+                SELECT `l`.`Id`, `l`.`Date`, `l`.`Name`, `l`.`OneToMany_Optional_Self_Inverse1Id`, `l`.`OneToMany_Required_Self_Inverse1Id`, `l`.`OneToOne_Optional_Self1Id`
+                FROM `LevelOne` AS `l`
+                LEFT JOIN `LevelTwo` AS `l0` ON `l`.`Id` = `l0`.`Level1_Optional_Id`
+                WHERE `l0`.`Name` IS NOT NULL AND (LEFT(`l0`.`Name`, CHAR_LENGTH(`l0`.`Name`)) = `l0`.`Name`)
+                """);
         }
 
         private void AssertSql(params string[] expected)

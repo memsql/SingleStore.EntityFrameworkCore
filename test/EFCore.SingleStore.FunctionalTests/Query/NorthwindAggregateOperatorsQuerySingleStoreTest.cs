@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
@@ -36,16 +37,34 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 selector: c => (decimal)c.Orders.Average(o => 5 + o.OrderDetails.Average(od => od.ProductID)),
                 asserter: (a, b) => Assert.Equal(a, b, 12)); // added flouting point precision tolerance
 
+        // TODO: Implement TranslatePrimitiveCollection.
         public override async Task Contains_with_local_anonymous_type_array_closure(bool async)
         {
             // Aggregates. Issue #15937.
-            await AssertTranslationFailed(() => base.Contains_with_local_anonymous_type_array_closure(async));
+            // await AssertTranslationFailed(() => base.Contains_with_local_anonymous_type_array_closure(async));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => base.Contains_with_local_anonymous_type_array_closure(async));
 
             AssertSql();
         }
 
+        // TODO: Implement TranslatePrimitiveCollection
         public override async Task Contains_with_local_tuple_array_closure(bool async)
-            => await AssertTranslationFailed(() => base.Contains_with_local_tuple_array_closure(async));
+        {
+            // await AssertTranslationFailed(() => base.Contains_with_local_tuple_array_closure(async));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => base.Contains_with_local_tuple_array_closure(async));
+        }
+
+        public override async Task Contains_with_local_enumerable_inline(bool async)
+        {
+            // Issue #31776
+            await Assert.ThrowsAsync<InvalidOperationException>(
+                async () =>
+                    await base.Contains_with_local_enumerable_inline(async));
+
+            AssertSql();
+        }
 
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
         public override Task Collection_Last_member_access_in_projection_translated(bool async)

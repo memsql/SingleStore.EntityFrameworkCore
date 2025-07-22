@@ -14,6 +14,8 @@ namespace EntityFrameworkCore.SingleStore.Scaffolding.Internal
     {
         private const string DummyStoreType = "clrOnly";
 
+        public static SingleStoreCodeGenerationServerVersionCreationTypeMapping Default { get; } = new();
+
         public SingleStoreCodeGenerationServerVersionCreationTypeMapping()
             : base(new RelationalTypeMappingParameters(new CoreTypeMappingParameters(typeof(SingleStoreCodeGenerationServerVersionCreation)), DummyStoreType))
         {

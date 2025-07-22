@@ -6,7 +6,7 @@ using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
-public class InheritanceBulkUpdatesSingleStoreFixture : InheritanceBulkUpdatesRelationalFixture
+public class TPHInheritanceBulkUpdatesSingleStoreFixture : TPHInheritanceBulkUpdatesFixture
 {
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;

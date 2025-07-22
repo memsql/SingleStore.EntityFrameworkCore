@@ -49,8 +49,10 @@ namespace Microsoft.EntityFrameworkCore
 
             optionsBuilder.AddInterceptors(new MatchInterceptor());
             ServerVersion serverVersion = SingleStoreServerVersion.LatestSupportedServerVersion;
+
             var extension = (SingleStoreOptionsExtension)GetOrCreateExtension(optionsBuilder)
                 .WithServerVersion(serverVersion);
+
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
             ConfigureWarnings(optionsBuilder);
             mySqlOptionsAction?.Invoke(new SingleStoreDbContextOptionsBuilder(optionsBuilder));
@@ -74,22 +76,6 @@ namespace Microsoft.EntityFrameworkCore
             Check.NullButNotEmpty(connectionString, nameof(connectionString));
 
             optionsBuilder.AddInterceptors(new MatchInterceptor());
-
-            if (connectionString is not null)
-            {
-                var resolvedConnectionString = new NamedConnectionStringResolver(optionsBuilder.Options)
-                    .ResolveConnectionString(connectionString);
-
-                var programVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-                var csb = new SingleStoreConnectionStringBuilder(resolvedConnectionString)
-                {
-                    AllowUserVariables = true,
-                    UseAffectedRows = false,
-                    ConnectionAttributes = $"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}",
-                };
-
-                connectionString = csb.ConnectionString;
-            }
 
             ServerVersion serverVersion;
 
@@ -137,33 +123,6 @@ namespace Microsoft.EntityFrameworkCore
             Check.NotNull(connection, nameof(connection));
 
             optionsBuilder.AddInterceptors(new MatchInterceptor());
-            var resolvedConnectionString = connection.ConnectionString is not null
-                ? new NamedConnectionStringResolver(optionsBuilder.Options)
-                    .ResolveConnectionString(connection.ConnectionString)
-                : null;
-
-            var csb = new SingleStoreConnectionStringBuilder(resolvedConnectionString);
-            var programVersion = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            csb.ConnectionAttributes = $"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}";
-
-            if (!csb.AllowUserVariables ||
-                csb.UseAffectedRows)
-            {
-                try
-                {
-                    csb.AllowUserVariables = true;
-                    csb.UseAffectedRows = false;
-
-                    connection.ConnectionString = csb.ConnectionString;
-                }
-                catch (Exception e)
-                {
-                    throw new InvalidOperationException(
-                        @"The connection string of a connection used by EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=true;UseAffectedRows=false"".",
-                        e);
-                }
-            }
-
             ServerVersion serverVersion;
 
             try
@@ -182,6 +141,51 @@ namespace Microsoft.EntityFrameworkCore
             var extension = (SingleStoreOptionsExtension)GetOrCreateExtension(optionsBuilder)
                 .WithServerVersion(serverVersion)
                 .WithConnection(connection);
+
+            ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
+            ConfigureWarnings(optionsBuilder);
+            mySqlOptionsAction?.Invoke(new SingleStoreDbContextOptionsBuilder(optionsBuilder));
+
+            return optionsBuilder;
+        }
+
+        /// <summary>
+        ///     Configures the context to connect to a MySQL compatible database.
+        /// </summary>
+        /// <param name="optionsBuilder"> The builder being used to configure the context. </param>
+        /// <param name="dataSource"> A <see cref="DbDataSource" /> which will be used to get database connections. </param>
+        /// <param name="mySqlOptionsAction"> An optional action to allow additional MySQL specific configuration. </param>
+        /// <returns> The options builder so that further configuration can be chained. </returns>
+        public static DbContextOptionsBuilder UseSingleStore(
+            this DbContextOptionsBuilder optionsBuilder,
+            DbDataSource dataSource,
+            Action<SingleStoreDbContextOptionsBuilder> mySqlOptionsAction = null)
+        {
+            Check.NotNull(optionsBuilder, nameof(optionsBuilder));
+            Check.NotNull(dataSource, nameof(dataSource));
+
+            optionsBuilder.AddInterceptors(new MatchInterceptor());
+            ServerVersion serverVersion;
+
+            try
+            {
+                using var connection = dataSource.CreateConnection();
+                connection.Open();
+
+                serverVersion = ServerVersion.AutoDetect(connection.ConnectionString);
+            }
+            // There might occur different types of Exceptions while trying to AutoDetect() server version.
+            // This includes: SocketException (when we're unable to connect to any of the specified hosts),
+            // InvalidOperationException (unable to determine server version from version string), etc.
+            // In this case the latest supported server version will be used, therefore we catch any Exception.
+            catch (Exception)
+            {
+                serverVersion = SingleStoreServerVersion.LatestSupportedServerVersion;
+            }
+
+            var extension = (SingleStoreOptionsExtension)GetOrCreateExtension(optionsBuilder)
+                .WithServerVersion(serverVersion)
+                .WithDataSource(dataSource);
 
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
             ConfigureWarnings(optionsBuilder);
@@ -247,6 +251,21 @@ namespace Microsoft.EntityFrameworkCore
             where TContext : DbContext
             => (DbContextOptionsBuilder<TContext>)UseSingleStore(
                 (DbContextOptionsBuilder)optionsBuilder, connection, mySqlOptionsAction);
+
+        /// <summary>
+        ///     Configures the context to connect to a MySQL compatible database.
+        /// </summary>
+        /// <param name="optionsBuilder"> The builder being used to configure the context. </param>
+        /// <param name="dataSource"> A <see cref="DbDataSource" /> which will be used to get database connections. </param>
+        /// <param name="mySqlOptionsAction"> An optional action to allow additional MySQL specific configuration. </param>
+        /// <returns> The options builder so that further configuration can be chained. </returns>
+        public static DbContextOptionsBuilder<TContext> UseSingleStore<TContext>(
+            [NotNull] this DbContextOptionsBuilder<TContext> optionsBuilder,
+            [NotNull] DbDataSource dataSource,
+            [CanBeNull] Action<SingleStoreDbContextOptionsBuilder> mySqlOptionsAction = null)
+            where TContext : DbContext
+            => (DbContextOptionsBuilder<TContext>)UseSingleStore(
+                (DbContextOptionsBuilder)optionsBuilder, dataSource, mySqlOptionsAction);
 
         private static SingleStoreOptionsExtension GetOrCreateExtension(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder.Options.FindExtension<SingleStoreOptionsExtension>()

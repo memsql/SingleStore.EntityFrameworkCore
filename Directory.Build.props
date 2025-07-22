@@ -12,7 +12,6 @@
     <PackageIcon>singlestore_logo.png</PackageIcon>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <LangVersion>latest</LangVersion>
-    <DebugType>portable</DebugType>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/memsql/SingleStore.EntityFrameworkCore</PackageProjectUrl>
@@ -21,10 +20,15 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SingleStoreTargetFrameworks>net6.0;net7.0</SingleStoreTargetFrameworks>
-    <SingleStoreTestTargetFramework>net7.0</SingleStoreTestTargetFramework>
-    <EfCoreTargetFramework>net6.0</EfCoreTargetFramework>
-    <EfCoreTestTargetFramework>net7.0</EfCoreTestTargetFramework>
+    <DebugType Condition="'$(DebugType)' == ''">portable</DebugType>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SingleStoreTargetFramework>net8.0</SingleStoreTargetFramework>
+    <SingleStoreTestTargetFramework>net8.0</SingleStoreTestTargetFramework>
+    <EfCoreTargetFramework>net8.0</EfCoreTargetFramework>
+    <EfCoreTestTargetFramework>net8.0</EfCoreTestTargetFramework>
+    <SingleStoreConnectorTargetFramework>net8.0</SingleStoreConnectorTargetFramework>
   </PropertyGroup>
 
    <PropertyGroup>

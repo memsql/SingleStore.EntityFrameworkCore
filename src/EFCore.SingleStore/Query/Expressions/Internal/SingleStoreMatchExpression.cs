@@ -19,7 +19,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
             SqlExpression match,
             SqlExpression against,
             RelationalTypeMapping typeMapping)
-            : base(typeof(bool), typeMapping)
+            : base(typeof(double), typeMapping)
         {
             Check.NotNull(match, nameof(match));
             Check.NotNull(against, nameof(against));

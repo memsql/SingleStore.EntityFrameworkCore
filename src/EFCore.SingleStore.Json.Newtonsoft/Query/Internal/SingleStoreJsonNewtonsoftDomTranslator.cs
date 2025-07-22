@@ -182,7 +182,7 @@ namespace EntityFrameworkCore.SingleStore.Json.Newtonsoft.Query.Internal
                 sqlConstantExpression.TypeMapping is SingleStoreStringTypeMapping stringTypeMapping &&
                 !stringTypeMapping.IsUnquoted)
             {
-                pathLocation = sqlConstantExpression.ApplyTypeMapping(stringTypeMapping.Clone(true));
+                pathLocation = sqlConstantExpression.ApplyTypeMapping(stringTypeMapping.Clone(unquoted: true));
             }
 
             return pathLocation;

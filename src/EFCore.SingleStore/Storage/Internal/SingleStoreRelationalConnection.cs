@@ -12,6 +12,7 @@ using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
@@ -20,25 +21,140 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
     public class SingleStoreRelationalConnection : RelationalConnection, ISingleStoreRelationalConnection
     {
+        private readonly ISingleStoreConnectionStringOptionsValidator _mySqlConnectionStringOptionsValidator;
         private const string NoBackslashEscapes = "NO_BACKSLASH_ESCAPES";
 
         private readonly SingleStoreOptionsExtension _mySqlOptionsExtension;
+        private DbDataSource _dataSource;
 
-        // ReSharper disable once VirtualMemberCallInConstructor
-        public SingleStoreRelationalConnection(RelationalConnectionDependencies dependencies)
+        public SingleStoreRelationalConnection(
+            RelationalConnectionDependencies dependencies,
+            ISingleStoreConnectionStringOptionsValidator mySqlConnectionStringOptionsValidator,
+            ISingleStoreOptions mySqlSingletonOptions)
+            : this(
+                dependencies,
+                mySqlConnectionStringOptionsValidator,
+                GetEffectiveDataSource(mySqlSingletonOptions, dependencies.ContextOptions))
+        {
+        }
+
+        public SingleStoreRelationalConnection(
+            RelationalConnectionDependencies dependencies,
+            ISingleStoreConnectionStringOptionsValidator mySqlConnectionStringOptionsValidator,
+            DbDataSource dataSource)
             : base(dependencies)
         {
-            _mySqlOptionsExtension = Dependencies.ContextOptions.FindExtension<SingleStoreOptionsExtension>() ?? new SingleStoreOptionsExtension();
+            _mySqlOptionsExtension = dependencies.ContextOptions.FindExtension<SingleStoreOptionsExtension>() ??
+                                     new SingleStoreOptionsExtension();
+            _mySqlConnectionStringOptionsValidator = mySqlConnectionStringOptionsValidator;
+
+            if (dataSource is not null)
+            {
+                _mySqlConnectionStringOptionsValidator.EnsureMandatoryOptions(dataSource);
+
+                base.SetDbConnection(null, false);
+                base.ConnectionString = null;
+
+                _dataSource = dataSource;
+            }
+            else if (base.ConnectionString is { } connectionString)
+            {
+                // This branch works for both: connections and connection strings, because base.ConnectionString handles both cases
+                // appropriately.
+                if (_mySqlConnectionStringOptionsValidator.EnsureMandatoryOptions(ref connectionString))
+                {
+                    try
+                    {
+                        base.ConnectionString = connectionString;
+                    }
+                    catch (Exception e)
+                    {
+                        _mySqlConnectionStringOptionsValidator.ThrowException(e);
+                    }
+                }
+            }
         }
+
+        /// <summary>
+        /// We allow users to either explicitly set a DbDataSource using our `SingleStoreOptionsExtensions` or by adding it as a service via DI
+        /// (`ApplicationServiceProvider`).
+        /// We don't set a DI injected service to the `SingleStoreOption.DbDataSource` property, because it might get cached by the service
+        /// collection cache, since no relevant property might have changed in the `SingleStoreOptionsExtension` instance. If we would create
+        /// a similar DbContext instance with a different service collection later, EF Core would provide us with the *same* `SingleStoreOptions`
+        /// instance (that was cached before) and we would use the old `DbDataSource` instance that we retrieved from the old
+        /// `ApplicationServiceProvider`.
+        /// Therefore, we check the `ISingleStoreOptions.DbDataSource` property and the current `ApplicationServiceProvider` at the time we
+        /// actually need the instance.
+        /// </summary>
+        protected static DbDataSource GetEffectiveDataSource(ISingleStoreOptions mySqlSingletonOptions, IDbContextOptions contextOptions)
+            => mySqlSingletonOptions.DataSource ??
+               contextOptions.FindExtension<CoreOptionsExtension>()?.ApplicationServiceProvider?.GetService<SingleStoreDataSource>();
 
         // TODO: Remove, because we don't use it anywhere.
         private bool IsMasterConnection { get; set; }
 
         protected override DbConnection CreateDbConnection()
-            => new SingleStoreConnection(AddConnectionStringOptions(new SingleStoreConnectionStringBuilder(ConnectionString!)).ConnectionString);
+            => _dataSource is not null
+                ? _dataSource.CreateConnection()
+                : new SingleStoreConnection(AddConnectionStringOptions(new SingleStoreConnectionStringBuilder(ConnectionString!)).ConnectionString);
+
+        public override string ConnectionString
+        {
+            get => _dataSource is null
+                ? base.ConnectionString
+                : _dataSource.ConnectionString;
+            set
+            {
+                _mySqlConnectionStringOptionsValidator.EnsureMandatoryOptions(ref value);
+                base.ConnectionString = value;
+
+                _dataSource = null;
+            }
+        }
+
+        public override void SetDbConnection(DbConnection value, bool contextOwnsConnection)
+        {
+            _mySqlConnectionStringOptionsValidator.EnsureMandatoryOptions(value);
+
+            base.SetDbConnection(value, contextOwnsConnection);
+        }
+
+        [AllowNull]
+        public new virtual SingleStoreConnection DbConnection
+        {
+            get => (SingleStoreConnection)base.DbConnection;
+            set
+            {
+                base.DbConnection = value;
+
+                _dataSource = null;
+            }
+        }
+
+        public virtual DbDataSource DbDataSource
+        {
+            get => _dataSource;
+            set
+            {
+                _mySqlConnectionStringOptionsValidator.EnsureMandatoryOptions(value);
+
+                if (value is not null)
+                {
+                    DbConnection = null;
+                    ConnectionString = null;
+                }
+
+                _dataSource = value;
+            }
+        }
 
         public virtual ISingleStoreRelationalConnection CreateMasterConnection()
         {
+            if (Dependencies.ContextOptions.FindExtension<SingleStoreOptionsExtension>() is not { } mySqlOptions)
+            {
+                throw new InvalidOperationException($"{nameof(SingleStoreOptionsExtension)} not found in {nameof(CreateMasterConnection)}");
+            }
+
             // Add master connection specific options.
             var csb = new SingleStoreConnectionStringBuilder(ConnectionString!)
             {
@@ -48,30 +164,27 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
             csb = AddConnectionStringOptions(csb);
 
-            var connectionString = csb.ConnectionString;
-            var relationalOptions = RelationalOptionsExtension.Extract(Dependencies.ContextOptions);
+            var masterConnectionString = csb.ConnectionString;
 
             // Apply modified connection string.
-            relationalOptions = relationalOptions.Connection is null
-                ? relationalOptions.WithConnectionString(connectionString)
-                : relationalOptions.WithConnection(DbConnection.CloneWith(connectionString));
+            var masterMySqlOptions = _dataSource is not null
+                ? mySqlOptions.WithConnection(((SingleStoreConnection)CreateDbConnection()).CloneWith(masterConnectionString))
+                : mySqlOptions.Connection is null
+                    ? mySqlOptions.WithConnectionString(masterConnectionString)
+                    : mySqlOptions.WithConnection(DbConnection.CloneWith(masterConnectionString));
 
             var optionsBuilder = new DbContextOptionsBuilder();
             var optionsBuilderInfrastructure = (IDbContextOptionsBuilderInfrastructure)optionsBuilder;
 
-            optionsBuilderInfrastructure.AddOrUpdateExtension(relationalOptions);
+            optionsBuilderInfrastructure.AddOrUpdateExtension(masterMySqlOptions);
 
-            return new SingleStoreRelationalConnection(Dependencies with { ContextOptions = optionsBuilder.Options })
+            return new SingleStoreRelationalConnection(
+                Dependencies with { ContextOptions = optionsBuilder.Options },
+                _mySqlConnectionStringOptionsValidator,
+                dataSource: null)
             {
                 IsMasterConnection = true
             };
-        }
-
-        [AllowNull]
-        public new virtual SingleStoreConnection DbConnection
-        {
-            get => (SingleStoreConnection)base.DbConnection;
-            set => base.DbConnection = value;
         }
 
         protected virtual SingleStoreConnectionStringBuilder AddConnectionStringOptions(SingleStoreConnectionStringBuilder builder)

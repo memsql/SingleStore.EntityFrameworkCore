@@ -2,6 +2,8 @@
 using System.Data;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -119,14 +121,19 @@ internal class ExistingConnectionSingleStoreTest
             {
                 await connection.OpenAsync();
 
+                var options = new DbContextOptionsBuilder<NorthwindContext>()
+                    .UseSingleStore(connection)
+                    .Options;
+
+                await using var context = new NorthwindContext(options);
+
                 Assert.Equal(
                     Assert.Throws<InvalidOperationException>(
                         () =>
                         {
-                            new DbContextOptionsBuilder<NorthwindContext>()
-                                .UseSingleStore(connection);
+                            context.GetService<IRelationalConnection>();
                         }).Message,
-                    @"The connection string of a connection used by EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=true;UseAffectedRows=false"".");
+                    @"The connection string of a connection used by EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=True;UseAffectedRows=False"".");
             }
         }
     }
@@ -175,14 +182,19 @@ internal class ExistingConnectionSingleStoreTest
             {
                 await connection.OpenAsync();
 
+                var options = new DbContextOptionsBuilder<NorthwindContext>()
+                    .UseSingleStore(connection)
+                    .Options;
+
+                await using var context = new NorthwindContext(options);
+
                 Assert.Equal(
                     Assert.Throws<InvalidOperationException>(
                         () =>
                         {
-                            new DbContextOptionsBuilder<NorthwindContext>()
-                                .UseSingleStore(connection);
+                            context.GetService<IRelationalConnection>();
                         }).Message,
-                    @"The connection string of a connection used by EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=true;UseAffectedRows=false"".");
+                    @"The connection string of a connection used by EntityFrameworkCore.SingleStore must contain ""AllowUserVariables=True;UseAffectedRows=False"".");
             }
         }
     }

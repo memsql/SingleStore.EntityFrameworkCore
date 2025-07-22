@@ -1,12 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
-    public class CaseSensitiveNorthwindQuerySingleStoreFixture<TModelCustomizer> : NorthwindQueryRelationalFixture<TModelCustomizer>
+    public class CaseSensitiveNorthwindQuerySingleStoreFixture<TModelCustomizer> : NorthwindQuerySingleStoreFixture<TModelCustomizer>
         where TModelCustomizer : IModelCustomizer, new()
     {
         protected override string StoreName => "NorthwindCs";

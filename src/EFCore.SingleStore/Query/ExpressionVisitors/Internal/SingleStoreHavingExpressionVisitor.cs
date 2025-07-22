@@ -2,8 +2,6 @@
 // Copyright (c) SingleStore Inc. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
-using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
@@ -44,7 +42,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
                 havingExpression is not SingleStoreColumnAliasReferenceExpression)
             {
                 _containsAggregateFunctionExpressionVisitor ??= new SingleStoreContainsAggregateFunctionExpressionVisitor();
-                if (!_containsAggregateFunctionExpressionVisitor.Process(havingExpression))
+                if (!_containsAggregateFunctionExpressionVisitor.ProcessUntilSelect(havingExpression))
                 {
                     selectExpression.PushdownIntoSubquery();
                     var subQuery = (SelectExpression) selectExpression.Tables.Single();
@@ -86,72 +84,6 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             }
 
             return base.VisitExtension(selectExpression);
-        }
-
-        /// <summary>
-        /// Looks for aggregate functions (like SUM(), AVG() etc.) in an expression tree, but not in subqueries.
-        /// </summary>
-        private sealed class SingleStoreContainsAggregateFunctionExpressionVisitor : ExpressionVisitor
-        {
-            // See https://dev.mysql.com/doc/refman/8.0/en/aggregate-functions.html
-            private static readonly SortedSet<string> _aggregateFunctions = new SortedSet<string>(StringComparer.OrdinalIgnoreCase)
-            {
-                "AVG",
-                "BIT_AND",
-                "BIT_OR",
-                "BIT_XOR",
-                "COUNT",
-                "GROUP_CONCAT",
-                "JSON_ARRAYAGG",
-                "JSON_OBJECTAGG",
-                "MAX",
-                "MIN",
-                "STD",
-                "STDDEV",
-                "STDDEV_POP",
-                "STDDEV_SAMP",
-                "SUM",
-                "VAR_POP",
-                "VAR_SAMP",
-                "VARIANCE",
-            };
-
-            public bool AggregateFunctionFound { get; private set; }
-
-            public bool Process(Expression node)
-            {
-                // Can be reused within the same thread.
-                AggregateFunctionFound = false;
-
-                Visit(node);
-
-                return AggregateFunctionFound;
-            }
-
-            public override Expression Visit(Expression node)
-                => AggregateFunctionFound
-                    ? node
-                    : base.Visit(node);
-
-            protected override Expression VisitExtension(Expression extensionExpression)
-                => extensionExpression switch
-                {
-                    SqlFunctionExpression sqlFunctionExpression => VisitSqlFunction(sqlFunctionExpression),
-                    SelectExpression selectExpression => selectExpression,
-                    ShapedQueryExpression shapedQueryExpression => shapedQueryExpression,
-                    _ => base.VisitExtension(extensionExpression)
-                };
-
-            private Expression VisitSqlFunction(SqlFunctionExpression sqlFunctionExpression)
-            {
-                if (_aggregateFunctions.Contains(sqlFunctionExpression.Name))
-                {
-                    AggregateFunctionFound = true;
-                    return sqlFunctionExpression;
-                }
-
-                return base.VisitExtension(sqlFunctionExpression);
-            }
         }
     }
 }

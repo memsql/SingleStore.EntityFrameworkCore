@@ -27,7 +27,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             // Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Scalar subselect where outer table is not a sharded table' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Scalar subselect where outer table is not a sharded table' is not supported by SingleStore Distributed")]
         public override Task Composite_key_join_on_groupby_aggregate_projecting_only_grouping_key(bool async)
         {
             return base.Composite_key_join_on_groupby_aggregate_projecting_only_grouping_key(async);
@@ -65,19 +65,19 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Element_selector_with_coalesce_repeated_in_aggregate(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Collection_FirstOrDefault_property_accesses_in_projection(bool async)
         {
             return base.Collection_FirstOrDefault_property_accesses_in_projection(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Contains_over_optional_navigation_with_null_column(bool async)
         {
             return base.Contains_over_optional_navigation_with_null_column(async);
         }
 
-        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Contains_over_optional_navigation_with_null_entity_reference(bool async)
         {
             return base.Contains_over_optional_navigation_with_null_entity_reference(async);
@@ -182,6 +182,23 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 async () => await base.Nested_SelectMany_correlated_with_join_table_correctly_translated_to_apply(async));
 
             AssertSql();
+        }
+
+        public override async Task Method_call_on_optional_navigation_translates_to_null_conditional_properly_for_arguments(bool async)
+        {
+            await base.Method_call_on_optional_navigation_translates_to_null_conditional_properly_for_arguments(async);
+
+            AssertSql(
+                """
+                SELECT `l`.`Id`, `l`.`Date`, `l`.`Name`
+                FROM `Level1` AS `l`
+                LEFT JOIN (
+                    SELECT `l0`.`Level1_Optional_Id`, `l0`.`Level2_Name`
+                    FROM `Level1` AS `l0`
+                    WHERE (`l0`.`OneToOne_Required_PK_Date` IS NOT NULL AND (`l0`.`Level1_Required_Id` IS NOT NULL)) AND `l0`.`OneToMany_Required_Inverse2Id` IS NOT NULL
+                ) AS `t` ON `l`.`Id` = `t`.`Level1_Optional_Id`
+                WHERE `t`.`Level2_Name` IS NOT NULL AND (LEFT(`t`.`Level2_Name`, CHAR_LENGTH(`t`.`Level2_Name`)) = `t`.`Level2_Name`)
+                """);
         }
 
         private void AssertSql(params string[] expected)

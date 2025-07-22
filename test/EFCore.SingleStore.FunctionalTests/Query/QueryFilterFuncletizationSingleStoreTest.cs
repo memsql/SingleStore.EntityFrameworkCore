@@ -30,39 +30,104 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             {
                 return;
             }
+
             base.Using_DbSet_in_filter_works();
+        }
+
+        public override void Using_multiple_entities_with_filters_reuses_parameters()
+        {
+            // We're skipping this test when we're running tests on Managed Service due to the specifics of
+            // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+            if (AppConfig.ManagedService)
+            {
+                return;
+            }
+
+            base.Using_multiple_entities_with_filters_reuses_parameters();
         }
 
         public override void DbContext_list_is_parameterized()
         {
-            using var context = CreateContext();
-            // Default value of TenantIds is null InExpression over null values throws
-            Assert.Throws<NullReferenceException>(() => context.Set<ListFilter>().ToList());
+            base.DbContext_list_is_parameterized();
 
-            context.TenantIds = new List<int>();
-            var query = context.Set<ListFilter>().ToList();
-            Assert.Empty(query);
-
-            context.TenantIds = new List<int> { 1 };
-            query = context.Set<ListFilter>().ToList();
-            Assert.Single(query);
-
-            context.TenantIds = new List<int> { 2, 3 };
-            query = context.Set<ListFilter>().ToList();
-            Assert.Equal(2, query.Count);
-
-            AssertSql(
-                @"SELECT `l`.`Id`, `l`.`Tenant`
+            if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+            {
+                AssertSql(
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
 FROM `ListFilter` AS `l`
-WHERE FALSE",
-                //
-                @"SELECT `l`.`Id`, `l`.`Tenant`
+WHERE `l`.`Tenant` IN (
+    SELECT `e`.`value`
+    FROM JSON_TABLE(NULL, '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `e`
+)
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
 FROM `ListFilter` AS `l`
-WHERE `l`.`Tenant` = 1",
-                //
-                @"SELECT `l`.`Id`, `l`.`Tenant`
+WHERE `l`.`Tenant` IN (
+    SELECT `e`.`value`
+    FROM JSON_TABLE('[]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `e`
+)
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
 FROM `ListFilter` AS `l`
-WHERE `l`.`Tenant` IN (2, 3)");
+WHERE `l`.`Tenant` IN (
+    SELECT `e`.`value`
+    FROM JSON_TABLE('[1]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `e`
+)
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE `l`.`Tenant` IN (
+    SELECT `e`.`value`
+    FROM JSON_TABLE('[2,3]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` int PATH '$[0]'
+    )) AS `e`
+)
+""");
+            }
+            else
+            {
+                AssertSql(
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE FALSE
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE FALSE
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE `l`.`Tenant` = 1
+""",
+                    //
+"""
+SELECT `l`.`Id`, `l`.`Tenant`
+FROM `ListFilter` AS `l`
+WHERE `l`.`Tenant` IN (2, 3)
+""");
+            }
         }
 
         private void AssertSql(params string[] expected)
@@ -154,6 +219,15 @@ WHERE `l`.`Tenant` IN (2, 3)");
                     .Property(e => e.Id)
                     .HasColumnType("bigint");
                 modelBuilder.Entity<DependentSetFilter>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<DeDupeFilter1>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<DeDupeFilter2>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+                modelBuilder.Entity<DeDupeFilter3>()
                     .Property(e => e.Id)
                     .HasColumnType("bigint");
             }

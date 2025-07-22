@@ -1,9 +1,11 @@
+using System;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestModels.Northwind;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
@@ -11,6 +13,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         where TModelCustomizer : IModelCustomizer, new()
     {
         protected override ITestStoreFactory TestStoreFactory => SingleStoreNorthwindTestStoreFactory.Instance;
+        protected override Type ContextType => typeof(NorthwindSingleStoreContext);
 
         protected override bool ShouldLogCategory(string logCategory)
             => logCategory == DbLoggerCategory.Query.Name || logCategory == DbLoggerCategory.Database.Command.Name;

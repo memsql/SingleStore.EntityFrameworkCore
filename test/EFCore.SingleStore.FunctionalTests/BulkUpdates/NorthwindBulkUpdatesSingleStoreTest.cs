@@ -16,7 +16,7 @@ public class NorthwindBulkUpdatesSingleStoreTest : NorthwindBulkUpdatesTestBase<
     public NorthwindBulkUpdatesSingleStoreTest(
         NorthwindBulkUpdatesSingleStoreFixture<NoopModelCustomizer> fixture,
         ITestOutputHelper testOutputHelper)
-        : base(fixture)
+        : base(fixture, testOutputHelper)
     {
         ClearLog();
         // Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
@@ -363,7 +363,7 @@ DELETE `o`
 FROM `Order Details` AS `o`
 INNER JOIN `Orders` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
 LEFT JOIN `Customers` AS `c` ON `o0`.`CustomerID` = `c`.`CustomerID`
-WHERE `c`.`CustomerID` IS NOT NULL AND (`c`.`CustomerID` LIKE 'F%')
+WHERE `c`.`CustomerID` LIKE 'F%'
 """);
     }
 
@@ -509,7 +509,7 @@ DELETE `o`
 FROM `Order Details` AS `o`
 INNER JOIN `Orders` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
 LEFT JOIN `Customers` AS `c` ON `o0`.`CustomerID` = `c`.`CustomerID`
-WHERE `c`.`City` IS NOT NULL AND (`c`.`City` LIKE 'Se%')
+WHERE `c`.`City` LIKE 'Se%'
 """);
     }
 
@@ -644,8 +644,8 @@ WHERE `c`.`CustomerID` LIKE 'F%'
         await base.Update_Where_parameter_set_constant(async);
 
         AssertExecuteUpdateSql(
-            """
-@__customer_0='ALFKI' (Size = 255)
+"""
+@__customer_0='ALFKI' (Size = 5) (DbType = StringFixedLength)
 
 UPDATE `Customers` AS `c`
 SET `c`.`ContactName` = 'Updated'
@@ -653,7 +653,7 @@ WHERE `c`.`CustomerID` = @__customer_0
 """,
             //
             """
-@__customer_0='ALFKI' (Size = 255)
+@__customer_0='ALFKI' (Size = 5) (DbType = StringFixedLength)
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
@@ -679,7 +679,7 @@ WHERE FALSE
 
         AssertExecuteUpdateSql(
 """
-@__value_0='Abc' (Size = 4000)
+@__value_0='Abc' (Size = 30)
 
 UPDATE `Customers` AS `c`
 SET `c`.`ContactName` = @__value_0
@@ -693,7 +693,7 @@ WHERE `c`.`CustomerID` LIKE 'F%'
 
         AssertExecuteUpdateSql(
 """
-@__p_0='Abc' (Size = 4000)
+@__p_0='Abc' (Size = 30)
 
 UPDATE `Customers` AS `c`
 SET `c`.`ContactName` = @__p_0
@@ -719,7 +719,7 @@ WHERE `c`.`CustomerID` LIKE 'F%'
 
         AssertExecuteUpdateSql(
 """
-@__container_Containee_Property_0='Abc' (Size = 4000)
+@__container_Containee_Property_0='Abc' (Size = 30)
 
 UPDATE `Customers` AS `c`
 SET `c`.`ContactName` = @__container_Containee_Property_0
@@ -974,8 +974,12 @@ WHERE EXISTS (
         AssertExecuteUpdateSql(
 """
 UPDATE `Customers` AS `c`
+INNER JOIN (
+    SELECT DISTINCT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
+    FROM `Customers` AS `c0`
+    WHERE `c0`.`CustomerID` LIKE 'F%'
+) AS `t` ON `c`.`CustomerID` = `t`.`CustomerID`
 SET `c`.`ContactName` = 'Updated'
-WHERE `c`.`CustomerID` LIKE 'F%'
 """);
     }
 
@@ -1038,7 +1042,7 @@ WHERE `c`.`CustomerID` LIKE 'F%'
 
         AssertExecuteUpdateSql(
 """
-@__value_0='Abc' (Size = 4000)
+@__value_0='Abc' (Size = 30)
 
 UPDATE `Customers` AS `c`
 SET `c`.`ContactName` = CONCAT(COALESCE(`c`.`ContactName`, ''), @__value_0)
@@ -1102,7 +1106,7 @@ WHERE `c`.`CustomerID` LIKE 'F%'
 
         AssertExecuteUpdateSql(
 """
-@__value_0='Abc' (Size = 4000)
+@__value_0='Abc' (Size = 30)
 
 UPDATE `Customers` AS `c`
 SET `c`.`City` = 'Seattle',
@@ -1114,13 +1118,6 @@ WHERE `c`.`CustomerID` LIKE 'F%'
     public override async Task Update_with_invalid_lambda_in_set_property_throws(bool async)
     {
         await base.Update_with_invalid_lambda_in_set_property_throws(async);
-
-        AssertExecuteUpdateSql();
-    }
-
-    public override async Task Update_multiple_entity_throws(bool async)
-    {
-        await base.Update_multiple_entity_throws(async);
 
         AssertExecuteUpdateSql();
     }
@@ -1307,7 +1304,7 @@ UPDATE `Customers` AS `c`
 CROSS JOIN (
     SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
     FROM `Customers` AS `c0`
-    WHERE `c0`.`City` IS NOT NULL AND (`c0`.`City` LIKE 'S%')
+    WHERE `c0`.`City` LIKE 'S%'
 ) AS `t`
 LEFT JOIN (
     SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
@@ -1329,7 +1326,7 @@ UPDATE `Customers` AS `c`
 CROSS JOIN (
     SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
     FROM `Customers` AS `c0`
-    WHERE `c0`.`City` IS NOT NULL AND (`c0`.`City` LIKE 'S%')
+    WHERE `c0`.`City` LIKE 'S%'
 ) AS `t`
 JOIN LATERAL (
     SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
@@ -1351,7 +1348,7 @@ UPDATE `Customers` AS `c`
 CROSS JOIN (
     SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
     FROM `Customers` AS `c0`
-    WHERE `c0`.`City` IS NOT NULL AND (`c0`.`City` LIKE 'S%')
+    WHERE `c0`.`City` LIKE 'S%'
 ) AS `t`
 LEFT JOIN LATERAL (
     SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
@@ -1442,6 +1439,49 @@ SET `c`.`City` = CAST(EXTRACT(year FROM (
     LIMIT 1)) AS char)
 WHERE `c`.`CustomerID` LIKE 'F%'
 """);
+    }
+
+    public override async Task Update_multiple_tables_throws(bool async)
+    {
+        await base.Update_multiple_tables_throws(async);
+
+        AssertSql(
+            """
+            SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+            FROM `Orders` AS `o`
+            LEFT JOIN `Customers` AS `c` ON `o`.`CustomerID` = `c`.`CustomerID`
+            WHERE `o`.`CustomerID` LIKE 'F%'
+            """);
+    }
+
+    public override async Task Update_with_two_inner_joins(bool async)
+    {
+        await base.Update_with_two_inner_joins(async);
+
+        AssertSql(
+            """
+            SELECT `o`.`OrderID`, `o`.`ProductID`, `o`.`Discount`, `o`.`Quantity`, `o`.`UnitPrice`
+            FROM `Order Details` AS `o`
+            INNER JOIN `Products` AS `p` ON `o`.`ProductID` = `p`.`ProductID`
+            INNER JOIN `Orders` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
+            WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > '1990-01-01 00:00:00')
+            """,
+            //
+            """
+            UPDATE `Order Details` AS `o`
+            INNER JOIN `Products` AS `p` ON `o`.`ProductID` = `p`.`ProductID`
+            INNER JOIN `Orders` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
+            SET `o`.`Quantity` = CAST(1 AS signed)
+            WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > '1990-01-01 00:00:00')
+            """,
+            //
+            """
+            SELECT `o`.`OrderID`, `o`.`ProductID`, `o`.`Discount`, `o`.`Quantity`, `o`.`UnitPrice`
+            FROM `Order Details` AS `o`
+            INNER JOIN `Products` AS `p` ON `o`.`ProductID` = `p`.`ProductID`
+            INNER JOIN `Orders` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
+            WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > '1990-01-01 00:00:00')
+            """);
     }
 
     private void AssertSql(params string[] expected)

@@ -6,7 +6,6 @@ using System.Data;
 using System.Data.Common;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Storage;
-using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
@@ -18,6 +17,8 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
     /// </summary>
     public class SingleStoreDoubleTypeMapping : DoubleTypeMapping
     {
+        public static new SingleStoreDoubleTypeMapping Default { get; } = new("double");
+
         /// <summary>
         ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
         ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
@@ -26,7 +27,7 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         /// </summary>
         public SingleStoreDoubleTypeMapping(
             [NotNull] string storeType,
-            DbType? dbType = null)
+            DbType? dbType = System.Data.DbType.Double)
             : base(storeType, dbType)
         {
         }
