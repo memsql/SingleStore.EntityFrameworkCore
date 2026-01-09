@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -20,6 +20,11 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
 {
     public class SingleStoreAnnotationCodeGenerator : AnnotationCodeGenerator
     {
+        private static readonly MethodInfo _modelUseIdentityColumnsMethodInfo
+            = typeof(SingleStoreModelBuilderExtensions).GetRequiredRuntimeMethod(
+                nameof(SingleStoreModelBuilderExtensions.AutoIncrementColumns),
+                typeof(ModelBuilder));
+
         private static readonly MethodInfo _modelHasCharSetMethodInfo
             = typeof(SingleStoreModelBuilderExtensions).GetRequiredRuntimeMethod(
                 nameof(SingleStoreModelBuilderExtensions.HasCharSet),
@@ -40,6 +45,12 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
                 typeof(ModelBuilder),
                 typeof(string));
 
+        private static readonly MethodInfo _modelHasAnnotationMethodInfo
+            = typeof(ModelBuilder).GetRequiredRuntimeMethod(
+                nameof(ModelBuilder.HasAnnotation),
+                typeof(string),
+                typeof(object));
+
         private static readonly MethodInfo _entityTypeHasCharSetMethodInfo
             = typeof(SingleStoreEntityTypeBuilderExtensions).GetRequiredRuntimeMethod(
                 nameof(SingleStoreEntityTypeBuilderExtensions.HasCharSet),
@@ -54,13 +65,24 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
                 typeof(string),
                 typeof(DelegationModes?));
 
+        private static readonly MethodInfo _propertyUseIdentityColumnMethodInfo
+            = typeof(SingleStorePropertyBuilderExtensions).GetRequiredRuntimeMethod(
+                nameof(SingleStorePropertyBuilderExtensions.UseSingleStoreIdentityColumn),
+                typeof(PropertyBuilder));
+
+        private static readonly MethodInfo _propertyUseComputedColumnMethodInfo
+            = typeof(SingleStorePropertyBuilderExtensions).GetRequiredRuntimeMethod(
+                nameof(SingleStorePropertyBuilderExtensions.UseSingleStoreComputedColumn),
+                typeof(PropertyBuilder));
+
+
         private static readonly MethodInfo _propertyHasCharSetMethodInfo
             = typeof(SingleStorePropertyBuilderExtensions).GetRequiredRuntimeMethod(
                 nameof(SingleStorePropertyBuilderExtensions.HasCharSet),
                 typeof(PropertyBuilder),
                 typeof(string));
 
-        public SingleStoreAnnotationCodeGenerator([NotNull] AnnotationCodeGeneratorDependencies dependencies)
+        public SingleStoreAnnotationCodeGenerator([JetBrains.Annotations.NotNull] AnnotationCodeGeneratorDependencies dependencies)
             : base(dependencies)
         {
         }
@@ -95,7 +117,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
                 var delegationModes = model[SingleStoreAnnotationNames.CharSetDelegation] as DelegationModes?;
                 return new MethodCallCodeFragment(
                     _modelHasCharSetMethodInfo,
-                    new[] {annotation.Value}
+                    new[] { annotation.Value }
                         .AppendIfTrue(delegationModes.HasValue, delegationModes)
                         .ToArray());
             }
@@ -116,7 +138,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
                 var delegationModes = model[SingleStoreAnnotationNames.CollationDelegation] as DelegationModes?;
                 return new MethodCallCodeFragment(
                     _modelUseCollationMethodInfo,
-                    new[] {annotation.Value}
+                    new[] { annotation.Value }
                         .AppendIfTrue(delegationModes.HasValue, delegationModes)
                         .ToArray());
             }
@@ -147,7 +169,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
                 var delegationModes = entityType[SingleStoreAnnotationNames.CharSetDelegation] as DelegationModes?;
                 return new MethodCallCodeFragment(
                     _entityTypeHasCharSetMethodInfo,
-                    new[] {annotation.Value}
+                    new[] { annotation.Value }
                         .AppendIfTrue(delegationModes.HasValue, delegationModes)
                         .ToArray());
             }
@@ -166,7 +188,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
                 var delegationModes = entityType[SingleStoreAnnotationNames.CollationDelegation] as DelegationModes?;
                 return new MethodCallCodeFragment(
                     _entityTypeUseCollationMethodInfo,
-                    new[] {annotation.Value}
+                    new[] { annotation.Value }
                         .AppendIfTrue(delegationModes.HasValue, delegationModes)
                         .ToArray());
             }
@@ -193,7 +215,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
                 var delegationModes = entityType[SingleStoreAnnotationNames.CharSetDelegation] as DelegationModes?;
                 return new AttributeCodeFragment(
                     typeof(SingleStoreCharSetAttribute),
-                    new[] {annotation.Value}
+                    new[] { annotation.Value }
                         .AppendIfTrue(delegationModes.HasValue, delegationModes)
                         .ToArray());
             }
@@ -212,7 +234,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
                 var delegationModes = entityType[SingleStoreAnnotationNames.CollationDelegation] as DelegationModes?;
                 return new AttributeCodeFragment(
                     typeof(SingleStoreCollationAttribute),
-                    new[] {annotation.Value}
+                    new[] { annotation.Value }
                         .AppendIfTrue(delegationModes.HasValue, delegationModes)
                         .ToArray());
             }
@@ -241,7 +263,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
 
             switch (annotation.Name)
             {
-                case SingleStoreAnnotationNames.CharSet when annotation.Value is string {Length: > 0} charSet:
+                case SingleStoreAnnotationNames.CharSet when annotation.Value is string { Length: > 0 } charSet:
                     return new MethodCallCodeFragment(
                         _propertyHasCharSetMethodInfo,
                         charSet);
@@ -258,10 +280,75 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
 
             return annotation.Name switch
             {
-                SingleStoreAnnotationNames.CharSet when annotation.Value is string {Length: > 0} charSet => new AttributeCodeFragment(typeof(SingleStoreCharSetAttribute), charSet),
-                RelationalAnnotationNames.Collation when annotation.Value is string {Length: > 0} collation => new AttributeCodeFragment(typeof(SingleStoreCollationAttribute), collation),
+                SingleStoreAnnotationNames.CharSet when annotation.Value is string { Length: > 0 } charSet => new AttributeCodeFragment(
+                    typeof(SingleStoreCharSetAttribute), charSet),
+                RelationalAnnotationNames.Collation when annotation.Value is string { Length: > 0 } collation => new AttributeCodeFragment(
+                    typeof(SingleStoreCollationAttribute), collation),
                 _ => base.GenerateDataAnnotation(property, annotation)
             };
+        }
+
+
+        public override IReadOnlyList<MethodCallCodeFragment> GenerateFluentApiCalls(
+            IModel model,
+            IDictionary<string, IAnnotation> annotations)
+        {
+            var fragments = new List<MethodCallCodeFragment>(base.GenerateFluentApiCalls(model, annotations));
+
+            if (GenerateValueGenerationStrategy(annotations, onModel: true) is { } valueGenerationStrategy)
+            {
+                fragments.Add(valueGenerationStrategy);
+            }
+
+            return fragments;
+        }
+
+        public override IReadOnlyList<MethodCallCodeFragment> GenerateFluentApiCalls(
+            IProperty property,
+            IDictionary<string, IAnnotation> annotations)
+        {
+            var fragments = new List<MethodCallCodeFragment>(base.GenerateFluentApiCalls(property, annotations));
+
+            if (GenerateValueGenerationStrategy(annotations, onModel: false) is { } valueGenerationStrategy)
+            {
+                fragments.Add(valueGenerationStrategy);
+            }
+
+            return fragments;
+        }
+
+        private MethodCallCodeFragment GenerateValueGenerationStrategy(IDictionary<string, IAnnotation> annotations, bool onModel)
+            => TryGetAndRemove(annotations, SingleStoreAnnotationNames.ValueGenerationStrategy, out SingleStoreValueGenerationStrategy strategy)
+                ? strategy switch
+                {
+                    SingleStoreValueGenerationStrategy.IdentityColumn => new MethodCallCodeFragment(
+                        onModel
+                            ? _modelUseIdentityColumnsMethodInfo
+                            : _propertyUseIdentityColumnMethodInfo),
+                    SingleStoreValueGenerationStrategy.ComputedColumn => new MethodCallCodeFragment(_propertyUseComputedColumnMethodInfo),
+                    SingleStoreValueGenerationStrategy.None => new MethodCallCodeFragment(
+                        _modelHasAnnotationMethodInfo,
+                        SingleStoreAnnotationNames.ValueGenerationStrategy,
+                        SingleStoreValueGenerationStrategy.None),
+                    _ => throw new ArgumentOutOfRangeException(strategy.ToString())
+                }
+                : null;
+
+        private static bool TryGetAndRemove<T>(
+            IDictionary<string, IAnnotation> annotations,
+            string annotationName,
+            [NotNullWhen(true)] out T annotationValue)
+        {
+            if (annotations.TryGetValue(annotationName, out var annotation)
+                && annotation.Value is not null)
+            {
+                annotations.Remove(annotationName);
+                annotationValue = (T)annotation.Value;
+                return true;
+            }
+
+            annotationValue = default;
+            return false;
         }
     }
 }
