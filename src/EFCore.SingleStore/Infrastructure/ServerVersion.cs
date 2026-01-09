@@ -72,7 +72,12 @@ namespace Microsoft.EntityFrameworkCore
         public static ServerVersion AutoDetect(string connectionString)
         {
             using var connection = new SingleStoreConnection(
-                new SingleStoreConnectionStringBuilder(connectionString) {Database = string.Empty}.ConnectionString);
+                new SingleStoreConnectionStringBuilder(connectionString)
+                {
+                    Database = string.Empty,
+                    AutoEnlist = false,
+                    Pooling = false,
+                }.ConnectionString);
             connection.Open();
             return Parse(connection.S2ServerVersion);
         }
@@ -96,7 +101,12 @@ namespace Microsoft.EntityFrameworkCore
             if (connection.State != ConnectionState.Open)
             {
                 using var clonedConnection = connection.CloneWith(
-                    new SingleStoreConnectionStringBuilder(connection.ConnectionString) {Database = string.Empty}.ConnectionString);
+                    new SingleStoreConnectionStringBuilder(connection.ConnectionString)
+                    {
+                        Database = string.Empty,
+                        AutoEnlist = false,
+                        Pooling = false,
+                    }.ConnectionString);
                 clonedConnection.Open();
                 serverVersion = clonedConnection.S2ServerVersion;
             }

@@ -11,12 +11,11 @@ namespace Microsoft.EntityFrameworkCore
 {
     /// <summary>
     /// Represents a <see cref="ServerVersion"/> for MySQL database servers.
-    /// For MariaDB database servers, use <see cref="MariaDbServerVersion"/> instead.
     /// </summary>
     public class SingleStoreServerVersion : ServerVersion
     {
         public static readonly string SingleStoreTypeIdentifier = nameof(ServerType.SingleStore).ToLowerInvariant();
-        public static readonly ServerVersion LatestSupportedServerVersion = new SingleStoreServerVersion(new Version(8, 9, 0));
+        public static readonly ServerVersion LatestSupportedServerVersion = new SingleStoreServerVersion(new Version(9, 0, 0));
 
         public override ServerVersionSupport Supports { get; }
 

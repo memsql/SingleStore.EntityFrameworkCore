@@ -74,8 +74,8 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure
         public virtual bool SpatialDistanceFunctionImplementsAndoyer => false;
         public virtual bool SpatialDistanceSphereFunction => false;
         public virtual bool SpatialGeographic => false;
-        public virtual bool ExceptIntercept => false;
-        public virtual bool ExceptInterceptPrecedence => false;
+        public virtual bool ExceptIntercept => true;
+        public virtual bool ExceptInterceptPrecedence => true;
         public virtual bool JsonDataTypeEmulation => false;
         public virtual bool ImplicitBoolCheckUsesIndex => false;
         public virtual bool Sequences => false;
