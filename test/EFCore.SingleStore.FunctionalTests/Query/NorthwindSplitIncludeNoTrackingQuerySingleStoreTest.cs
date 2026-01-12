@@ -125,7 +125,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Include_duplicate_collection_result_operator(async);
         }
 
-        public class NorthwindSplitIncludeNoTrackingQueryMySqlFixture : NorthwindQuerySingleStoreFixture<NoopModelCustomizer>
+        public class NorthwindSplitIncludeNoTrackingQuerySingleStoreFixture : NorthwindQuerySingleStoreFixture<NoopModelCustomizer>
         {
             // We used our `DebugRelationalCommandBuilderFactory` implementation to track down a
             // bug in Oracle's MySQL implementation, related to `SELECT ... ORDER BY (SELECT 1)`.

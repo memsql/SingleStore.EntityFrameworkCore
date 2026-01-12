@@ -19,9 +19,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         {
         }
 
-        protected override bool SnapshotSupported => false;
+        protected override bool SnapshotSupported => true;
         protected override bool AmbientTransactionsSupported => true;
-        protected override bool DirtyReadsOccur => false;
 
         protected override bool SavepointsSupported => false;
 
