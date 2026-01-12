@@ -55,7 +55,7 @@ namespace Microsoft.EntityFrameworkCore.Metadata.Conventions
 
             ReplaceConvention(
                 conventionSet.ModelFinalizedConventions,
-                (RuntimeModelConvention)new MySqlRuntimeModelConvention(Dependencies, RelationalDependencies));
+                (RuntimeModelConvention)new SingleStoreRuntimeModelConvention(Dependencies, RelationalDependencies));
 
             return conventionSet;
         }
