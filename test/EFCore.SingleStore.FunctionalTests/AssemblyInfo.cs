@@ -1,5 +1,3 @@
-// #define FIXED_TEST_ORDER
-
 using Xunit;
 
 //
@@ -7,11 +5,11 @@ using Xunit;
 //           This can be helpful for diffing etc.
 //
 
-#if FIXED_TEST_ORDER
+#if FIXED_TEST_ORDER || SPECIFIC_TEST_ORDER
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly, DisableTestParallelization = true, MaxParallelThreads = 1)]
-[assembly: TestCollectionOrderer("EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Xunit.SingleStoreTestCollectionOrderer", "EntityFrameworkCore.SingleStore.FunctionalTests")]
 [assembly: TestCaseOrderer("EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Xunit.SingleStoreTestCaseOrderer", "EntityFrameworkCore.SingleStore.FunctionalTests")]
+[assembly: TestCollectionOrderer("EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Xunit.SingleStoreTestCollectionOrderer", "EntityFrameworkCore.SingleStore.FunctionalTests")]
 
 #endif
 

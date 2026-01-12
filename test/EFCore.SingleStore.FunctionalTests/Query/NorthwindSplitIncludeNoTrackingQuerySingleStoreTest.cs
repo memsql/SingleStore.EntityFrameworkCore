@@ -2,19 +2,23 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Microsoft.Extensions.DependencyInjection;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.DebugServices;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
-    public class NorthwindSplitIncludeNoTrackingQuerySingleStoreTest : NorthwindSplitIncludeNoTrackingQueryTestBase<NorthwindQuerySingleStoreFixture<NoopModelCustomizer>>
+    // We use our custom fixture here, to inject a custom debug services.
+    public class NorthwindSplitIncludeNoTrackingQuerySingleStoreTest : NorthwindSplitIncludeNoTrackingQueryTestBase<NorthwindSplitIncludeNoTrackingQuerySingleStoreTest.NorthwindSplitIncludeNoTrackingQuerySingleStoreFixture>
     {
-        public NorthwindSplitIncludeNoTrackingQuerySingleStoreTest(NorthwindQuerySingleStoreFixture<NoopModelCustomizer> fixture, ITestOutputHelper testOutputHelper)
+        public NorthwindSplitIncludeNoTrackingQuerySingleStoreTest(NorthwindSplitIncludeNoTrackingQuerySingleStoreFixture fixture, ITestOutputHelper testOutputHelper)
             : base(fixture)
         {
-            //TestSqlLoggerFactory.CaptureOutput(testOutputHelper);
+            Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
@@ -119,6 +123,15 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override Task Include_duplicate_collection_result_operator(bool async)
         {
             return base.Include_duplicate_collection_result_operator(async);
+        }
+
+        public class NorthwindSplitIncludeNoTrackingQueryMySqlFixture : NorthwindQuerySingleStoreFixture<NoopModelCustomizer>
+        {
+            // We used our `DebugRelationalCommandBuilderFactory` implementation to track down a
+            // bug in Oracle's MySQL implementation, related to `SELECT ... ORDER BY (SELECT 1)`.
+            protected override IServiceCollection AddServices(IServiceCollection serviceCollection)
+                => base.AddServices(serviceCollection)
+                    .AddSingleton<IRelationalCommandBuilderFactory, DebugRelationalCommandBuilderFactory>();
         }
     }
 }
