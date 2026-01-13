@@ -44,7 +44,7 @@ jobs:
           version_rows=$(jq -cn --argjson versions "$VERSIONS" '
             $versions | map({
               name: ("SingleStore " + . + " connection test"),
-              singlestore_image: (.)
+              singlestore_version: (.)
             })
           ')
 
@@ -106,7 +106,7 @@ jobs:
         run: |
           ./.github/workflows/test_setup/setup_cluster.sh
         env:
-          SINGLESTORE_IMAGE: ${{ matrix.singlestore_image }}
+          SINGLESTORE_VERSION: ${{ matrix.singlestore_version }}
 
       - name: Copy test config
         run: |
@@ -129,7 +129,7 @@ jobs:
       - name: Run Integration Tests
         run: dotnet test test/EFCore.SingleStore.IntegrationTests -f net8.0 -c Release --no-build
 
-      - name: Run Functional Tests ${{ matrix.singlestore_image }} - ${{ matrix.func_test_script }}
+      - name: Run Functional Tests ${{ matrix.singlestore_version }} - ${{ matrix.func_test_script }}
         run: ${{ matrix.func_test_script }}
 
   test-windows:
