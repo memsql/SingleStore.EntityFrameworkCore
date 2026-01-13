@@ -13330,7 +13330,8 @@ WHERE NOT EXISTS (
 """);
     }
 
-        public override async Task Nav_expansion_inside_Contains_argument(bool async)
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+    public override async Task Nav_expansion_inside_Contains_argument(bool async)
     {
         await base.Nav_expansion_inside_Contains_argument(async);
 
@@ -13354,6 +13355,7 @@ END IN (1, -1)
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
     public override async Task Nav_expansion_with_member_pushdown_inside_Contains_argument(bool async)
     {
         await base.Nav_expansion_with_member_pushdown_inside_Contains_argument(async);
