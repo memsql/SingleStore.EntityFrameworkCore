@@ -563,5 +563,17 @@ FROM `Missions` AS `m`
 WHERE EXTRACT(hour FROM `m`.`Timeline`) = 8
 """);
         }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override async Task Nav_expansion_inside_Contains_argument(bool async)
+        {
+            await base.Nav_expansion_inside_Contains_argument(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override async Task Nav_expansion_with_member_pushdown_inside_Contains_argument(bool async)
+        {
+            await base.Nav_expansion_with_member_pushdown_inside_Contains_argument(async);
+        }
     }
 }

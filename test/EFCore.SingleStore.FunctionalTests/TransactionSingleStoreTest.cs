@@ -54,13 +54,13 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             base.EnlistTransaction_throws_if_ambient_transaction_started();
         }
 
-        [ConditionalFact(Skip = "IsolationLevel.ReadUncommitted is not supported by SingleStore Distributed.")]
+        [ConditionalTheory(Skip = "IsolationLevel.ReadUncommitted is not supported by SingleStore Distributed.")]
         public override void Query_uses_explicit_transaction(AutoTransactionBehavior autoTransactionBehavior)
         {
             base.Query_uses_explicit_transaction(autoTransactionBehavior);
         }
 
-        [ConditionalFact(Skip = "IsolationLevel.ReadUncommitted is not supported by SingleStore Distributed.")]
+        [ConditionalTheory(Skip = "IsolationLevel.ReadUncommitted is not supported by SingleStore Distributed.")]
         public override async Task QueryAsync_uses_explicit_transaction(AutoTransactionBehavior autoTransactionBehavior)
         {
             await base.QueryAsync_uses_explicit_transaction(autoTransactionBehavior);
