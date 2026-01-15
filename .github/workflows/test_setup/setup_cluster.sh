@@ -17,15 +17,6 @@ if [[ "${EXISTS}" -eq 1 ]]; then
     docker rm -f ${CONTAINER_NAME}
     EXISTS=0
   fi
-
-  # This prevents reusing a container started with a different version.
-  EXISTING_VERSION=$(docker inspect -f '{{range .Config.Env}}{{println .}}{{end}}' ${CONTAINER_NAME} \
-    | grep '^SINGLESTORE_VERSION=' | cut -d= -f2 || true)
-  if [[ "${EXISTING_VERSION}" != "${VERSION}" ]]; then
-    echo "Existing container ${CONTAINER_NAME} has SINGLESTORE_VERSION=${EXISTING_VERSION} when ${VERSION} is expected; recreating container."
-    docker rm -f ${CONTAINER_NAME}
-    EXISTS=0
-  fi
 fi
 
 if [[ "${EXISTS}" -eq 0 ]]; then
