@@ -82,6 +82,16 @@ jobs:
           sudo rm -rf /opt/hostedtoolcache/CodeQL
           sudo rm -rf /opt/hostedtoolcache/Ruby
           sudo rm -rf /opt/hostedtoolcache/Go
+          sudo rm -rf /opt/hostedtoolcache/Java*
+          sudo rm -rf /opt/hostedtoolcache/Python*
+          sudo rm -rf /opt/hostedtoolcache/Node*
+          sudo rm -rf /opt/hostedtoolcache/PyPy*
+          sudo rm -rf /opt/hostedtoolcache/Swift*
+          sudo rm -rf /opt/hostedtoolcache/gradle*
+          sudo rm -rf /opt/hostedtoolcache/maven*
+          sudo rm -rf /opt/hostedtoolcache/Rust*
+          sudo rm -rf /opt/hostedtoolcache/Perl*
+          sudo rm -rf /opt/hostedtoolcache/llvm
           docker system prune -af || true
           sudo apt-get clean
           echo "=== AFTER ==="
