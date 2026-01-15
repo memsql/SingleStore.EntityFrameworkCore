@@ -31,6 +31,8 @@ fi
 
 docker start ${CONTAINER_NAME}
 
+docker exec ${CONTAINER_NAME} df -h || true
+
 singlestore-wait-start() {
   echo -n "Waiting for SingleStore to start..."
   while true; do
