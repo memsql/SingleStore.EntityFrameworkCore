@@ -307,6 +307,12 @@ SELECT ROW_COUNT();",
         }
 
         [ConditionalTheory(Skip = "TODO")]
+        public override Task Add_primary_key_int()
+        {
+            return base.Add_primary_key_int();
+        }
+
+        [ConditionalTheory(Skip = "TODO")]
         public override async Task Add_primary_key_string()
         {
             await base.Add_primary_key_string();
