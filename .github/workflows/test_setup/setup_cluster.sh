@@ -31,8 +31,6 @@ fi
 
 docker start ${CONTAINER_NAME}
 
-docker exec ${CONTAINER_NAME} df -h || true
-
 singlestore-wait-start() {
   echo -n "Waiting for SingleStore to start..."
   while true; do
@@ -44,12 +42,17 @@ singlestore-wait-start() {
   done
   mysql -u root -h 127.0.0.1 -P 3306 -p"${SQL_USER_PASSWORD}" -e "create database if not exists singlestoretest" >/dev/null 2>/dev/null && \
   mysql -u root -h 127.0.0.1 -P 3306 -p"${SQL_USER_PASSWORD}" -e "SET GLOBAL data_conversion_compatibility_level = '6.0'" >/dev/null 2>/dev/null
-  mysql -u root -h 127.0.0.1 -P 3306 -p"${SQL_USER_PASSWORD}" -e "SHOW VARIABLES LIKE '%free%space%'; SHOW VARIABLES LIKE '%disk%';"
 
   echo ". Success!"
 }
 
 singlestore-wait-start
+
+mysql -u root -h 127.0.0.1 -P 3306 -p"${SQL_USER_PASSWORD}" --batch -N -e "\
+  SET GLOBAL failover_on_low_disk = OFF; \
+  SET GLOBAL minimal_disk_space = 0; \
+  SET GLOBAL spilling_minimal_disk_space = 0; \
+" >/dev/null 2>/dev/null || true
 
 echo
 echo "Ensuring child nodes are connected using container IP"
