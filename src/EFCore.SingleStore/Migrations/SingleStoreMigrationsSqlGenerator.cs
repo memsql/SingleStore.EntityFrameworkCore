@@ -73,6 +73,13 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             _stringTypeMapping = dependencies.TypeMappingSource.GetMapping(typeof(string));
         }
 
+        /// <summary>
+        ///     Generates commands from a list of operations.
+        /// </summary>
+        /// <param name="operations">The operations.</param>
+        /// <param name="model">The target model which may be <see langword="null" /> if the operations exist without a model.</param>
+        /// <param name="options">The options to use when generating commands.</param>
+        /// <returns>The list of commands to be executed or scripted.</returns>
         public override IReadOnlyList<MigrationCommand> Generate(
             IReadOnlyList<MigrationOperation> operations,
             IModel model = null,
@@ -105,6 +112,25 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             }
         }
 
+        /// <summary>
+        ///     Checks if a migration operation is a FULLTEXT index creation.
+        /// </summary>
+        /// <param name="operation">The migration operation to check.</param>
+        /// <returns>True if the operation is a CreateIndexOperation with FULLTEXT annotation.</returns>
+        private static bool IsFullText(MigrationOperation operation)
+        {
+            return operation is CreateIndexOperation &&
+                   operation[SingleStoreAnnotationNames.FullTextIndex] as bool? == true;
+        }
+
+        /// <summary>
+        ///     Filters and preprocesses migration operations to handle SingleStore-specific requirements:
+        ///     1. FULLTEXT indexes: Transfers FULLTEXT CreateIndexOperations to inline annotations on CreateTableOperations
+        ///     2. AUTO_INCREMENT: Merges AUTO_INCREMENT column additions with their AddPrimaryKeyOperations
+        /// </summary>
+        /// <param name="operations">The list of migration operations to filter.</param>
+        /// <param name="model">The target model.</param>
+        /// <returns>A filtered list of operations ready for SQL generation.</returns>
         protected virtual IReadOnlyList<MigrationOperation> FilterOperations(IReadOnlyList<MigrationOperation> operations, IModel model)
         {
             if (operations.Count <= 0)
@@ -112,12 +138,52 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 return operations;
             }
 
+            // STEP 1: Process FULLTEXT indexes
+            // SingleStore requires FULLTEXT indexes to be defined inline in CREATE TABLE statements, not as separate CREATE INDEX.
+            // We transfer the FULLTEXT index definition from CreateIndexOperation to CreateTableOperation as an annotation.
+            var operationsAfterFullTextProcessing = new List<MigrationOperation>();
+
+            foreach (var operation in operations)
+            {
+                if (operation is CreateIndexOperation createIndexOperation && IsFullText(operation))
+                {
+                    // Find the corresponding CreateTableOperation for this FULLTEXT index
+                    var createTableOperation = (CreateTableOperation)operations.Single(o =>
+                            (o is CreateTableOperation createTableOperation && createTableOperation.Name == createIndexOperation.Table));
+
+                    try
+                    {
+                        createTableOperation.AddAnnotation(SingleStoreAnnotationNames.FullTextIndex, createIndexOperation.Columns);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        throw new InvalidOperationException("Feature 'more than one FULLTEXT KEY' is not supported by SingleStore Distributed.");
+                    }
+
+                    continue;
+                }
+
+                // Add all non-FULLTEXT operations to the list
+                operationsAfterFullTextProcessing.Add(operation);
+            }
+
+            // STEP 2: Process AUTO_INCREMENT + PRIMARY KEY merging
+            // MySQL/SingleStore requires AUTO_INCREMENT columns to be keys. If we add an AUTO_INCREMENT column
+            // and then make it a primary key in separate statements, the first statement fails.
+            // We merge these operations so both happen in a single SQL statement.
+
+            // If no operations left after FULLTEXT processing, return what we have
+            if (operationsAfterFullTextProcessing.Count == 0)
+            {
+                return operationsAfterFullTextProcessing.AsReadOnly();
+            }
+
             var filteredOperations = new List<MigrationOperation>();
 
-            var previousOperation = operations.First();
+            var previousOperation = operationsAfterFullTextProcessing.First();
             filteredOperations.Add(previousOperation);
 
-            foreach (var currentOperation in operations.Skip(1))
+            foreach (var currentOperation in operationsAfterFullTextProcessing.Skip(1))
             {
                 // Merge a ColumnOperation immediately followed by an AddPrimaryKeyOperation into a single operation (and SQL statement), if
                 // the ColumnOperation is for an AUTO_INCREMENT column. The *immediately followed* restriction could be lifted, if it later
@@ -881,10 +947,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             {
                 switch (matchType)
                 {
-                    // ACCORDING TO CHANGES SHOULD DELETE THIS, LEAVING IT BEFORE I CHECK
-                    case "bigint":
-                        autoIncrement = true;
-                        break;
                     case "datetime":
                         if (!_options.ServerVersion.Supports.DateTimeCurrentTimestamp)
                         {
