@@ -99,7 +99,7 @@ namespace QueryBaselineUpdater
 
             if (notFound.Any())
             {
-                Console.WriteLine("The following chunks where not found:");
+                Console.WriteLine("The following chunks were not found:");
                 Console.WriteLine();
 
                 foreach (var id in notFound)

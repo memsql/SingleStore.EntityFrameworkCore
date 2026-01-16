@@ -35,7 +35,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
     public class SingleStoreMigrationsSqlGenerator : MigrationsSqlGenerator
     {
         private const string InternalAnnotationPrefix = SingleStoreAnnotationNames.Prefix + "SingleStoreMigrationsSqlGenerator:";
-        private const string OutputPrimaryKeyConstraintOnAutoIncrementAnnotationName = InternalAnnotationPrefix + "OutputPrimaryKeyConstraint";
 
         private static readonly Regex _typeRegex = new Regex(@"(?<Name>[a-z0-9]+)\s*?(?:\(\s*(?<Length>\d+)?\s*\))?",
             RegexOptions.IgnoreCase);
@@ -124,9 +123,11 @@ namespace EntityFrameworkCore.SingleStore.Migrations
         }
 
         /// <summary>
-        ///     Filters and preprocesses migration operations to handle SingleStore-specific requirements:
-        ///     1. FULLTEXT indexes: Transfers FULLTEXT CreateIndexOperations to inline annotations on CreateTableOperations
-        ///     2. AUTO_INCREMENT: Merges AUTO_INCREMENT column additions with their AddPrimaryKeyOperations
+        ///     Filters and preprocesses migration operations to handle SingleStore-specific requirements.
+        ///
+        ///     FULLTEXT indexes: SingleStore requires FULLTEXT indexes to be defined inline in CREATE TABLE statements,
+        ///     not as separate CREATE INDEX statements. This method transfers FULLTEXT CreateIndexOperations to inline
+        ///     annotations on CreateTableOperations.
         /// </summary>
         /// <param name="operations">The list of migration operations to filter.</param>
         /// <param name="model">The target model.</param>
@@ -138,10 +139,10 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 return operations;
             }
 
-            // STEP 1: Process FULLTEXT indexes
+            // Process FULLTEXT indexes
             // SingleStore requires FULLTEXT indexes to be defined inline in CREATE TABLE statements, not as separate CREATE INDEX.
             // We transfer the FULLTEXT index definition from CreateIndexOperation to CreateTableOperation as an annotation.
-            var operationsAfterFullTextProcessing = new List<MigrationOperation>();
+            var filteredOperations = new List<MigrationOperation>();
 
             foreach (var operation in operations)
             {
@@ -160,60 +161,18 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                         throw new InvalidOperationException("Feature 'more than one FULLTEXT KEY' is not supported by SingleStore Distributed.");
                     }
 
+                    // Transfer parser annotation if present (for custom FULLTEXT parsers like ngram)
+                    if (createIndexOperation[SingleStoreAnnotationNames.FullTextParser] is string parser)
+                    {
+                        createTableOperation.AddAnnotation(SingleStoreAnnotationNames.FullTextParser, parser);
+                    }
+
+                    // Skip adding this CreateIndexOperation - it will be generated inline in CREATE TABLE
                     continue;
                 }
 
                 // Add all non-FULLTEXT operations to the list
-                operationsAfterFullTextProcessing.Add(operation);
-            }
-
-            // STEP 2: Process AUTO_INCREMENT + PRIMARY KEY merging
-            // MySQL/SingleStore requires AUTO_INCREMENT columns to be keys. If we add an AUTO_INCREMENT column
-            // and then make it a primary key in separate statements, the first statement fails.
-            // We merge these operations so both happen in a single SQL statement.
-
-            // If no operations left after FULLTEXT processing, return what we have
-            if (operationsAfterFullTextProcessing.Count == 0)
-            {
-                return operationsAfterFullTextProcessing.AsReadOnly();
-            }
-
-            var filteredOperations = new List<MigrationOperation>();
-
-            var previousOperation = operationsAfterFullTextProcessing.First();
-            filteredOperations.Add(previousOperation);
-
-            foreach (var currentOperation in operationsAfterFullTextProcessing.Skip(1))
-            {
-                // Merge a ColumnOperation immediately followed by an AddPrimaryKeyOperation into a single operation (and SQL statement), if
-                // the ColumnOperation is for an AUTO_INCREMENT column. The *immediately followed* restriction could be lifted, if it later
-                // turns out to be necessary.
-                // MySQL dictates that there can be only one AUTO_INCREMENT column and it has to be a key.
-                // If we first add a new column with the AUTO_INCREMENT flag and *then* make it a primary key in the *next* statement, the
-                // first statement will fail, because the column is not a key yet, and AUTO_INCREMENT columns have to be keys.
-                if (previousOperation is ColumnOperation columnOperation &&
-                    currentOperation is AddPrimaryKeyOperation addPrimaryKeyOperation &&
-                    addPrimaryKeyOperation.Schema == columnOperation.Schema &&
-                    addPrimaryKeyOperation.Table == columnOperation.Table &&
-                    addPrimaryKeyOperation.Columns.Length == 1 &&
-                    addPrimaryKeyOperation.Columns[0] == columnOperation.Name &&
-                    // The following 3 conditions match the ones from `ColumnDefinition()`.
-                    SingleStoreValueGenerationStrategyCompatibility.GetValueGenerationStrategy(columnOperation.GetAnnotations().OfType<IAnnotation>().ToArray()) is var valueGenerationStrategy &&
-                    GetColumBaseTypeAndLength(columnOperation, model) is var (columnBaseType, _) &&
-                    IsAutoIncrement(columnOperation, columnBaseType, valueGenerationStrategy))
-                {
-                    // This internal annotation lets our `ColumnDefinition()` implementation generate a second clause for the primary key
-                    // constraint in the same statement.
-                    columnOperation[OutputPrimaryKeyConstraintOnAutoIncrementAnnotationName] = true;
-
-                    // We now skip adding the AddPrimaryKeyOperation to the list of operations.
-                }
-                else
-                {
-                    filteredOperations.Add(currentOperation);
-                }
-
-                previousOperation = currentOperation;
+                filteredOperations.Add(operation);
             }
 
             return filteredOperations.AsReadOnly();
@@ -994,24 +953,11 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 GenerateComment(operation.Comment, builder);
 
                 // AUTO_INCREMENT has priority over reference definitions.
+                // Note: SingleStore requires AUTO_INCREMENT columns to be included in an index (PRIMARY, UNIQUE, or regular KEY).
+                // This must be defined in the CREATE TABLE statement; ALTER TABLE ADD COLUMN with AUTO_INCREMENT is not supported.
                 if (autoIncrement)
                 {
                     builder.Append(" AUTO_INCREMENT");
-
-                    // TODO: Add support for a non-primary key that is used as with auto_increment.
-                    if (model?.GetRelationalModel().FindTable(table, schema) is { PrimaryKey: { Columns.Count: 1 } primaryKey } &&
-                        primaryKey.Columns[0].Name == operation.Name &&
-                        (bool?)operation[OutputPrimaryKeyConstraintOnAutoIncrementAnnotationName] == true)
-                    {
-                        builder
-                            .AppendLine(",")
-                            .Append("ADD ");
-
-                        PrimaryKeyConstraint(
-                            AddPrimaryKeyOperation.CreateFrom(primaryKey),
-                            model,
-                            builder);
-                    }
                 }
                 else if (onUpdateSql != null)
                 {
@@ -1075,10 +1021,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             {
                 switch (columnType)
                 {
-                    case "tinyint":
-                    case "smallint":
-                    case "mediumint":
-                    case "int":
                     case "bigint":
                         return true;
                 }

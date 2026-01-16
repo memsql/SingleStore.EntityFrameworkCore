@@ -15,7 +15,7 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal;
 // Used to generate a compiled model. The compiled model is only used at app runtime and not for design-time purposes.
 // Therefore, all annotations that are related to design-time concerns (i.e. databases, tables or columns) are superfluous and should be
 // removed.
-// TOOD: Check behavior for `ValueGenerationStrategy`, `LegacyValueGeneratedOnAdd` and `LegacyValueGeneratedOnAddOrUpdate`.
+// TODO: Check behavior for `ValueGenerationStrategy`, `LegacyValueGeneratedOnAdd` and `LegacyValueGeneratedOnAddOrUpdate`.
 public class SingleStoreCSharpRuntimeAnnotationCodeGenerator : RelationalCSharpRuntimeAnnotationCodeGenerator
 {
     public SingleStoreCSharpRuntimeAnnotationCodeGenerator(
