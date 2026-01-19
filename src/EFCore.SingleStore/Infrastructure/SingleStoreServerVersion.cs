@@ -95,7 +95,7 @@ namespace Microsoft.EntityFrameworkCore
             public override bool JsonValue => false;
             public override bool Values => false;
             public override bool ValuesWithRows => false;
-            public override bool OffsetReferencesOuterQuery => false;
+            public override bool WhereSubqueryReferencesOuterQuery => false;
 
             public override bool JsonTableImplementationStable => false;
             public override bool JsonTableImplementationWithoutMySqlBugs => false; // Other non-fatal bugs regarding JSON_TABLE.

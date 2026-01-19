@@ -96,7 +96,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure
         public virtual bool JsonValue => false;
         public virtual bool Values => false;
         public virtual bool ValuesWithRows => false;
-        public virtual bool OffsetReferencesOuterQuery => false;
+        public virtual bool WhereSubqueryReferencesOuterQuery => false;
 
         public virtual bool JsonTableImplementationStable => JsonTable;
         public virtual bool JsonTableImplementationWithoutMySqlBugs => JsonTable;

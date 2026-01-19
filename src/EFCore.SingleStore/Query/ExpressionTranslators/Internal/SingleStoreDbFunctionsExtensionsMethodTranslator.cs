@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
 using EntityFrameworkCore.SingleStore.Query.Internal;
+using EntityFrameworkCore.SingleStore.Utilities;
 
 namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
 {
@@ -22,6 +23,40 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
     public class SingleStoreDbFunctionsExtensionsMethodTranslator : IMethodCallTranslator
     {
         private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
+
+                private static readonly HashSet<MethodInfo> _convertTimeZoneMethodInfos =
+        [
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateTime), typeof(string), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateOnly), typeof(string), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateTime?), typeof(string), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateOnly?), typeof(string), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateTime), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateTimeOffset), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateOnly), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateTime?), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateTimeOffset?), typeof(string) }),
+            typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
+                nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
+                new[] { typeof(DbFunctions), typeof(DateOnly?), typeof(string) }),
+        ];
 
         private static readonly Type[] _supportedLikeTypes = {
             typeof(int),
@@ -149,6 +184,29 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
             IReadOnlyList<SqlExpression> arguments,
             IDiagnosticsLogger<DbLoggerCategory.Query> logger)
         {
+            if (_convertTimeZoneMethodInfos.TryGetValue(method, out _))
+            {
+                // Will not just return `NULL` if any of its parameters is `NULL`, but also if `fromTimeZone` or `toTimeZone` is incorrect.
+                // Will do no conversion at all if `dateTime` is outside the supported range.
+                return _sqlExpressionFactory.NullableFunction(
+                    "CONVERT_TZ",
+                    arguments.Count == 3
+                        ?
+                        [
+                            arguments[1],
+                            // The implicit fromTimeZone is UTC for DateTimeOffset values and the current session time zone otherwise.
+                            method.GetParameters()[1].ParameterType.UnwrapNullableType() == typeof(DateTimeOffset)
+                                ? _sqlExpressionFactory.Constant("+00:00")
+                                : _sqlExpressionFactory.Fragment("@@session.time_zone"),
+                            arguments[2]
+                        ]
+                        : new[] { arguments[1], arguments[2], arguments[3] },
+                    method.ReturnType.UnwrapNullableType(),
+                    null,
+                    false,
+                    Statics.GetTrueValues(arguments.Count));
+            }
+
             if (_likeMethodInfos.Any(m => Equals(method, m)))
             {
                 var match = _sqlExpressionFactory.ApplyDefaultTypeMapping(arguments[1]);
