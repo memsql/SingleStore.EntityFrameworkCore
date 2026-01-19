@@ -4,6 +4,7 @@ using System.Linq;
 using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -167,6 +168,33 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             Assert.Equal(string.Empty, new SingleStoreConnectionStringBuilder(masterConnection.ConnectionString).Database);
 
             masterConnection.Open();
+        }
+
+
+        [Fact]
+        public void Can_create_database_with_disablebackslashescaping()
+        {
+            var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
+            optionsBuilder.UseSingleStore(SingleStoreTestStore.CreateConnectionString("ConnectionTest_" + Guid.NewGuid()), b => b.ApplyConfiguration().DisableBackslashEscaping());
+            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+
+            var relationalDatabaseCreator = context.GetService<IRelationalDatabaseCreator>();
+
+            try
+            {
+                relationalDatabaseCreator.EnsureCreated();
+            }
+            finally
+            {
+                try
+                {
+                    relationalDatabaseCreator.EnsureDeleted();
+                }
+                catch
+                {
+                    // ignored
+                }
+            }
         }
 
         private readonly IServiceProvider _serviceProvider = new ServiceCollection()

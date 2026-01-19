@@ -23,11 +23,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
         AssertSql(
 """
-@__ef_filter__TenantPrefix_0_rewritten='B%' (Size = 40)
+@__ef_filter__TenantPrefix_0_startswith='B%' (Size = 40)
 
 SELECT COUNT(*)
 FROM `Customers` AS `c`
-WHERE `c`.`CompanyName` LIKE @__ef_filter__TenantPrefix_0_rewritten
+WHERE `c`.`CompanyName` LIKE @__ef_filter__TenantPrefix_0_startswith
 """);
         }
 
