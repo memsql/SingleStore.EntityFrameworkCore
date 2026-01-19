@@ -56,7 +56,7 @@ public class SingleStoreValueGenerationStrategyConvention : IModelInitializedCon
             {
                 SingleStoreValueGenerationStrategy? strategy = null;
                 var declaringTable = property.GetMappedStoreObjects(StoreObjectType.Table).FirstOrDefault();
-                if (declaringTable.Name != null!)
+                if (declaringTable.Name is not null)
                 {
                     strategy = property.GetValueGenerationStrategy(declaringTable, Dependencies.TypeMappingSource);
                     if (strategy == SingleStoreValueGenerationStrategy.None &&
@@ -68,7 +68,7 @@ public class SingleStoreValueGenerationStrategyConvention : IModelInitializedCon
                 else
                 {
                     var declaringView = property.GetMappedStoreObjects(StoreObjectType.View).FirstOrDefault();
-                    if (declaringView.Name != null!)
+                    if (declaringView.Name is not null)
                     {
                         strategy = property.GetValueGenerationStrategy(declaringView, Dependencies.TypeMappingSource);
                         if (strategy == SingleStoreValueGenerationStrategy.None &&
@@ -80,8 +80,8 @@ public class SingleStoreValueGenerationStrategyConvention : IModelInitializedCon
                 }
 
                 // Needed for the annotation to show up in the model snapshot.
-                if (strategy != null &&
-                    declaringTable.Name != null)
+                if (strategy is not null &&
+                    declaringTable.Name is not null)
                 {
                     property.Builder.HasValueGenerationStrategy(strategy);
                 }

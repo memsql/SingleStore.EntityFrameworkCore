@@ -124,10 +124,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
         /// <summary>
         ///     Filters and preprocesses migration operations to handle SingleStore-specific requirements.
-        ///
-        ///     FULLTEXT indexes: SingleStore requires FULLTEXT indexes to be defined inline in CREATE TABLE statements,
-        ///     not as separate CREATE INDEX statements. This method transfers FULLTEXT CreateIndexOperations to inline
-        ///     annotations on CreateTableOperations.
         /// </summary>
         /// <param name="operations">The list of migration operations to filter.</param>
         /// <param name="model">The target model.</param>
@@ -161,17 +157,14 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                         throw new InvalidOperationException("Feature 'more than one FULLTEXT KEY' is not supported by SingleStore Distributed.");
                     }
 
-                    // Transfer parser annotation if present (for custom FULLTEXT parsers like ngram)
                     if (createIndexOperation[SingleStoreAnnotationNames.FullTextParser] is string parser)
                     {
                         createTableOperation.AddAnnotation(SingleStoreAnnotationNames.FullTextParser, parser);
                     }
 
-                    // Skip adding this CreateIndexOperation - it will be generated inline in CREATE TABLE
                     continue;
                 }
 
-                // Add all non-FULLTEXT operations to the list
                 filteredOperations.Add(operation);
             }
 

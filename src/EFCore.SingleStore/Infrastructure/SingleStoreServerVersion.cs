@@ -76,8 +76,8 @@ namespace Microsoft.EntityFrameworkCore
             public override bool SpatialDistanceFunctionImplementsAndoyer => false;
             public override bool SpatialDistanceSphereFunction => false;
             public override bool SpatialGeographic => false;
-            public override bool ExceptIntercept => false;
-            public override bool ExceptInterceptPrecedence => false;
+            public override bool ExceptIntercept => true;
+            public override bool ExceptInterceptPrecedence => true;
             public override bool JsonDataTypeEmulation => false;
             public override bool ImplicitBoolCheckUsesIndex => false;
             public override bool SingleStoreBug96947Workaround => false;
