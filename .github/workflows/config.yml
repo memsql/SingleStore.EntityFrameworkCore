@@ -9,36 +9,69 @@ env:
   S2MS_API_KEY: ${{ secrets.S2MS_API_KEY }}
 
 jobs:
+  fetch-s2-versions:
+    name: Fetch SingleStore supported versions
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.get_versions.outputs.versions }}
+    steps:
+      - name: Get supported versions of SingleStore
+        id: get_versions
+        uses: singlestore-labs/singlestore-supported-versions@main
+        with:
+          include_rc: true
+
+  build-matrix:
+    name: Build test matrix
+    runs-on: ubuntu-latest
+    needs: fetch-s2-versions
+    outputs:
+      matrix: ${{ steps.compose.outputs.matrix }}
+    steps:
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: Compose matrix JSON
+        id: compose
+        env:
+          VERSIONS: ${{ needs.fetch-s2-versions.outputs.versions }}
+        run: |
+          scripts='[
+            ".github/workflows/test_setup/run_functional_tests1.sh",
+            ".github/workflows/test_setup/run_functional_tests2.sh"
+          ]'
+
+          version_rows=$(jq -cn --argjson versions "$VERSIONS" '
+            $versions | map({
+              name: ("SingleStore " + . + " connection test"),
+              singlestore_version: (.)
+            })
+          ')
+
+          rows=$(jq -cn --argjson versions "$version_rows" --argjson scripts "$scripts" '
+            [
+              $versions[] as $v |
+              $scripts[] as $s |
+              ($v + { func_test_script: $s })
+            ]
+          ')
+
+          matrix=$(jq -cn --argjson rows "$rows" '{ include: $rows }')
+
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
   test-ubuntu:
+    name: ${{ matrix.name }}
     runs-on: ubuntu-22.04
+    needs: build-matrix
     strategy:
       fail-fast: false
-      matrix:
-        singlestore_image:
-          - singlestore/cluster-in-a-box:alma-8.5.6-b51bc5471a-4.0.17-1.17.8
-          - singlestore/cluster-in-a-box:alma-8.7.12-483e5f8acb-4.1.0-1.17.15
-        func_test_script:
-          - .github/workflows/test_setup/run_functional_tests1.sh
-          - .github/workflows/test_setup/run_functional_tests2.sh
+      matrix: ${{ fromJson(needs.build-matrix.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v4
 
       - name: Remove unnecessary pre-installed toolchains for free disk spaces
-        run: |
-          echo "=== BEFORE ==="
-          df -h
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf /usr/local/share/boost
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          sudo rm -rf /usr/local/lib/android
-          sudo rm -rf /opt/hostedtoolcache/CodeQL
-          sudo rm -rf /opt/hostedtoolcache/Ruby
-          sudo rm -rf /opt/hostedtoolcache/Go
-          docker system prune -af || true
-          sudo apt-get clean
-          echo "=== AFTER ==="
-          df -h
+        run: ./.github/workflows/test_setup/free_disk_space.sh
 
       - name: Set up .NET
         uses: actions/setup-dotnet@v4
@@ -55,11 +88,19 @@ jobs:
       - name: Install Powershell
         run: sudo snap install powershell --classic
 
+      - name: Extra Docker cleanup before starting SingleStore
+        run: |
+          docker ps -a || true
+          docker rm -f singlestore-integration || true
+          docker system prune -af || true
+          docker volume prune -f || true
+          df -h
+
       - name: Start SingleStore Cluster
         run: |
           ./.github/workflows/test_setup/setup_cluster.sh
         env:
-          SINGLESTORE_IMAGE: ${{ matrix.singlestore_image }}
+          SINGLESTORE_VERSION: ${{ matrix.singlestore_version }}
 
       - name: Copy test config
         run: |
@@ -82,7 +123,7 @@ jobs:
       - name: Run Integration Tests
         run: dotnet test test/EFCore.SingleStore.IntegrationTests -f net8.0 -c Release --no-build
 
-      - name: Run Functional Tests ${{ matrix.singlestore_image }} - ${{ matrix.func_test_script }}
+      - name: Run Functional Tests ${{ matrix.singlestore_version }} - ${{ matrix.func_test_script }}
         run: ${{ matrix.func_test_script }}
 
   test-windows:
