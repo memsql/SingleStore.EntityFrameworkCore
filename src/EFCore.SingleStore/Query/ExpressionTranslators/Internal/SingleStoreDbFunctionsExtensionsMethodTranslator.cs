@@ -6,8 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -23,8 +25,9 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
     public class SingleStoreDbFunctionsExtensionsMethodTranslator : IMethodCallTranslator
     {
         private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
+        private readonly string _sessionTimeZone;
 
-                private static readonly HashSet<MethodInfo> _convertTimeZoneMethodInfos =
+        private static readonly HashSet<MethodInfo> _convertTimeZoneMethodInfos =
         [
             typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(
                 nameof(SingleStoreDbFunctionsExtensions.ConvertTimeZone),
@@ -169,9 +172,13 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
         private static readonly MethodInfo _radiansDoubleMethodInfo = typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(nameof(SingleStoreDbFunctionsExtensions.Radians), new[] { typeof(DbFunctions), typeof(double) });
         private static readonly MethodInfo _radiansFloatMethodInfo = typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethod(nameof(SingleStoreDbFunctionsExtensions.Radians), new[] { typeof(DbFunctions), typeof(float) });
 
-        public SingleStoreDbFunctionsExtensionsMethodTranslator(ISqlExpressionFactory sqlExpressionFactory)
+        public SingleStoreDbFunctionsExtensionsMethodTranslator(ISqlExpressionFactory sqlExpressionFactory, IDbContextOptions dbContextOptions)
         {
             _sqlExpressionFactory = (SingleStoreSqlExpressionFactory)sqlExpressionFactory;
+            // Default to UTC when not configured, because SingleStore ignores @@session.time_zone at runtime.
+            _sessionTimeZone =
+                dbContextOptions.FindExtension<SingleStoreOptionsExtension>()?.SessionTimeZone
+                ?? "+00:00";
         }
 
         /// <summary>
@@ -186,6 +193,12 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
         {
             if (_convertTimeZoneMethodInfos.TryGetValue(method, out _))
             {
+                // Replace any accidental @@session.time_zone fragments (MySQL semantics) with configured session offset.
+                SqlExpression RewriteSessionTz(SqlExpression expr)
+                    => expr is SqlFragmentExpression sfe && sfe.Sql == "@@session.time_zone"
+                        ? _sqlExpressionFactory.Constant(_sessionTimeZone)
+                        : expr;
+
                 // Will not just return `NULL` if any of its parameters is `NULL`, but also if `fromTimeZone` or `toTimeZone` is incorrect.
                 // Will do no conversion at all if `dateTime` is outside the supported range.
                 return _sqlExpressionFactory.NullableFunction(
@@ -193,14 +206,19 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
                     arguments.Count == 3
                         ?
                         [
-                            arguments[1],
+                            RewriteSessionTz(arguments[1]),
                             // The implicit fromTimeZone is UTC for DateTimeOffset values and the current session time zone otherwise.
                             method.GetParameters()[1].ParameterType.UnwrapNullableType() == typeof(DateTimeOffset)
                                 ? _sqlExpressionFactory.Constant("+00:00")
-                                : _sqlExpressionFactory.Fragment("@@session.time_zone"),
-                            arguments[2]
+                                : _sqlExpressionFactory.Constant(_sessionTimeZone), // was @@session.time_zone
+                            RewriteSessionTz(arguments[2])
                         ]
-                        : new[] { arguments[1], arguments[2], arguments[3] },
+                        : new[]
+                        {
+                            RewriteSessionTz(arguments[1]),
+                            RewriteSessionTz(arguments[2]),
+                            RewriteSessionTz(arguments[3])
+                        },
                     method.ReturnType.UnwrapNullableType(),
                     null,
                     false,

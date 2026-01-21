@@ -15,8 +15,8 @@ namespace EntityFrameworkCore.SingleStore.Query
         [ConditionalFact]
         public void ConvertTimeZone()
         {
-            using var context = Fixture.CreateContext();
-            SetSessionTimeZone(context);
+            using var context = Fixture.CreateContext(
+                mySqlOptions: o => o.SessionTimeZone("-08:00")); // use provider option (customer-facing)
             Fixture.ClearSql();
 
             var metalContainer = context.Set<Model.Container>()
@@ -55,8 +55,8 @@ LIMIT 2
         [ConditionalFact]
         public void DateTimeOffset_LocalDateTime()
         {
-            using var context = Fixture.CreateContext();
-            SetSessionTimeZone(context);
+            using var context = Fixture.CreateContext(
+                mySqlOptions: o => o.SessionTimeZone("-08:00")); // use provider option (customer-facing)
             Fixture.ClearSql();
 
             var metalContainer = context.Set<Model.Container>()
@@ -68,21 +68,12 @@ LIMIT 2
 
             Assert.Equal(
                 """
-SELECT CONVERT_TZ(`c`.`DeliveredDateTimeOffset`, '+00:00', @__ef_singlestore_tz) AS `LocalDateTime`
+SELECT CONVERT_TZ(`c`.`DeliveredDateTimeOffset`, '+00:00', '-08:00') AS `LocalDateTime`
 FROM `Container` AS `c`
-WHERE CONVERT_TZ(`c`.`DeliveredDateTimeOffset`, '+00:00', @__ef_singlestore_tz) = ('2023-12-31 15:00:00' :> TIMESTAMP)
+WHERE CONVERT_TZ(`c`.`DeliveredDateTimeOffset`, '+00:00', '-08:00') = '2023-12-31 15:00:00'
 LIMIT 2
 """,
                 Fixture.Sql);
-        }
-
-        private static void SetSessionTimeZone(SingleStoreTimeZoneFixture.SingleStoreTimeZoneContext context)
-        {
-            context.Database.OpenConnection();
-            var connection = context.Database.GetDbConnection();
-            using var command = connection.CreateCommand();
-            command.CommandText = "SET @__ef_singlestore_tz = '-08:00';";
-            command.ExecuteNonQuery();
         }
 
         public class SingleStoreTimeZoneFixture : SingleStoreTestFixtureBase<SingleStoreTimeZoneFixture.SingleStoreTimeZoneContext>
