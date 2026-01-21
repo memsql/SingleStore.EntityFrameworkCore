@@ -183,6 +183,7 @@ FROM `FunkyCustomers` AS `f`
             """
             @__s_0_contains='%B%' (Size = 4000)
             @__s_0_startswith='B%' (Size = 4000)
+
             SELECT `f`.`Id`, `f`.`FirstName`, `f`.`LastName`, `f`.`NullableBool`
             FROM `FunkyCustomers` AS `f`
             WHERE (`f`.`FirstName` LIKE @__s_0_contains) OR (`f`.`LastName` LIKE @__s_0_startswith)

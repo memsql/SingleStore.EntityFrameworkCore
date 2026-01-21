@@ -171,7 +171,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
 
-        [Fact]
+        [ConditionalFact(Skip = "Feature 'Non-underscore or alphanumeric characters in database name, or name starts with digit' is not supported by SingleStore")]
         public void Can_create_database_with_disablebackslashescaping()
         {
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();

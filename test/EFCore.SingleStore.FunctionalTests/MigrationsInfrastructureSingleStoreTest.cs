@@ -91,6 +91,14 @@ VALUES ('00000000000003_Migration3', '7.0.0-test');
 
 COMMIT;
 
+START TRANSACTION;
+
+INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
+VALUES ('00000000000004_Migration4', '7.0.0-test');
+
+COMMIT;
+
+
 """,
                 Sql,
                 ignoreLineEndingDifferences: true);
@@ -110,11 +118,7 @@ VALUES ('00000000000002_Migration2', '7.0.0-test');
 
 COMMIT;
 
-START TRANSACTION;
-INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
-VALUES ('00000000000004_Migration4', '7.0.0-test');
-COMMIT;
-""",
+",
                 Sql,
                 ignoreLineEndingDifferences: true);
         }
@@ -240,19 +244,25 @@ DROP PROCEDURE MigrationsScript;
 COMMIT;
 
 START TRANSACTION;
+
 DROP PROCEDURE IF EXISTS MigrationsScript;
 DELIMITER //
 CREATE PROCEDURE MigrationsScript()
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '00000000000004_Migration4') THEN
+
     INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
     VALUES ('00000000000004_Migration4', '7.0.0-test');
+
     END IF;
 END //
 DELIMITER ;
 CALL MigrationsScript();
 DROP PROCEDURE MigrationsScript;
+
 COMMIT;
+
+
 """,
                 Sql,
                 ignoreLineEndingDifferences: true);
@@ -438,6 +448,8 @@ VALUES ('00000000000003_Migration3', '7.0.0-test');
 
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('00000000000004_Migration4', '7.0.0-test');
+
+
 """,
                 Sql,
                 ignoreLineEndingDifferences: true);
@@ -537,13 +549,17 @@ DELIMITER //
 CREATE PROCEDURE MigrationsScript()
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '00000000000004_Migration4') THEN
+
     INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
     VALUES ('00000000000004_Migration4', '7.0.0-test');
+
     END IF;
 END //
 DELIMITER ;
 CALL MigrationsScript();
 DROP PROCEDURE MigrationsScript;
+
+
 """,
                 Sql,
                 ignoreLineEndingDifferences: true);

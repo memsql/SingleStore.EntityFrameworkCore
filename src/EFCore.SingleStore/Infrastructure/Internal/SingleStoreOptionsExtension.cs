@@ -92,7 +92,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
         public virtual bool LimitKeyedOrIndexedStringColumnLength { get; private set; }
         public virtual bool StringComparisonTranslations { get; private set; }
         public virtual bool PrimitiveCollectionsSupport { get; private set; }
-        public string SessionTimeZone { get; private set; }
+        public virtual string SessionTimeZone { get; private set; }
 
         /// <summary>
         ///     Creates a new instance with all options the same as for this instance, but with the given option changed.
@@ -217,7 +217,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
             return clone;
         }
 
-        public SingleStoreOptionsExtension WithSessionTimeZone(string offset)
+        public virtual SingleStoreOptionsExtension WithSessionTimeZone(string offset)
         {
             var clone = (SingleStoreOptionsExtension)Clone();
             clone.SessionTimeZone = offset;

@@ -730,6 +730,7 @@ ORDER BY `t`.`CustomerID`, `o0`.`OrderID`
             return base.DefaultIfEmpty_Sum_over_collection_navigation(async);
         }
 
+        [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
         public override async Task Parameter_collection_Contains_with_projection_and_ordering(bool async)
         {
 #if EFCORE_DEBUG_BUILD
