@@ -889,7 +889,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             Check.NotNull(operation, nameof(operation));
             Check.NotNull(builder, nameof(builder));
 
-            var (matchType, matchLen) = GetColumBaseTypeAndLength(schema, table, name, operation, model);
+            var (matchType, matchLen) = GetColumnBaseTypeAndLength(schema, table, name, operation, model);
             var valueGenerationStrategy = SingleStoreValueGenerationStrategyCompatibility.GetValueGenerationStrategy(operation.GetAnnotations().OfType<IAnnotation>().ToArray());
             var autoIncrement = IsAutoIncrement(operation, matchType, valueGenerationStrategy);
 
@@ -978,12 +978,12 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             }
         }
 
-        protected virtual (string matchType, string matchLen) GetColumBaseTypeAndLength(
+        protected virtual (string matchType, string matchLen) GetColumnBaseTypeAndLength(
             ColumnOperation operation,
             IModel model)
-            => GetColumBaseTypeAndLength(operation.Schema, operation.Table, operation.Name, operation, model);
+            => GetColumnBaseTypeAndLength(operation.Schema, operation.Table, operation.Name, operation, model);
 
-        protected virtual (string matchType, string matchLen) GetColumBaseTypeAndLength(
+        protected virtual (string matchType, string matchLen) GetColumnBaseTypeAndLength(
             string schema,
             string table,
             string name,
