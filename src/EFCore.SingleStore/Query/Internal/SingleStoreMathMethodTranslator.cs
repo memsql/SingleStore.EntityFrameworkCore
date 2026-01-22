@@ -57,9 +57,9 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             { typeof(MathF).GetRuntimeMethod(nameof(MathF.Floor), new[] { typeof(float) }), ("FLOOR", true, false) },
 
             { typeof(Math).GetRuntimeMethod(nameof(Math.Log), new[] { typeof(double) }), ("LOG", true, false) },
-            { typeof(Math).GetRuntimeMethod(nameof(Math.Log), new[] { typeof(double), typeof(double) }), ("LOG", false, false) },
+            { typeof(Math).GetRuntimeMethod(nameof(Math.Log), new[] { typeof(double), typeof(double) }), ("LOG", false, true) },
             { typeof(MathF).GetRuntimeMethod(nameof(MathF.Log), new[] { typeof(float) }), ("LOG", true, false) },
-            { typeof(MathF).GetRuntimeMethod(nameof(MathF.Log), new[] { typeof(float), typeof(float) }), ("LOG", false, false) },
+            { typeof(MathF).GetRuntimeMethod(nameof(MathF.Log), new[] { typeof(float), typeof(float) }), ("LOG", false, true) },
 
             { typeof(Math).GetRuntimeMethod(nameof(Math.Log10), new[] { typeof(double) }), ("LOG10", false, false) },
             { typeof(MathF).GetRuntimeMethod(nameof(MathF.Log10), new[] { typeof(float) }), ("LOG10", false, false) },
