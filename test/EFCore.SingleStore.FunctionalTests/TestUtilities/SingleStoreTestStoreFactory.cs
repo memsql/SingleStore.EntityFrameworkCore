@@ -1,12 +1,16 @@
 ﻿using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
+using EntityFrameworkCore.SingleStore.Tests;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 {
     public class SingleStoreTestStoreFactory : RelationalTestStoreFactory
     {
-        public static SingleStoreTestStoreFactory Instance { get; } = new SingleStoreTestStoreFactory();
+        public static SingleStoreTestStoreFactory Instance => InstanceCi;
+        public static SingleStoreTestStoreFactory InstanceCi { get; } = new SingleStoreTestStoreFactory(databaseCollation: AppConfig.ServerVersion.DefaultUtf8CiCollation);
+        public static SingleStoreTestStoreFactory InstanceCs { get; } = new SingleStoreTestStoreFactory(databaseCollation: AppConfig.ServerVersion.DefaultUtf8CsCollation);
+
         public static SingleStoreTestStoreFactory NoBackslashEscapesInstance { get; } = new SingleStoreTestStoreFactory(noBackslashEscapes: true);
         public static SingleStoreTestStoreFactory GuidBinary16Instance { get; } = new SingleStoreTestStoreFactory(guidFormat: SingleStoreGuidFormat.Binary16);
 

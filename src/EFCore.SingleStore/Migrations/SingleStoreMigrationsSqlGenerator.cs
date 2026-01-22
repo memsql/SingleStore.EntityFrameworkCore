@@ -34,6 +34,8 @@ namespace EntityFrameworkCore.SingleStore.Migrations
     /// </summary>
     public class SingleStoreMigrationsSqlGenerator : MigrationsSqlGenerator
     {
+        private const string InternalAnnotationPrefix = SingleStoreAnnotationNames.Prefix + "SingleStoreMigrationsSqlGenerator:";
+
         private static readonly Regex _typeRegex = new Regex(@"(?<Name>[a-z0-9]+)\s*?(?:\(\s*(?<Length>\d+)?\s*\))?",
             RegexOptions.IgnoreCase);
 
@@ -79,61 +81,94 @@ namespace EntityFrameworkCore.SingleStore.Migrations
         /// <returns>The list of commands to be executed or scripted.</returns>
         public override IReadOnlyList<MigrationCommand> Generate(
             IReadOnlyList<MigrationOperation> operations,
-            IModel model,
+            IModel model = null,
             MigrationsSqlGenerationOptions options = MigrationsSqlGenerationOptions.Default)
         {
-            Check.NotNull(operations, nameof(operations));
-
-            Options = options;
-
-            var builder = new MigrationCommandListBuilder(Dependencies);
             try
             {
-                UpdateMigrationOperations(operations);
-                foreach (var operation in operations)
-                {
-                    if (!IsFullText(operation))
-                    {
-                        Generate(operation, model, builder);
-                    }
-                }
+                var filteredOperations = FilterOperations(operations, model);
+                var migrationCommands = base.Generate(filteredOperations, model, options);
+
+                return migrationCommands;
             }
             finally
             {
-                Options = MigrationsSqlGenerationOptions.Default;
+                CleanUpInternalAnnotations(operations);
             }
-
-            return builder.GetCommandList();
         }
 
-        private void UpdateMigrationOperations(IReadOnlyList<MigrationOperation> operations)
+        private static void CleanUpInternalAnnotations(IReadOnlyList<MigrationOperation> filteredOperations)
         {
-            foreach (var operation in operations)
+            foreach (var filteredOperation in filteredOperations)
             {
-                if (operation is CreateIndexOperation createIndexOperation)
+                foreach (var annotation in filteredOperation.GetAnnotations().ToList())
                 {
-                    if (IsFullText(operation))
+                    if (annotation.Name.StartsWith(InternalAnnotationPrefix))
                     {
-                        var createTableOperation = (CreateTableOperation)operations.Single(o =>
-                            (o is CreateTableOperation createTableOperation && createTableOperation.Name == createIndexOperation.Table));
-
-                        try
-                        {
-                            createTableOperation.AddAnnotation(SingleStoreAnnotationNames.FullTextIndex, createIndexOperation.Columns);
-                        }
-                        catch (InvalidOperationException)
-                        {
-                            throw new InvalidOperationException("Feature 'more than one FULLTEXT KEY' is not supported by SingleStore Distributed.");
-                        }
+                        filteredOperation.RemoveAnnotation(annotation.Name);
                     }
                 }
             }
         }
 
+        /// <summary>
+        ///     Checks if a migration operation is a FULLTEXT index creation.
+        /// </summary>
+        /// <param name="operation">The migration operation to check.</param>
+        /// <returns>True if the operation is a CreateIndexOperation with FULLTEXT annotation.</returns>
         private static bool IsFullText(MigrationOperation operation)
         {
             return operation is CreateIndexOperation &&
                    operation[SingleStoreAnnotationNames.FullTextIndex] as bool? == true;
+        }
+
+        /// <summary>
+        ///     Filters and preprocesses migration operations to handle SingleStore-specific requirements.
+        /// </summary>
+        /// <param name="operations">The list of migration operations to filter.</param>
+        /// <param name="model">The target model.</param>
+        /// <returns>A filtered list of operations ready for SQL generation.</returns>
+        protected virtual IReadOnlyList<MigrationOperation> FilterOperations(IReadOnlyList<MigrationOperation> operations, IModel model)
+        {
+            if (operations.Count <= 0)
+            {
+                return operations;
+            }
+
+            // Process FULLTEXT indexes
+            // SingleStore requires FULLTEXT indexes to be defined inline in CREATE TABLE statements, not as separate CREATE INDEX.
+            // We transfer the FULLTEXT index definition from CreateIndexOperation to CreateTableOperation as an annotation.
+            var filteredOperations = new List<MigrationOperation>();
+
+            foreach (var operation in operations)
+            {
+                if (operation is CreateIndexOperation createIndexOperation && IsFullText(operation))
+                {
+                    // Find the corresponding CreateTableOperation for this FULLTEXT index
+                    var createTableOperation = (CreateTableOperation)operations.Single(o =>
+                            (o is CreateTableOperation createTableOperation && createTableOperation.Name == createIndexOperation.Table));
+
+                    try
+                    {
+                        createTableOperation.AddAnnotation(SingleStoreAnnotationNames.FullTextIndex, createIndexOperation.Columns);
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        throw new InvalidOperationException("Feature 'more than one FULLTEXT KEY' is not supported by SingleStore Distributed.");
+                    }
+
+                    if (createIndexOperation[SingleStoreAnnotationNames.FullTextParser] is string parser)
+                    {
+                        createTableOperation.AddAnnotation(SingleStoreAnnotationNames.FullTextParser, parser);
+                    }
+
+                    continue;
+                }
+
+                filteredOperations.Add(operation);
+            }
+
+            return filteredOperations.AsReadOnly();
         }
 
         /// <summary>
@@ -854,29 +889,16 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             Check.NotNull(operation, nameof(operation));
             Check.NotNull(builder, nameof(builder));
 
-            var matchType = GetColumnType(schema, table, name, operation, model);
-            var matchLen = "";
-            var match = _typeRegex.Match(matchType ?? "-");
-            if (match.Success)
-            {
-                matchType = match.Groups["Name"].Value.ToLower();
-                if (match.Groups["Length"].Success)
-                {
-                    matchLen = match.Groups["Length"].Value;
-                }
-            }
-
+            var (matchType, matchLen) = GetColumnBaseTypeAndLength(schema, table, name, operation, model);
             var valueGenerationStrategy = SingleStoreValueGenerationStrategyCompatibility.GetValueGenerationStrategy(operation.GetAnnotations().OfType<IAnnotation>().ToArray());
+            var autoIncrement = IsAutoIncrement(operation, matchType, valueGenerationStrategy);
 
-            var autoIncrement = false;
-            if (valueGenerationStrategy == SingleStoreValueGenerationStrategy.IdentityColumn &&
-                string.IsNullOrWhiteSpace(operation.DefaultValueSql) && operation.DefaultValue == null)
+            if (!autoIncrement &&
+                valueGenerationStrategy == SingleStoreValueGenerationStrategy.IdentityColumn &&
+                string.IsNullOrWhiteSpace(operation.DefaultValueSql))
             {
                 switch (matchType)
                 {
-                    case "bigint":
-                        autoIncrement = true;
-                        break;
                     case "datetime":
                         if (!_options.ServerVersion.Supports.DateTimeCurrentTimestamp)
                         {
@@ -884,8 +906,8 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                                 $"Error in {table}.{name}: DATETIME does not support values generated " +
                                 $"on Add or Update in server version {_options.ServerVersion}. Try explicitly setting the column type to TIMESTAMP.");
                         }
-
                         goto case "timestamp";
+
                     case "timestamp":
                         operation.DefaultValueSql = $"CURRENT_TIMESTAMP({matchLen})";
                         break;
@@ -921,15 +943,16 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             {
                 ColumnDefinitionWithCharSet(schema, table, name, operation, model, builder);
 
+                GenerateComment(operation.Comment, builder);
+
+                // AUTO_INCREMENT has priority over reference definitions.
+                // Note: SingleStore requires AUTO_INCREMENT columns to be included in an index (PRIMARY, UNIQUE, or regular KEY).
+                // This must be defined in the CREATE TABLE statement; ALTER TABLE ADD COLUMN with AUTO_INCREMENT is not supported.
                 if (autoIncrement)
                 {
                     builder.Append(" AUTO_INCREMENT");
                 }
-
-                GenerateComment(operation.Comment, builder);
-
-                // AUTO_INCREMENT has priority over reference definitions.
-                if (onUpdateSql != null && !autoIncrement)
+                else if (onUpdateSql != null)
                 {
                     builder
                         .Append(" ON UPDATE ")
@@ -953,6 +976,50 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
                 GenerateComment(operation.Comment, builder);
             }
+        }
+
+        protected virtual (string matchType, string matchLen) GetColumnBaseTypeAndLength(
+            ColumnOperation operation,
+            IModel model)
+            => GetColumnBaseTypeAndLength(operation.Schema, operation.Table, operation.Name, operation, model);
+
+        protected virtual (string matchType, string matchLen) GetColumnBaseTypeAndLength(
+            string schema,
+            string table,
+            string name,
+            ColumnOperation operation,
+            IModel model)
+        {
+            var matchType = GetColumnType(schema, table, name, operation, model);
+            var matchLen = "";
+            var match = _typeRegex.Match(matchType ?? "-");
+            if (match.Success)
+            {
+                matchType = match.Groups["Name"].Value.ToLower();
+                if (match.Groups["Length"].Success)
+                {
+                    matchLen = match.Groups["Length"].Value;
+                }
+            }
+
+            return (matchType, matchLen);
+        }
+
+        protected virtual bool IsAutoIncrement(ColumnOperation operation,
+            string columnType,
+            SingleStoreValueGenerationStrategy? valueGenerationStrategy)
+        {
+            if (valueGenerationStrategy == SingleStoreValueGenerationStrategy.IdentityColumn &&
+                string.IsNullOrWhiteSpace(operation.DefaultValueSql))
+            {
+                switch (columnType)
+                {
+                    case "bigint":
+                        return true;
+                }
+            }
+
+            return false;
         }
 
         private void GenerateComment(string comment, MigrationCommandListBuilder builder)

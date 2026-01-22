@@ -1080,7 +1080,7 @@ FROM (
     SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, FALSE AS `c`
     FROM `Customers` AS `c`
     WHERE `c`.`CustomerID` LIKE 'A%'
-    ORDER BY (SELECT 1)
+    ORDER BY 1
     LIMIT 18446744073709551610 OFFSET @__p_1
 ) AS `t`
 LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`
@@ -2009,7 +2009,7 @@ ORDER BY `t`.`CompanyName` DESC, `t`.`CustomerID`
                     SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, TRUE AS `c`
                     FROM `Customers` AS `c`
                     WHERE `c`.`CustomerID` LIKE 'A%'
-                    ORDER BY (SELECT 1)
+                    ORDER BY 1
                     LIMIT 18446744073709551610 OFFSET @__p_1
                 ) AS `t`
                 LEFT JOIN `Orders` AS `o` ON `t`.`CustomerID` = `o`.`CustomerID`

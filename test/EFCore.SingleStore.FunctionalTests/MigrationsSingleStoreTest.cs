@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -1393,6 +1392,10 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                     Assert.Equal("Persons", table.Name);
                 },
                 withConventions: false);
+
+        // The constraint name for a primary key is always PRIMARY in MySQL.
+        protected override bool AssertConstraintNames
+            => false;
 
         protected virtual string DefaultCollation => ((SingleStoreTestStore)Fixture.TestStore).DatabaseCollation;
 

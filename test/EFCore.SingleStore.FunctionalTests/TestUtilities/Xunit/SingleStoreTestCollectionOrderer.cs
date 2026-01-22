@@ -9,6 +9,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Xunit
     public class SingleStoreTestCollectionOrderer : ITestCollectionOrderer
     {
         public IEnumerable<ITestCollection> OrderTestCollections(IEnumerable<ITestCollection> testCollections)
-            => testCollections.OrderBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase);
+            => testCollections
+                .OrderBy(c => c.DisplayName, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(c => c.DisplayName, StringComparer.Ordinal)
+                .ThenBy(c => c.UniqueID);
     }
 }

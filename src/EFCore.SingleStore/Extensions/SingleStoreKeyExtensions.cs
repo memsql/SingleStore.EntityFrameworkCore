@@ -2,7 +2,9 @@
 // Copyright (c) SingleStore Inc. All rights reserved.
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
+using System;
 using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata;
 using EntityFrameworkCore.SingleStore.Metadata.Internal;
 
@@ -21,7 +23,9 @@ namespace Microsoft.EntityFrameworkCore
         /// <returns> The prefix lengths.
         /// A value of `0` indicates, that the full length should be used for that column. </returns>
         public static int[] PrefixLength([NotNull] this IKey key)
-            => (int[])key[SingleStoreAnnotationNames.IndexPrefixLength];
+            => (key is RuntimeKey)
+                ? throw new InvalidOperationException(CoreStrings.RuntimeModelMissingData)
+                : (int[])key[SingleStoreAnnotationNames.IndexPrefixLength];
 
         /// <summary>
         ///     Sets prefix lengths for the key.

@@ -19,9 +19,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         {
         }
 
-        protected override bool SnapshotSupported => false;
+        protected override bool SnapshotSupported => true;
         protected override bool AmbientTransactionsSupported => true;
-        protected override bool DirtyReadsOccur => false;
 
         protected override bool SavepointsSupported => false;
 
@@ -53,6 +52,18 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         public override void EnlistTransaction_throws_if_ambient_transaction_started()
         {
             base.EnlistTransaction_throws_if_ambient_transaction_started();
+        }
+
+        [ConditionalTheory(Skip = "IsolationLevel.ReadUncommitted is not supported by SingleStore Distributed.")]
+        public override void Query_uses_explicit_transaction(AutoTransactionBehavior autoTransactionBehavior)
+        {
+            base.Query_uses_explicit_transaction(autoTransactionBehavior);
+        }
+
+        [ConditionalTheory(Skip = "IsolationLevel.ReadUncommitted is not supported by SingleStore Distributed.")]
+        public override async Task QueryAsync_uses_explicit_transaction(AutoTransactionBehavior autoTransactionBehavior)
+        {
+            await base.QueryAsync_uses_explicit_transaction(autoTransactionBehavior);
         }
 
         protected override DbContext CreateContextWithConnectionString()

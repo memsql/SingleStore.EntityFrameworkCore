@@ -11,12 +11,11 @@ namespace Microsoft.EntityFrameworkCore
 {
     /// <summary>
     /// Represents a <see cref="ServerVersion"/> for MySQL database servers.
-    /// For MariaDB database servers, use <see cref="MariaDbServerVersion"/> instead.
     /// </summary>
     public class SingleStoreServerVersion : ServerVersion
     {
         public static readonly string SingleStoreTypeIdentifier = nameof(ServerType.SingleStore).ToLowerInvariant();
-        public static readonly ServerVersion LatestSupportedServerVersion = new SingleStoreServerVersion(new Version(8, 9, 0));
+        public static readonly ServerVersion LatestSupportedServerVersion = new SingleStoreServerVersion(new Version(9, 0, 0));
 
         public override ServerVersionSupport Supports { get; }
 
@@ -77,8 +76,8 @@ namespace Microsoft.EntityFrameworkCore
             public override bool SpatialDistanceFunctionImplementsAndoyer => false;
             public override bool SpatialDistanceSphereFunction => false;
             public override bool SpatialGeographic => false;
-            public override bool ExceptIntercept => false;
-            public override bool ExceptInterceptPrecedence => false;
+            public override bool ExceptIntercept => true;
+            public override bool ExceptInterceptPrecedence => true;
             public override bool JsonDataTypeEmulation => false;
             public override bool ImplicitBoolCheckUsesIndex => false;
             public override bool SingleStoreBug96947Workaround => false;

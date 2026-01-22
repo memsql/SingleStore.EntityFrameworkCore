@@ -523,6 +523,18 @@ ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
                 """);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override async Task Nav_expansion_inside_Contains_argument(bool async)
+        {
+            await base.Nav_expansion_inside_Contains_argument(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed.")]
+        public override async Task Nav_expansion_with_member_pushdown_inside_Contains_argument(bool async)
+        {
+            await base.Nav_expansion_with_member_pushdown_inside_Contains_argument(async);
+        }
+
         private string AssertSql(string expected)
         {
             Fixture.TestSqlLoggerFactory.AssertBaseline(new[] {expected});

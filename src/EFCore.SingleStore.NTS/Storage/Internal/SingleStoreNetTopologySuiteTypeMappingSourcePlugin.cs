@@ -13,6 +13,7 @@ using NetTopologySuite;
 using NetTopologySuite.Geometries;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 
+// TODO: once we have geometry support in our adapter -- grab latest changes for this file
 namespace EntityFrameworkCore.SingleStore.Storage.Internal
 {
     /// <summary>

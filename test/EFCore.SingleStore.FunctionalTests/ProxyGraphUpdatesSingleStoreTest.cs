@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
@@ -35,6 +36,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         {
             public LazyLoading(ProxyGraphUpdatesWithLazyLoadingSingleStoreFixture fixture)
                 : base(fixture)
+            {
+            }
+
+            // Used to track down a bug in Oracle's MySQL implementation, related to `SELECT ... ORDER BY (SELECT 1)`.
+            [Fact]
+            public void DummyTest()
             {
             }
 
