@@ -33,20 +33,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         public class FieldMappingSingleStoreFixture : FieldMappingFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
-
-            protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
-            {
-                base.OnModelCreating(modelBuilder, context);
-
-                // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
-                // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
-                modelBuilder.Entity<LoginSession>()
-                    .Property(e => e.Id)
-                    .HasColumnType("bigint");
-                modelBuilder.Entity<User2>()
-                    .Property(e => e.Id)
-                    .HasColumnType("bigint");
-            }
         }
     }
 }
