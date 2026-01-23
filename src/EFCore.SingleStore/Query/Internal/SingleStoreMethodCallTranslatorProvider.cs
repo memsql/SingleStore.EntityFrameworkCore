@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal;
 using EntityFrameworkCore.SingleStore.Storage.Internal;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace EntityFrameworkCore.SingleStore.Query.Internal
 {
@@ -21,7 +22,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
     {
         public SingleStoreMethodCallTranslatorProvider(
             [NotNull] RelationalMethodCallTranslatorProviderDependencies dependencies,
-            [NotNull] ISingleStoreOptions options)
+            [NotNull] ISingleStoreOptions options,
+            [NotNull] IDbContextOptions dbContextOptions)
             : base(dependencies)
         {
             var sqlExpressionFactory = (SingleStoreSqlExpressionFactory)dependencies.SqlExpressionFactory;
@@ -33,7 +35,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                 new SingleStoreConvertTranslator(sqlExpressionFactory),
                 new SingleStoreDateTimeMethodTranslator(sqlExpressionFactory),
                 new SingleStoreDateDiffFunctionsTranslator(sqlExpressionFactory),
-                new SingleStoreDbFunctionsExtensionsMethodTranslator(sqlExpressionFactory),
+                new SingleStoreDbFunctionsExtensionsMethodTranslator(sqlExpressionFactory, dbContextOptions),
                 new SingleStoreJsonDbFunctionsTranslator(sqlExpressionFactory),
                 new SingleStoreMathMethodTranslator(sqlExpressionFactory),
                 new SingleStoreNewGuidTranslator(sqlExpressionFactory),

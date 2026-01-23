@@ -5,10 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using EntityFrameworkCore.SingleStore.Utilities;
 
 namespace EntityFrameworkCore.SingleStore.Query.Internal
 {
@@ -26,10 +29,15 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                 { nameof(DateTime.Millisecond), ("microsecond", 1000) },
             };
         private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
+        private readonly string _sessionTimeZone;
 
-        public SingleStoreDateTimeMemberTranslator(ISqlExpressionFactory sqlExpressionFactory)
+        public SingleStoreDateTimeMemberTranslator(ISqlExpressionFactory sqlExpressionFactory, IDbContextOptions dbContextOptions)
         {
             _sqlExpressionFactory = (SingleStoreSqlExpressionFactory)sqlExpressionFactory;
+
+            // Read the configured session time zone offset (e.g. "-08:00") from provider options.
+            // If not configured, we default to "+00:00" (UTC) because SingleStore ignores @@session.time_zone at runtime.
+            _sessionTimeZone = dbContextOptions.FindExtension<SingleStoreOptionsExtension>()?.SessionTimeZone ?? "+00:00";
         }
 
         public virtual SqlExpression Translate(
@@ -139,6 +147,31 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                             new[] { instance },
                             returnType),
                         _sqlExpressionFactory.Constant(366));
+                }
+            }
+
+            if (declaringType == typeof(DateTimeOffset))
+            {
+                switch (member.Name)
+                {
+                    case nameof(DateTimeOffset.DateTime):
+                    case nameof(DateTimeOffset.UtcDateTime):
+                        // We represent `DateTimeOffset` values as UTC datetime values in the database. Therefore, `DateTimeOffset`,
+                        // `DateTimeOffset.DateTime` and `DateTimeOffset.UtcDateTime` are all the same.
+                        return _sqlExpressionFactory.Convert(instance, typeof(DateTime));
+
+                    case nameof(DateTimeOffset.LocalDateTime):
+                        return _sqlExpressionFactory.NullableFunction(
+                            "CONVERT_TZ",
+                            [
+                                instance,
+                                _sqlExpressionFactory.Constant("+00:00"),
+                                _sqlExpressionFactory.Constant(_sessionTimeZone) // use provider-configured offset (SingleStore ignores @@session.time_zone)
+                            ],
+                            typeof(DateTime),
+                            null,
+                            false,
+                            Statics.GetTrueValues(3));
                 }
             }
 

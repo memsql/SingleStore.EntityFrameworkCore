@@ -67,6 +67,15 @@ Use the [EF Core tools](https://docs.microsoft.com/en-us/ef/core/cli/dotnet) to 
 dotnet ef dbcontext scaffold "Server=localhost;User=root;Password=1234;Database=ef" "SingleStore.EntityFrameworkCore"
 ```
 
+## Time zone handling
+SingleStore does not support changing [`@@session.time_zone`](https://docs.singlestore.com/db/v9.0/user-and-cluster-administration/maintain-your-cluster/setting-the-time-zone/time-zone-engine-variables/) at runtime (it is a MySQL-compatibility variable and remains `SYSTEM`).
+
+If you need `DateTimeOffset.LocalDateTime` translation, configure a session time zone offset in the provider:
+```c#
+optionsBuilder.UseSingleStore(cs, o => o.SessionTimeZone("-08:00"));
+```
+If not configured, the provider defaults to `+00:00` (UTC).
+
 ## License
 
 [MIT](https://github.com/memsql/SingleStore.EntityFrameworkCore/blob/master/LICENSE)

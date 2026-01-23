@@ -131,5 +131,19 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
         /// </summary>
         public virtual SingleStoreDbContextOptionsBuilder EnablePrimitiveCollectionsSupport(bool enable = true)
             => WithOption(e => e.WithPrimitiveCollectionsSupport(enable));
+
+        public virtual SingleStoreDbContextOptionsBuilder SessionTimeZone(string offset)
+        {
+            if (string.IsNullOrWhiteSpace(offset))
+                throw new ArgumentException("Session time zone offset must be a value like '+02:00' or '-08:00'.", nameof(offset));
+
+            var extension = OptionsBuilder.Options.FindExtension<SingleStoreOptionsExtension>()
+                            ?? new SingleStoreOptionsExtension();
+
+            ((IDbContextOptionsBuilderInfrastructure)OptionsBuilder)
+                .AddOrUpdateExtension(extension.WithSessionTimeZone(offset));
+
+            return this;
+        }
     }
 }

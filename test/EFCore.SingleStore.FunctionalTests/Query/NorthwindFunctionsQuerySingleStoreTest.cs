@@ -535,11 +535,11 @@ WHERE `c`.`ContactName` LIKE '%     %'");
 
             AssertSql(
 """
-@__pattern_0_rewritten='%     %' (Size = 30)
+@__pattern_0_contains='%     %' (Size = 30)
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`ContactName` LIKE @__pattern_0_rewritten
+WHERE `c`.`ContactName` LIKE @__pattern_0_contains
 """);
         }
 
@@ -1813,11 +1813,11 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND ((CAST(`o`.`OrderDate` AS char) LIKE '%19
 
             AssertSql(
 """
-@__pattern_0_rewritten='M%' (Size = 30)
+@__pattern_0_startswith='M%' (Size = 30)
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`ContactName` LIKE @__pattern_0_rewritten
+WHERE `c`.`ContactName` LIKE @__pattern_0_startswith
 """);
         }
 
@@ -1827,11 +1827,11 @@ WHERE `c`.`ContactName` LIKE @__pattern_0_rewritten
 
             AssertSql(
 """
-@__pattern_0_rewritten='%b' (Size = 30)
+@__pattern_0_endswith='%b' (Size = 30)
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`ContactName` LIKE @__pattern_0_rewritten
+WHERE `c`.`ContactName` LIKE @__pattern_0_endswith
 """);
         }
 

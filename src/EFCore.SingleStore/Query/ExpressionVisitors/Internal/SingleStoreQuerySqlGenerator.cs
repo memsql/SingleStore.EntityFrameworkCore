@@ -555,6 +555,11 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
                 return;
             }
 
+            if (valuesExpression.RowValues.Count == 0)
+            {
+                throw new InvalidOperationException(RelationalStrings.EmptyCollectionNotSupportedAsInlineQueryRoot);
+            }
+
             var rowValues = valuesExpression.RowValues;
 
             //
@@ -863,28 +868,6 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             }
 
             return mySqlBinaryExpression;
-        }
-
-        protected override Expression VisitOrdering(OrderingExpression orderingExpression)
-        {
-            // The base implementation translates this case to `(SELECT 1)`.
-            // This leads to a bug in Oracle's MySQL, where completely wrong data is being returned under certain conditions.
-            // This can be reproduced by executing a no-op (or any existing) test of the `ProxyGraphUpdatesSingleStoreTest+LazyLoading` class (e.g. our own `DummyTest`),
-            // immediately followed by NorthwindSplitIncludeNoTrackingQuerySingleStoreTest.Include_collection_OrderBy_empty_list_contains(async: False).
-            // As a workaround, we just output `1` instead of `(SELECT 1)` for all database versions and types.
-            if (orderingExpression.Expression is SqlConstantExpression or SqlParameterExpression)
-            {
-                Sql.Append("1");
-
-                if (!orderingExpression.IsAscending)
-                {
-                    Sql.Append(" DESC");
-                }
-
-                return orderingExpression;
-            }
-
-            return base.VisitOrdering(orderingExpression);
         }
 
         protected virtual Expression VisitJsonTableExpression(SingleStoreJsonTableExpression jsonTableExpression)

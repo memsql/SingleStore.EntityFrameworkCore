@@ -162,6 +162,26 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Sum_over_subquery_is_client_eval(async);
         }
 
+        public override async Task Contains_inside_Average_without_GroupBy(bool async)
+        {
+            var cities = new[] { "London", "Berlin" };
+
+            await AssertAverage(
+                async,
+                ss => ss.Set<Customer>(),
+                selector: c => cities.Contains(c.City) ? 1.0 : 0.0,
+                asserter: (e, a) => Assert.Equal(e, a, 0.00001)); // expected: 0.076923076923076927, MySQL actual: 0.076920000000000002
+
+            AssertSql(
+                """
+                SELECT AVG(CASE
+                    WHEN `c`.`City` IN ('London', 'Berlin') THEN 1.0
+                    ELSE 0.0
+                END)
+                FROM `Customers` AS `c`
+                """);
+        }
+
         protected override bool CanExecuteQueryString
             => true;
 

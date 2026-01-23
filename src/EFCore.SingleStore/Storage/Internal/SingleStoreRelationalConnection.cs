@@ -90,7 +90,6 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
             => mySqlSingletonOptions.DataSource ??
                contextOptions.FindExtension<CoreOptionsExtension>()?.ApplicationServiceProvider?.GetService<SingleStoreDataSource>();
 
-        // TODO: Remove, because we don't use it anywhere.
         private bool IsMasterConnection { get; set; }
 
         protected override DbConnection CreateDbConnection()
@@ -178,14 +177,19 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
             optionsBuilderInfrastructure.AddOrUpdateExtension(masterMySqlOptions);
 
-            return new SingleStoreRelationalConnection(
+            return CreateMasterConnectionCore(optionsBuilder, _mySqlConnectionStringOptionsValidator);
+        }
+
+        protected virtual ISingleStoreRelationalConnection CreateMasterConnectionCore(
+            DbContextOptionsBuilder optionsBuilder,
+            ISingleStoreConnectionStringOptionsValidator mySqlConnectionStringOptionsValidator)
+            => new SingleStoreRelationalConnection(
                 Dependencies with { ContextOptions = optionsBuilder.Options },
-                _mySqlConnectionStringOptionsValidator,
+                mySqlConnectionStringOptionsValidator,
                 dataSource: null)
             {
                 IsMasterConnection = true
             };
-        }
 
         protected virtual SingleStoreConnectionStringBuilder AddConnectionStringOptions(SingleStoreConnectionStringBuilder builder)
         {
@@ -255,7 +259,9 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
             if (result)
             {
-                if (_mySqlOptionsExtension.UpdateSqlModeOnOpen && _mySqlOptionsExtension.NoBackslashEscapes)
+                if (_mySqlOptionsExtension.UpdateSqlModeOnOpen &&
+                    _mySqlOptionsExtension.NoBackslashEscapes &&
+                    !IsMasterConnection)
                 {
                     AddSqlMode(NoBackslashEscapes);
                 }
@@ -271,9 +277,11 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
             if (result)
             {
-                if (_mySqlOptionsExtension.UpdateSqlModeOnOpen && _mySqlOptionsExtension.NoBackslashEscapes)
+                if (_mySqlOptionsExtension.UpdateSqlModeOnOpen &&
+                    _mySqlOptionsExtension.NoBackslashEscapes &&
+                    !IsMasterConnection)
                 {
-                    await AddSqlModeAsync(NoBackslashEscapes)
+                    await AddSqlModeAsync(NoBackslashEscapes, cancellationToken)
                         .ConfigureAwait(false);
                 }
             }
@@ -282,15 +290,32 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
         }
 
         public virtual void AddSqlMode(string mode)
-            => Dependencies.CurrentContext.Context?.Database.ExecuteSqlInterpolated($@"SET SESSION sql_mode = CONCAT(@@sql_mode, ',', {mode});");
+            => ExecuteNonQuery($@"SET SESSION sql_mode = CONCAT(@@sql_mode, ',', '{mode}');");
 
         public virtual Task AddSqlModeAsync(string mode, CancellationToken cancellationToken = default)
-            => Dependencies.CurrentContext.Context?.Database.ExecuteSqlInterpolatedAsync($@"SET SESSION sql_mode = CONCAT(@@sql_mode, ',', {mode});", cancellationToken);
+            => ExecuteNonQueryAsync($@"SET SESSION sql_mode = CONCAT(@@sql_mode, ',', '{mode}');", cancellationToken);
 
         public virtual void RemoveSqlMode(string mode)
-            => Dependencies.CurrentContext.Context?.Database.ExecuteSqlInterpolated($@"SET SESSION sql_mode = REPLACE(@@sql_mode, {mode}, '');");
+            => ExecuteNonQuery($@"SET SESSION sql_mode = REPLACE(@@sql_mode, '{mode}', '');");
 
-        public virtual void RemoveSqlModeAsync(string mode, CancellationToken cancellationToken = default)
-            => Dependencies.CurrentContext.Context?.Database.ExecuteSqlInterpolatedAsync($@"SET SESSION sql_mode = REPLACE(@@sql_mode, {mode}, '');", cancellationToken);
+        public virtual Task RemoveSqlModeAsync(string mode, CancellationToken cancellationToken = default)
+            => ExecuteNonQueryAsync($@"SET SESSION sql_mode = REPLACE(@@sql_mode, '{mode}', '');", cancellationToken);
+
+        protected virtual void ExecuteNonQuery(string sql)
+        {
+            using var command = DbConnection.CreateCommand();
+            command.CommandText = sql;
+            command.ExecuteNonQuery();
+        }
+
+        protected virtual async Task ExecuteNonQueryAsync(string sql, CancellationToken cancellationToken = default)
+        {
+            var command = DbConnection.CreateCommand();
+            await using (command.ConfigureAwait(false))
+            {
+                command.CommandText = sql;
+                await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
     }
 }

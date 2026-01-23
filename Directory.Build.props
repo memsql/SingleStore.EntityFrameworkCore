@@ -3,6 +3,13 @@
   <Import Project="Development.props" Condition="Exists('Development.props')" />
 
   <PropertyGroup>
+    <LocalEFCoreRepositoryConfiguration Condition="'$(LocalEFCoreRepositoryConfiguration)' == ''">Debug</LocalEFCoreRepositoryConfiguration>
+    <LocalSingleStoreConnectorRepositoryConfiguration Condition="'$(LocalSingleStoreConnectorRepositoryConfiguration)' == ''">debug</LocalSingleStoreConnectorRepositoryConfiguration>
+    <DefineConstants Condition="'$(LocalEFCoreRepository)' != '' And '$(LocalEFCoreRepositoryConfiguration)' == 'Debug'">$(DefineConstants);EFCORE_DEBUG_BUILD</DefineConstants>
+    <DefineConstants Condition="'$(LocalSingleStoreConnectorRepository)' != '' And '$(LocalSingleStoreConnectorRepositoryConfiguration)' == 'Debug'">$(DefineConstants);SINGLESTORECONNECTOR_DEBUG_BUILD</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <StrongNameKeyId>EntityFrameworkCore.SingleStore</StrongNameKeyId>
     <PackageTags>singlestore;Entity Framework Core;entity-framework-core;ef;efcore;ef core;orm;sql</PackageTags>
     <Product>EntityFrameworkCore.SingleStore</Product>
