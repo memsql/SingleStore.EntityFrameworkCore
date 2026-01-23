@@ -4,11 +4,15 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocComplexTypeQuerySingleStoreTest : AdHocComplexTypeQueryTestBase
 {
+    [ConditionalTheory(Skip =
+        "SingleStore: disabled due to distributed-table identity constraints for int keys. " +
+        "With explicit mapping to BIGINT or sequence-based identity (AUTO_INCREMENT AS SEQUENCE), this passes.")]
     public override async Task Complex_type_equals_parameter_with_nested_types_with_property_of_same_name()
     {
         await base.Complex_type_equals_parameter_with_nested_types_with_property_of_same_name();

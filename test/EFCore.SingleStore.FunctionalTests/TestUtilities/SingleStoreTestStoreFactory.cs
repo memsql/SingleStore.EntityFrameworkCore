@@ -1,10 +1,7 @@
-﻿using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Conventions;
-using Microsoft.EntityFrameworkCore.TestUtilities;
+﻿using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.Tests;
-using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 {
@@ -38,13 +35,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             => SingleStoreTestStore.GetOrCreate(storeName, noBackslashEscapes: NoBackslashEscapes, databaseCollation: DatabaseCollation, guidFormat: GuidFormat);
 
         public override IServiceCollection AddProviderServices(IServiceCollection serviceCollection)
-        {
-            serviceCollection.AddEntityFrameworkSingleStore();
+            => serviceCollection.AddEntityFrameworkSingleStore();
 
-            serviceCollection.Replace(
-                ServiceDescriptor.Scoped<IConventionSetBuilder, SingleStoreTestConventionSetBuilder>());
-
-            return serviceCollection;
-        }
     }
 }
