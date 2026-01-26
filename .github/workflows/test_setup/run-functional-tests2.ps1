@@ -118,6 +118,30 @@ dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TP
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTInheritanceBulkUpdatesSingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypeBulkUpdatesSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypesTrackingSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypeQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.BadDataJsonDeserializationSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocComplexTypeQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocAdvancedMappingsQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.OperatorsProceduralSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.OperatorsQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.OptionalDependentQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.SqlQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TPHInheritanceQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.SingleStoreConnectionStringOptionsValidatorTests.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 
 cd ..\..\
 

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.Tests.ValueGeneration.Internal
 {
-    public class MysqlSequentialGuidValueGeneratorTest
+    public class SingleStoreSequentialGuidValueGeneratorTest
     {
         private SingleStoreSequentialGuidValueGenerator GetGenerator(bool mysqlGuidFormatIsLittleEndianBinary16) {
             var connectionSettings = new Mock<SingleStoreConnectionSettings>();
