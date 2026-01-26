@@ -195,7 +195,7 @@ SELECT ROW_COUNT();",
                 });
 
             AssertSql(
-                @"ALTER TABLE `People` ADD `Name` varchar(128) CHARACTER SET utf8 NOT NULL DEFAULT 'John Doe';");
+                @"ALTER TABLE `People` ADD `Name` varchar(128) CHARACTER SET utf8mb4 NOT NULL DEFAULT 'John Doe';");
         }
 
         [ConditionalFact]
@@ -500,12 +500,12 @@ CREATE SEQUENCE `dbo2_TestSequence` START WITH 3 INCREMENT BY 2 MINVALUE 2 MAXVA
             AssertSql(
                 @"CREATE TABLE `People` (
     `Id` int NOT NULL,
-    `Name` longtext CHARACTER SET utf8 NULL COMMENT 'This is a multi-line
+    `Name` longtext CHARACTER SET utf8mb4 NULL COMMENT 'This is a multi-line
 column comment.
 More information can
 be found in the docs.',
     CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
-) CHARACTER SET=utf8 COMMENT='This is a multi-line
+) CHARACTER SET=utf8mb4 COMMENT='This is a multi-line
 table comment.
 More information can
 be found in the docs.';");
@@ -779,12 +779,12 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                     var table = Assert.Single(result.Tables);
                     var iceCreamIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "IceCreamId"));
 
-                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? "utf8_general_ci" : null, iceCreamIdColumn.Collation);
+                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? "utf8mb4_bin" : null, iceCreamIdColumn.Collation);
                 });
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` char(36) COLLATE utf8_general_ci NOT NULL,
+    `IceCreamId` char(36) COLLATE utf8mb4_bin NOT NULL,
     CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) COLLATE={DefaultCollation};");
         }
@@ -1047,7 +1047,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                                     .HasColumnType("int");
 
                                 b.Property<string>("Name")
-                                    .HasColumnType("longtext CHARACTER SET utf8");
+                                    .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                                 b.HasKey("IceCreamId");
 
@@ -1204,7 +1204,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
     `IceCreamId` int NOT NULL,
     `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL,
     CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
-) CHARACTER SET=utf8;");
+) CHARACTER SET=utf8mb4;");
         }
 
         [ConditionalFact]

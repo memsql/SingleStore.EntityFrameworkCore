@@ -34,7 +34,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             DefaultCharSet = CharSet.Utf8Mb4;
 
             // Optimize space and performance for GUID columns.
-            DefaultGuidCollation = "utf8mb4_general_ci";
+            DefaultGuidCollation = "utf8mb4_bin";
 
             ReplaceLineBreaksWithCharFunction = true;
             DefaultDataTypeMappings = new SingleStoreDefaultDataTypeMappings();
