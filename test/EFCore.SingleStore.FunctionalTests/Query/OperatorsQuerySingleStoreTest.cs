@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Operators;
@@ -82,13 +83,31 @@ WHERE `o`.`Id` = -`o`.`Value`
 
     public override async Task Double_negate_on_column()
     {
-        await base.Double_negate_on_column();
+        var contextFactory = await InitializeAsync<OperatorsContext>(seed: Seed);
+        using var context = contextFactory.CreateContext();
+
+        var expected = (from e in ExpectedData.OperatorEntitiesInt
+            where -(-e.Value) == e.Value
+            orderby e.Id
+            select e.Id).ToList();
+
+        var actual = (from e in context.Set<OperatorEntityInt>()
+            where -(-e.Value) == e.Value
+            orderby e.Id
+            select e.Id).ToList();
+
+        Assert.Equal(expected.Count, actual.Count);
+        for (var i = 0; i < expected.Count; i++)
+        {
+            Assert.Equal(expected[i], actual[i]);
+        }
 
         AssertSql(
 """
 SELECT `o`.`Id`
 FROM `OperatorEntityInt` AS `o`
 WHERE -(-`o`.`Value`) = `o`.`Value`
+ORDER BY `o`.`Id`
 """);
     }
 

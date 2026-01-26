@@ -1195,7 +1195,14 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                     var table = Assert.Single(result.Tables);
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
 
-                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? null : NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    if (S2ServerVersion.Supports.Version(ServerVersion.Parse("9.0")))
+                    {
+                        Assert.Equal(NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    }
+                    else
+                    {
+                        Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4 ? null : NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    }
                     Assert.Equal("longtext", nameColumn.StoreType);
                 });
 
