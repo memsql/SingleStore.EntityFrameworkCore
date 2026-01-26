@@ -850,20 +850,9 @@ DROP PROCEDURE MigrationsScript;
             Assert.Null(Sql);
         }
 
-        public override void Can_apply_all_migrations() // Issue https://github.com/dotnet/efcore/issues/33331
-            => Assert.Throws<SingleStoreException>(() => base.Can_apply_all_migrations());
-
-        public override Task Can_apply_all_migrations_async() // Issue https://github.com/dotnet/efcore/issues/33331
-            => Assert.ThrowsAsync<SingleStoreException>(() => base.Can_apply_all_migrations_async());
-
-        public override void Can_apply_range_of_migrations() // Issue https://github.com/dotnet/efcore/issues/33331
-            => Assert.Throws<SingleStoreException>(() => base.Can_apply_range_of_migrations());
-
-        public override void Can_revert_all_migrations() // Issue https://github.com/dotnet/efcore/issues/33331
-            => Assert.Throws<SingleStoreException>(() => base.Can_revert_all_migrations());
-
-        public override void Can_revert_one_migrations() // Issue https://github.com/dotnet/efcore/issues/33331
-            => Assert.Throws<SingleStoreException>(() => base.Can_revert_one_migrations());
+        // Issue https://github.com/dotnet/efcore/issues/33331 isn’t applicable in our CI runs because the
+        // test environment sets `data_conversion_compatibility_level = '6.0'`, which avoids the overflow
+        // behavior the tests were asserting.
 
         [ConditionalFact(Skip = "TODO: Implement")]
         public override void Can_diff_against_2_2_model()

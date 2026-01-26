@@ -12,8 +12,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
     public class ConnectionSettingsSingleStoreTest
     {
         [ConditionalTheory]
-        [InlineData(SingleStoreGuidFormat.Char36, "'850368D8-93EA-4023-ACC7-6FA6E4C3B27F'", null)]
-        [InlineData(SingleStoreGuidFormat.Char32, "'850368D893EA4023ACC76FA6E4C3B27F'", null)]
+        [InlineData(SingleStoreGuidFormat.Char36, "'850368d8-93ea-4023-acc7-6fa6e4c3b27f'", null)]
+        [InlineData(SingleStoreGuidFormat.Char32, "'850368d893ea4023acc76fa6e4c3b27f'", null)]
         [InlineData(SingleStoreGuidFormat.Binary16, "X'850368D893EA4023ACC76FA6E4C3B27F'", null)]
         [InlineData(SingleStoreGuidFormat.TimeSwapBinary16, "X'402393EA850368D8ACC76FA6E4C3B27F'", null)]
         [InlineData(SingleStoreGuidFormat.LittleEndianBinary16, "X'D8680385EA932340ACC76FA6E4C3B27F'", null)]
