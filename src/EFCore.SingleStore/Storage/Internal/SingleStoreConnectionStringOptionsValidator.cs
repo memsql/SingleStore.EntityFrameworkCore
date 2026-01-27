@@ -47,11 +47,6 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
 
             if (!ValidateMandatoryOptions(csb))
             {
-                if (connection.State != ConnectionState.Closed)
-                {
-                    ThrowException(new InvalidOperationException("Cannot change the connection string on an open connection."));
-                }
-
                 try
                 {
                     csb.AllowUserVariables = true;
