@@ -45,29 +45,40 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         {
             var csb = new SingleStoreConnectionStringBuilder(connection.ConnectionString);
 
-            var attrsChanged = AddConnectionAttributes(csb);
-            var flagsChanged = false;
-
             if (!ValidateMandatoryOptions(csb))
             {
-                csb.AllowUserVariables = true;
-                csb.UseAffectedRows = false;
-                flagsChanged = true;
+                if (connection.State != ConnectionState.Closed)
+                {
+                    ThrowException(new InvalidOperationException("Cannot change the connection string on an open connection."));
+                }
+
+                try
+                {
+                    csb.AllowUserVariables = true;
+                    csb.UseAffectedRows = false;
+
+                    connection.ConnectionString = csb.ConnectionString;
+
+                    return true;
+                }
+                catch (Exception e)
+                {
+                    ThrowException(e);
+                }
             }
 
-            // Only update if: mandatory flags changed (critical) OR connection is closed (safe to add attributes)
-            var shouldUpdate = flagsChanged || (attrsChanged && connection.State == ConnectionState.Closed);
+            var attrsChanged = AddConnectionAttributes(csb);
 
-            if (shouldUpdate)
+            if (attrsChanged && connection.State == ConnectionState.Closed)
             {
                 try
                 {
                     connection.ConnectionString = csb.ConnectionString;
                     return true;
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
-                    ThrowException(e);
+                    return false;
                 }
             }
         }
