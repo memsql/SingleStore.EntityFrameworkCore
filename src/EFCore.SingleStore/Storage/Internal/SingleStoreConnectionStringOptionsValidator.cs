@@ -17,15 +17,20 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         if (connectionString is not null)
         {
             var csb = new SingleStoreConnectionStringBuilder(connectionString);
-            AddConnectionAttributes(csb);
+
+            var attrsChanged = AddConnectionAttributes(csb);
+            var flagsChanged = false;
 
             if (!ValidateMandatoryOptions(csb))
             {
                 csb.AllowUserVariables = true;
                 csb.UseAffectedRows = false;
+                flagsChanged = true;
+            }
 
+            if (attrsChanged || flagsChanged)
+            {
                 connectionString = csb.ConnectionString;
-
                 return true;
             }
         }
@@ -38,17 +43,22 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         if (connection is not null)
         {
             var csb = new SingleStoreConnectionStringBuilder(connection.ConnectionString);
-            AddConnectionAttributes(csb);
+
+            var attrsChanged = AddConnectionAttributes(csb);
+            var flagsChanged = false;
 
             if (!ValidateMandatoryOptions(csb))
             {
+                csb.AllowUserVariables = true;
+                csb.UseAffectedRows = false;
+                flagsChanged = true;
+            }
+
+            if (attrsChanged || flagsChanged)
+            {
                 try
                 {
-                    csb.AllowUserVariables = true;
-                    csb.UseAffectedRows = false;
-
                     connection.ConnectionString = csb.ConnectionString;
-
                     return true;
                 }
                 catch (Exception e)
@@ -69,37 +79,38 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         }
 
         var csb = new SingleStoreConnectionStringBuilder(dataSource.ConnectionString);
-        AddConnectionAttributes(csb);
 
+        // We can’t persist ConnectionAttributes changes back to the data source, so don’t attempt.
         if (!ValidateMandatoryOptions(csb))
         {
-            // We can't alter the connection string of a DbDataSource/SingleStoreDataSource as we do for DbConnection/SingleStoreConnection in cases
-            // where the necessary connection string options have not been set.
-            // We can only throw.
             ThrowException();
         }
 
         return true;
     }
 
-    static void AddConnectionAttributes(SingleStoreConnectionStringBuilder csb)
+    static bool AddConnectionAttributes(SingleStoreConnectionStringBuilder csb)
     {
         var existing = csb.ConnectionAttributes?.TrimEnd(',') ?? "";
 
-        var programVersion = Assembly.GetExecutingAssembly().GetName().Version;
-        var connAttrs = $"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{programVersion}";
-
-        var existingConnAttrs = existing
+        var existingAttrs = existing
             .Split(',', StringSplitOptions.RemoveEmptyEntries)
             .Select(attr => attr.Trim())
+            .Where(attr => !string.IsNullOrEmpty(attr))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-        if (!existingConnAttrs.Contains(connAttrs))
+        var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
+        var nameAttr = "_connector_name:SingleStore Entity Framework Core provider";
+        var versionAttr = $"_connector_version:{programVersion}";
+
+        var changed = existingAttrs.Add(nameAttr) | existingAttrs.Add(versionAttr);
+
+        if (changed)
         {
-            csb.ConnectionAttributes = string.IsNullOrEmpty(existing)
-                ? connAttrs
-                : $"{existing},{connAttrs}";
+            csb.ConnectionAttributes = string.Join(",", existingAttrs);
         }
+
+        return changed;
     }
 
     public virtual void ThrowException(Exception innerException = null)
