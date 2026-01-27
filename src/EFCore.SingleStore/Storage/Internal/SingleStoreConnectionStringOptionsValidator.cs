@@ -3,6 +3,7 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 using System.Reflection;
@@ -54,7 +55,10 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
                 flagsChanged = true;
             }
 
-            if (attrsChanged || flagsChanged)
+            // Only update if: mandatory flags changed (critical) OR connection is closed (safe to add attributes)
+            var shouldUpdate = flagsChanged || (attrsChanged && connection.State == ConnectionState.Closed);
+
+            if (shouldUpdate)
             {
                 try
                 {
