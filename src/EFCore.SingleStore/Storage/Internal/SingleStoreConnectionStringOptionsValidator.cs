@@ -19,19 +19,13 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         {
             var csb = new SingleStoreConnectionStringBuilder(connectionString);
 
-            var attrsChanged = AddConnectionAttributes(csb);
-            var flagsChanged = false;
-
             if (!ValidateMandatoryOptions(csb))
             {
                 csb.AllowUserVariables = true;
                 csb.UseAffectedRows = false;
-                flagsChanged = true;
-            }
 
-            if (attrsChanged || flagsChanged)
-            {
                 connectionString = csb.ConnectionString;
+
                 return true;
             }
         }
@@ -61,21 +55,6 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
                     ThrowException(e);
                 }
             }
-
-            var attrsChanged = AddConnectionAttributes(csb);
-
-            if (attrsChanged && connection.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    connection.ConnectionString = csb.ConnectionString;
-                    return true;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }
         }
 
         return false;
@@ -97,30 +76,6 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         }
 
         return true;
-    }
-
-    static bool AddConnectionAttributes(SingleStoreConnectionStringBuilder csb)
-    {
-        var existing = csb.ConnectionAttributes?.TrimEnd(',') ?? "";
-
-        var existingAttrs = existing
-            .Split(',', StringSplitOptions.RemoveEmptyEntries)
-            .Select(attr => attr.Trim())
-            .Where(attr => !string.IsNullOrEmpty(attr))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
-        var nameAttr = "_connector_name:SingleStore Entity Framework Core provider";
-        var versionAttr = $"_connector_version:{programVersion}";
-
-        var changed = existingAttrs.Add(nameAttr) | existingAttrs.Add(versionAttr);
-
-        if (changed)
-        {
-            csb.ConnectionAttributes = string.Join(",", existingAttrs);
-        }
-
-        return changed;
     }
 
     public virtual void ThrowException(Exception innerException = null)
