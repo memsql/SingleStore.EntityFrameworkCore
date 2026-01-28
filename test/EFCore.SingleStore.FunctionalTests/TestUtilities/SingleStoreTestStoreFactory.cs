@@ -36,5 +36,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 
         public override IServiceCollection AddProviderServices(IServiceCollection serviceCollection)
             => serviceCollection.AddEntityFrameworkSingleStore();
+
     }
 }

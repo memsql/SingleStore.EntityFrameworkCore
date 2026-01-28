@@ -90,6 +90,7 @@ WHERE `m`.`ContactName` LIKE '%z%'
         AssertSql(
 """
 customer='CONSH' (Nullable = false)
+
 SELECT `m`.`Address`, `m`.`City`, `m`.`CompanyName`, `m`.`ContactName`, `m`.`ContactTitle`, `m`.`Country`, `m`.`CustomerID`, `m`.`Fax`, `m`.`Phone`, `m`.`Region`, `m`.`PostalCode`
 FROM (
     SELECT * FROM `Customers` WHERE `CustomerID` = @customer
@@ -105,6 +106,7 @@ WHERE `m`.`ContactName` LIKE '%z%'
         AssertSql(
 """
 p0='CONSH' (Nullable = false)
+
 SELECT `m`.`Address`, `m`.`City`, `m`.`CompanyName`, `m`.`ContactName`, `m`.`ContactTitle`, `m`.`Country`, `m`.`CustomerID`, `m`.`Fax`, `m`.`Phone`, `m`.`Region`, `m`.`PostalCode`
 FROM (
     SELECT * FROM `Customers` WHERE `CustomerID` = @p0
@@ -210,6 +212,7 @@ WHERE `m`.`City` = 'London'
 """
 p0='London' (Size = 4000)
 p1='Sales Representative' (Size = 4000)
+
 SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """);
     }
@@ -222,6 +225,7 @@ SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """
 p0='London' (Size = 4000)
 p1='Sales Representative' (Size = 4000)
+
 SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """);
     }
@@ -234,6 +238,7 @@ SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """
 p0='London' (Size = 4000)
 p1='Sales Representative' (Size = 4000)
+
 SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """);
     }
@@ -246,6 +251,7 @@ SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """
 p0='London' (Size = 4000)
 p1='Sales Representative' (Size = 4000)
+
 SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """);
     }
@@ -263,6 +269,7 @@ SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
         AssertSql(
 """
 p0=NULL (Nullable = false)
+
 SELECT * FROM `Employees` WHERE `ReportsTo` = @p0 OR (`ReportsTo` IS NULL AND @p0 IS NULL)
 """);
     }
@@ -275,6 +282,7 @@ SELECT * FROM `Employees` WHERE `ReportsTo` = @p0 OR (`ReportsTo` IS NULL AND @p
 """
 p0='London' (Size = 4000)
 @__contactTitle_1='Sales Representative' (Size = 30)
+
 SELECT `m`.`Address`, `m`.`City`, `m`.`CompanyName`, `m`.`ContactName`, `m`.`ContactTitle`, `m`.`Country`, `m`.`CustomerID`, `m`.`Fax`, `m`.`Phone`, `m`.`Region`, `m`.`PostalCode`
 FROM (
     SELECT * FROM `Customers` WHERE `City` = @p0
@@ -307,12 +315,14 @@ SELECT * FROM `Customers` WHERE `City` = 'Seattle'
 """
 p0='London' (Size = 4000)
 p1='Sales Representative' (Size = 4000)
+
 SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """,
                 //
                 """
 p0='Madrid' (Size = 4000)
 p1='Accounting Manager' (Size = 4000)
+
 SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @p1
 """);
     }
@@ -392,6 +402,7 @@ WHERE `m`.`ContactName` = `m`.`CompanyName`
         AssertSql(
 """
 @city='London' (Nullable = false)
+
 SELECT * FROM `Customers` WHERE `City` = @city
 """);
     }
@@ -402,6 +413,7 @@ SELECT * FROM `Customers` WHERE `City` = @city
         AssertSql(
 """
 city='London' (Nullable = false)
+
 SELECT * FROM `Customers` WHERE `City` = @city
 """);
     }
@@ -414,12 +426,14 @@ SELECT * FROM `Customers` WHERE `City` = @city
 """
 p0='London' (Size = 4000)
 @title='Sales Representative' (Nullable = false)
+
 SELECT * FROM `Customers` WHERE `City` = @p0 AND `ContactTitle` = @title
 """,
                 //
                 """
 @city='London' (Nullable = false)
 p1='Sales Representative' (Size = 4000)
+
 SELECT * FROM `Customers` WHERE `City` = @city AND `ContactTitle` = @p1
 """);
     }
@@ -431,11 +445,13 @@ SELECT * FROM `Customers` WHERE `City` = @city AND `ContactTitle` = @p1
         AssertSql(
 """
 @id='ALFKI' (Nullable = false)
+
 SELECT * FROM `Customers` WHERE `CustomerID` = @id
 """,
                 //
                 """
 @id='ALFKI' (Nullable = false)
+
 SELECT * FROM `Customers` WHERE `CustomerID` = @id
 """);
     }
@@ -447,6 +463,7 @@ SELECT * FROM `Customers` WHERE `CustomerID` = @id
         AssertSql(
 """
 @somename='ALFKI' (Nullable = false)
+
 SELECT * FROM `Customers` WHERE `CustomerID` = @somename
 """);
     }
@@ -458,6 +475,7 @@ SELECT * FROM `Customers` WHERE `CustomerID` = @somename
         AssertSql(
 """
 somename='ALFKI' (Nullable = false)
+
 SELECT * FROM `Customers` WHERE `CustomerID` = @somename
 """);
     }
@@ -469,6 +487,7 @@ SELECT * FROM `Customers` WHERE `CustomerID` = @somename
         AssertSql(
 """
 p0='10300'
+
 SELECT `m`.`OrderID`
 FROM (
     SELECT * FROM `Orders` WHERE `OrderID` >= @p0
@@ -478,6 +497,7 @@ FROM (
                 """
 @__max_1='10400'
 p0='10300'
+
 SELECT `m`.`OrderID`
 FROM (
     SELECT * FROM `Orders`
@@ -493,6 +513,7 @@ WHERE (`m`.`OrderID` <= @__max_1) AND `m`.`OrderID` IN (
                 """
 @__max_1='10400'
 p0='10300'
+
 SELECT `m`.`OrderID`
 FROM (
     SELECT * FROM `Orders`
@@ -513,6 +534,7 @@ WHERE (`m`.`OrderID` <= @__max_1) AND `m`.`OrderID` IN (
         AssertSql(
 """
 p0='10250'
+
 SELECT * FROM `Orders` WHERE `OrderID` < @p0
 """);
     }
@@ -557,6 +579,7 @@ WHERE `m`.`City` = 'Seattle'
         AssertSql(
 """
 @city='London' (Nullable = false)
+
 SELECT `m`.`CustomerID`, `m`.`EmployeeID`, `m`.`Freight`, `m`.`OrderDate`, `m`.`OrderID`, `m`.`RequiredDate`, `m`.`ShipAddress`, `m`.`ShipCity`, `m`.`ShipCountry`, `m`.`ShipName`, `m`.`ShipPostalCode`, `m`.`ShipRegion`, `m`.`ShipVia`, `m`.`ShippedDate`
 FROM (
     SELECT * FROM `Orders`
@@ -577,6 +600,7 @@ WHERE `m`.`CustomerID` IN (
         AssertSql(
 """
 p0='London' (Nullable = false)
+
 SELECT `m`.`CustomerID`, `m`.`EmployeeID`, `m`.`Freight`, `m`.`OrderDate`, `m`.`OrderID`, `m`.`RequiredDate`, `m`.`ShipAddress`, `m`.`ShipCity`, `m`.`ShipCountry`, `m`.`ShipName`, `m`.`ShipPostalCode`, `m`.`ShipRegion`, `m`.`ShipVia`, `m`.`ShippedDate`
 FROM (
     SELECT * FROM `Orders`
@@ -597,6 +621,7 @@ WHERE `m`.`CustomerID` IN (
         AssertSql(
 """
 @city='London' (Nullable = false)
+
 SELECT `m`.`CustomerID`, `m`.`EmployeeID`, `m`.`Freight`, `m`.`OrderDate`, `m`.`OrderID`, `m`.`RequiredDate`, `m`.`ShipAddress`, `m`.`ShipCity`, `m`.`ShipCountry`, `m`.`ShipName`, `m`.`ShipPostalCode`, `m`.`ShipRegion`, `m`.`ShipVia`, `m`.`ShippedDate`
 FROM (
     SELECT * FROM `Orders`
@@ -618,6 +643,7 @@ WHERE `m`.`CustomerID` IN (
 """
 p0='London' (Size = 4000)
 @title='Sales Representative' (Nullable = false)
+
 SELECT `m`.`CustomerID`, `m`.`EmployeeID`, `m`.`Freight`, `m`.`OrderDate`, `m`.`OrderID`, `m`.`RequiredDate`, `m`.`ShipAddress`, `m`.`ShipCity`, `m`.`ShipCountry`, `m`.`ShipName`, `m`.`ShipPostalCode`, `m`.`ShipRegion`, `m`.`ShipVia`, `m`.`ShippedDate`
 FROM (
     SELECT * FROM `Orders`
@@ -633,6 +659,7 @@ WHERE `m`.`CustomerID` IN (
                 """
 @city='London' (Nullable = false)
 p1='Sales Representative' (Size = 4000)
+
 SELECT `m`.`CustomerID`, `m`.`EmployeeID`, `m`.`Freight`, `m`.`OrderDate`, `m`.`OrderID`, `m`.`RequiredDate`, `m`.`ShipAddress`, `m`.`ShipCity`, `m`.`ShipCountry`, `m`.`ShipName`, `m`.`ShipPostalCode`, `m`.`ShipRegion`, `m`.`ShipVia`, `m`.`ShippedDate`
 FROM (
     SELECT * FROM `Orders`
@@ -653,6 +680,7 @@ WHERE `m`.`CustomerID` IN (
         AssertSql(
 """
 city='Seattle' (Nullable = false)
+
 SELECT `m`.`Address`, `m`.`City`, `m`.`CompanyName`, `m`.`ContactName`, `m`.`ContactTitle`, `m`.`Country`, `m`.`CustomerID`, `m`.`Fax`, `m`.`Phone`, `m`.`Region`, `m`.`PostalCode`
 FROM (
     SELECT * FROM `Customers` WHERE `City` = @city
