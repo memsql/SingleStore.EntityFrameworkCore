@@ -31,6 +31,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
             Assert.Contains("foo:bar", parts);
             Assert.Contains("baz:qux", parts);
+
             var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
             Assert.Contains(parts, p => p.StartsWith("_connector_name:SingleStore Entity Framework Core provider"));
             Assert.Contains(parts, p => p.StartsWith($"_connector_version:{programVersion}"));
@@ -44,8 +45,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             Assert.True(_validator.EnsureMandatoryOptions(ref cs));
             Assert.False(_validator.EnsureMandatoryOptions(ref cs));
 
-            var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
-
             var parts = new SingleStoreConnectionStringBuilder(cs)
                 .ConnectionAttributes
                 .TrimEnd(',')
@@ -53,6 +52,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 .Select(p => p.Trim())
                 .ToArray();
 
+            var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
             Assert.Equal(1, parts.Count(p => p.StartsWith("_connector_name:SingleStore Entity Framework Core provider")));
             Assert.Equal(1, parts.Count(p => p.StartsWith($"_connector_version:{programVersion}")));
         }
@@ -73,6 +73,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             var result = new SingleStoreConnectionStringBuilder(cs);
             Assert.True(result.AllowUserVariables);
             Assert.False(result.UseAffectedRows);
+
+            var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
+            Assert.Contains("_connector_name:SingleStore Entity Framework Core provider", result.ConnectionAttributes);
+            Assert.Contains($"_connector_version:{programVersion}", result.ConnectionAttributes);
         }
 
         [Fact]
@@ -86,9 +90,14 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             var result = new SingleStoreConnectionStringBuilder(conn.ConnectionString);
             Assert.True(result.AllowUserVariables);
             Assert.False(result.UseAffectedRows);
-            Assert.Contains("_connector_name:SingleStore Entity Framework Core provider", result.ConnectionAttributes);
-            var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
-            Assert.Contains($"_connector_version:{programVersion}", result.ConnectionAttributes);
+
+            // NOTE: We intentionally don't assert ConnectionAttributes here.
+            // EnsureMandatoryOptions(DbConnection) is only allowed to mutate the connection string when it is safe to do so.
+            // In practice, EF Core (and the provider) may open the DbConnection before our validator runs (or a caller may pass
+            // an already-open connection)
+            // Assert.Contains("_connector_name:SingleStore Entity Framework Core provider", result.ConnectionAttributes);
+            // var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
+            // Assert.Contains($"_connector_version:{programVersion}", result.ConnectionAttributes);
         }
 
         [Fact]

@@ -19,13 +19,19 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         {
             var csb = new SingleStoreConnectionStringBuilder(connectionString);
 
+            var attrsChanged = AddConnectionAttributes(csb);
+            var flagsChanged = false;
+
             if (!ValidateMandatoryOptions(csb))
             {
                 csb.AllowUserVariables = true;
                 csb.UseAffectedRows = false;
+                flagsChanged = true;
+            }
 
+            if (attrsChanged || flagsChanged)
+            {
                 connectionString = csb.ConnectionString;
-
                 return true;
             }
         }
@@ -35,29 +41,49 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
 
     public virtual bool EnsureMandatoryOptions(DbConnection connection)
     {
-        if (connection is not null)
+        if (connection is null)
         {
-            var csb = new SingleStoreConnectionStringBuilder(connection.ConnectionString);
+            return false;
+        }
 
-            if (!ValidateMandatoryOptions(csb))
+        var csb = new SingleStoreConnectionStringBuilder(connection.ConnectionString);
+        var changed = false;
+
+        if (!ValidateMandatoryOptions(csb))
+        {
+            try
+            {
+                csb.AllowUserVariables = true;
+                csb.UseAffectedRows = false;
+
+                connection.ConnectionString = csb.ConnectionString;
+                changed = true;
+            }
+            catch (Exception e)
+            {
+                ThrowException(e);
+            }
+
+            csb = new SingleStoreConnectionStringBuilder(connection.ConnectionString);
+        }
+        var attrsChanged = AddConnectionAttributes(csb);
+        if (attrsChanged)
+        {
+            if (connection.State == ConnectionState.Closed)
             {
                 try
                 {
-                    csb.AllowUserVariables = true;
-                    csb.UseAffectedRows = false;
-
                     connection.ConnectionString = csb.ConnectionString;
-
-                    return true;
+                    changed = true;
                 }
-                catch (Exception e)
+                catch
                 {
-                    ThrowException(e);
+                    // ignore: telemetry only
                 }
             }
         }
 
-        return false;
+        return changed;
     }
 
     public virtual bool EnsureMandatoryOptions(DbDataSource dataSource)
@@ -76,6 +102,31 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         }
 
         return true;
+    }
+
+    private static bool AddConnectionAttributes(SingleStoreConnectionStringBuilder csb)
+    {
+        var existing = csb.ConnectionAttributes?.TrimEnd(',') ?? "";
+
+        var existingAttrs = existing
+            .Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(attr => attr.Trim())
+            .Where(attr => !string.IsNullOrEmpty(attr))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
+        var nameAttr = "_connector_name:SingleStore Entity Framework Core provider";
+        var versionAttr = $"_connector_version:{programVersion}";
+
+        var changed = existingAttrs.Add(nameAttr) | existingAttrs.Add(versionAttr);
+
+        if (changed)
+        {
+            csb.ConnectionAttributes = string.Join(",", existingAttrs);
+            return true;
+        }
+
+        return false;
     }
 
     public virtual void ThrowException(Exception innerException = null)
