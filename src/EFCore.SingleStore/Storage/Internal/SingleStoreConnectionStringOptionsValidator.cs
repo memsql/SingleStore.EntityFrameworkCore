@@ -19,7 +19,6 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         {
             var csb = new SingleStoreConnectionStringBuilder(connectionString);
 
-            var attrsChanged = AddConnectionAttributes(csb);
             var flagsChanged = false;
 
             if (!ValidateMandatoryOptions(csb))
@@ -29,8 +28,10 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
                 flagsChanged = true;
             }
 
-            if (attrsChanged || flagsChanged)
+            if (flagsChanged)
             {
+                // Only add attrs when we're already changing the string anyway
+                AddConnectionAttributes(csb);
                 connectionString = csb.ConnectionString;
                 return true;
             }
