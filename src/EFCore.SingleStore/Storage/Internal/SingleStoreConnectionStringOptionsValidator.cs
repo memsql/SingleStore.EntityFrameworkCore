@@ -47,7 +47,6 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         }
 
         var csb = new SingleStoreConnectionStringBuilder(connection.ConnectionString);
-        var changed = false;
 
         if (!ValidateMandatoryOptions(csb))
         {
@@ -57,33 +56,15 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
                 csb.UseAffectedRows = false;
 
                 connection.ConnectionString = csb.ConnectionString;
-                changed = true;
+                return true;
             }
             catch (Exception e)
             {
                 ThrowException(e);
             }
-
-            csb = new SingleStoreConnectionStringBuilder(connection.ConnectionString);
-        }
-        var attrsChanged = AddConnectionAttributes(csb);
-        if (attrsChanged)
-        {
-            if (connection.State == ConnectionState.Closed)
-            {
-                try
-                {
-                    connection.ConnectionString = csb.ConnectionString;
-                    changed = true;
-                }
-                catch
-                {
-                    // ignore: telemetry only
-                }
-            }
         }
 
-        return changed;
+        return false;
     }
 
     public virtual bool EnsureMandatoryOptions(DbDataSource dataSource)
