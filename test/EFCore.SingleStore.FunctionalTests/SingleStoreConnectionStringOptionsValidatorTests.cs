@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Reflection;
 using Xunit;
 using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.Storage.Internal;
@@ -16,8 +15,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [Fact]
         public void EnsureMandatoryOptions_AppendsConnectionAttributesWithoutRemovingExisting()
         {
-            var attrs = "foo:bar,baz:qux";
-            var cs = AppConfig.ConnectionString + ";" + $"ConnectionAttributes={attrs}";
+            var cs = WithMandatoryFlags(AppConfig.ConnectionString, allowUserVariables: false, useAffectedRows: true);
+            cs = WithAttrs(cs, "foo:bar,baz:qux");
 
             var changed = _validator.EnsureMandatoryOptions(ref cs);
 
@@ -40,7 +39,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [Fact]
         public void EnsureMandatoryOptions_DoesNotDuplicateConnectionAttributes_OnRepeatedCalls()
         {
-            var cs = AppConfig.ConnectionString;
+            var cs = WithMandatoryFlags(AppConfig.ConnectionString, allowUserVariables: false, useAffectedRows: true);
 
             Assert.True(_validator.EnsureMandatoryOptions(ref cs));
             Assert.False(_validator.EnsureMandatoryOptions(ref cs));
@@ -60,12 +59,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [Fact]
         public void EnsureMandatoryOptions_SetsMandatoryFlags_WhenMissing()
         {
-            var builder = new SingleStoreConnectionStringBuilder(AppConfig.ConnectionString)
-            {
-                AllowUserVariables = false,
-                UseAffectedRows  = true
-            };
-            var cs = builder.ConnectionString;
+            var cs = WithMandatoryFlags(AppConfig.ConnectionString, false, true);
 
             var changed = _validator.EnsureMandatoryOptions(ref cs);
 
@@ -82,7 +76,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [Fact]
         public void EnsureMandatoryOptions_DbConnection_InjectsAttributesAndFlags()
         {
-            using var conn = new SingleStoreConnection(AppConfig.ConnectionString);
+            var cs = WithMandatoryFlags(AppConfig.ConnectionString, allowUserVariables: false, useAffectedRows: true);
+            using var conn = new SingleStoreConnection(cs);
 
             var changed = _validator.EnsureMandatoryOptions(conn);
 
@@ -103,11 +98,25 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         [Fact]
         public void EnsureMandatoryOptions_DbDataSource_ThrowsWhenMissingMandatoryOptions()
         {
-            var dataSource = new SingleStoreDataSourceBuilder(AppConfig.ConnectionString).Build();
+            var badCs = WithMandatoryFlags(AppConfig.ConnectionString, allowUserVariables: false, useAffectedRows: true);
+            var dataSource = new SingleStoreDataSourceBuilder(badCs).Build();
 
             var ex = Assert.Throws<InvalidOperationException>(
                 () => _validator.EnsureMandatoryOptions(dataSource));
             Assert.Contains("AllowUserVariables=True;UseAffectedRows=False", ex.Message);
         }
+
+        private static string WithMandatoryFlags(string baseCs, bool allowUserVariables, bool useAffectedRows)
+            => new SingleStoreConnectionStringBuilder(baseCs)
+            {
+                AllowUserVariables = allowUserVariables,
+                UseAffectedRows = useAffectedRows
+            }.ConnectionString;
+
+        private static string WithAttrs(string baseCs, string attrs)
+            => new SingleStoreConnectionStringBuilder(baseCs)
+            {
+                ConnectionAttributes = attrs
+            }.ConnectionString;
     }
 }
