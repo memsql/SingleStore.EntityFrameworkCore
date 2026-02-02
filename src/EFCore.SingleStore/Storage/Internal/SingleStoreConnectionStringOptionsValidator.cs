@@ -100,7 +100,9 @@ public class SingleStoreConnectionStringOptionsValidator : ISingleStoreConnectio
         var nameAttr = "_connector_name:SingleStore Entity Framework Core provider";
         var versionAttr = $"_connector_version:{programVersion}";
 
-        var changed = existingAttrs.Add(nameAttr) | existingAttrs.Add(versionAttr);
+        var addedNameAttr = existingAttrs.Add(nameAttr);
+        var addedVersionAttr = existingAttrs.Add(versionAttr);
+        var changed = addedNameAttr || addedVersionAttr;
 
         if (changed)
         {
