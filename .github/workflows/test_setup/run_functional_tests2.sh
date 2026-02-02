@@ -148,6 +148,31 @@ dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ValueC
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.UpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypeBulkUpdatesSingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypesTrackingSingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypeQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.BadDataJsonDeserializationSingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocComplexTypeQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocAdvancedMappingsQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.OperatorsProceduralSingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.OperatorsQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.OptionalDependentQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.SqlQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.TPHInheritanceQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net8.0 -c Release --no-build --filter 'FullyQualifiedName~.SingleStoreConnectionStringOptionsValidatorTests.'
+((TOTAL_FAILURES += $? != 0))
+
 
 cd ../../
 

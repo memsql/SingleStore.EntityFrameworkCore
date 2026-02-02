@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Design;
 using Microsoft.EntityFrameworkCore.Scaffolding;
 using Microsoft.EntityFrameworkCore.Scaffolding.Metadata;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
@@ -193,7 +195,7 @@ SELECT ROW_COUNT();",
                 });
 
             AssertSql(
-                @"ALTER TABLE `People` ADD `Name` varchar(128) CHARACTER SET utf8 NOT NULL DEFAULT 'John Doe';");
+                @"ALTER TABLE `People` ADD `Name` varchar(128) CHARACTER SET utf8mb4 NOT NULL DEFAULT 'John Doe';");
         }
 
         [ConditionalFact]
@@ -498,12 +500,12 @@ CREATE SEQUENCE `dbo2_TestSequence` START WITH 3 INCREMENT BY 2 MINVALUE 2 MAXVA
             AssertSql(
                 @"CREATE TABLE `People` (
     `Id` int NOT NULL,
-    `Name` longtext CHARACTER SET utf8 NULL COMMENT 'This is a multi-line
+    `Name` longtext CHARACTER SET utf8mb4 NULL COMMENT 'This is a multi-line
 column comment.
 More information can
 be found in the docs.',
     CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
-) CHARACTER SET=utf8 COMMENT='This is a multi-line
+) CHARACTER SET=utf8mb4 COMMENT='This is a multi-line
 table comment.
 More information can
 be found in the docs.';");
@@ -777,12 +779,12 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                     var table = Assert.Single(result.Tables);
                     var iceCreamIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "IceCreamId"));
 
-                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? "utf8_general_ci" : null, iceCreamIdColumn.Collation);
+                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? "utf8mb4_bin" : null, iceCreamIdColumn.Collation);
                 });
 
             AssertSql(
                 $@"CREATE TABLE `IceCream` (
-    `IceCreamId` char(36) COLLATE utf8_general_ci NOT NULL,
+    `IceCreamId` char(36) COLLATE utf8mb4_bin NOT NULL,
     CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
 ) COLLATE={DefaultCollation};");
         }
@@ -1045,7 +1047,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                                     .HasColumnType("int");
 
                                 b.Property<string>("Name")
-                                    .HasColumnType("longtext CHARACTER SET utf8");
+                                    .HasColumnType("longtext CHARACTER SET utf8mb4");
 
                                 b.HasKey("IceCreamId");
 
@@ -1193,7 +1195,14 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                     var table = Assert.Single(result.Tables);
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
 
-                    Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? null : NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    if (S2ServerVersion.Supports.Version(ServerVersion.Parse("9.0")))
+                    {
+                        Assert.Equal(NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    }
+                    else
+                    {
+                        Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4 ? null : NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    }
                     Assert.Equal("longtext", nameColumn.StoreType);
                 });
 
@@ -1202,7 +1211,7 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
     `IceCreamId` int NOT NULL,
     `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL,
     CONSTRAINT `PK_IceCream` PRIMARY KEY (`IceCreamId`)
-) CHARACTER SET=utf8;");
+) CHARACTER SET=utf8mb4;");
         }
 
         [ConditionalFact]
@@ -1392,6 +1401,125 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                     Assert.Equal("Persons", table.Name);
                 },
                 withConventions: false);
+
+        public override async Task Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table()
+        {
+            await Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table_core("'[3, 2, 1]'");
+
+            AssertSql(
+                """
+                ALTER TABLE `Customers` ADD `Numbers` varchar(127) CHARACTER SET utf8mb4 NOT NULL DEFAULT '[3, 2, 1]';
+                """);
+        }
+
+        protected override Task Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table_core(string defaultValueSql)
+            => Test(
+                builder => builder.Entity(
+                    "Customer", e =>
+                    {
+                        e.Property<int>("Id").ValueGeneratedOnAdd();
+                        e.HasKey("Id");
+                        e.Property<string>("Name");
+                        e.ToTable("Customers");
+                    }),
+                builder => builder.Entity(
+                    "Customer", e =>
+                    {
+                        e.Property<int>("Id").ValueGeneratedOnAdd();
+                        e.HasKey("Id");
+                        e.Property<string>("Name");
+                        e.Property<List<int>>("Numbers").IsRequired()
+                            .HasMaxLength(127) // <-- MySQL requires a `varchar(n)` instead of a `longtext` type for default value support
+                            .HasDefaultValueSql(defaultValueSql);
+                        e.ToTable("Customers");
+                    }),
+                model =>
+                {
+                    var customersTable = Assert.Single(model.Tables.Where(t => t.Name == "Customers"));
+
+                    Assert.Collection(
+                        customersTable.Columns,
+                        c => Assert.Equal("Id", c.Name),
+                        c => Assert.Equal("Name", c.Name),
+                        c => Assert.Equal("Numbers", c.Name));
+                    Assert.Same(
+                        customersTable.Columns.Single(c => c.Name == "Id"),
+                        Assert.Single(customersTable.PrimaryKey!.Columns));
+                });
+
+        public override Task Add_required_primitve_collection_with_custom_converter_and_custom_default_value_to_existing_table()
+            => Test(
+                builder => builder.Entity(
+                    "Customer", e =>
+                    {
+                        e.Property<int>("Id").ValueGeneratedOnAdd();
+                        e.HasKey("Id");
+                        e.Property<string>("Name");
+                        e.ToTable("Customers");
+                    }),
+                builder => builder.Entity(
+                    "Customer", e =>
+                    {
+                        e.Property<int>("Id").ValueGeneratedOnAdd();
+                        e.HasKey("Id");
+                        e.Property<string>("Name");
+                        e.Property<List<int>>("Numbers")
+                            .HasMaxLength(127) // <-- MySQL requires a `varchar(n)` instead of a `longtext` type for default value support
+                            .HasConversion(new ValueConverter<List<int>, string>(
+                                convertToProviderExpression: x => x != null && x.Count > 0 ? "some numbers" : "nothing",
+                                convertFromProviderExpression: x => x == "nothing" ? new List<int> { } : new List<int> { 7, 8, 9 }))
+                            .HasDefaultValue(new List<int> { 42 })
+                            .IsRequired();
+                        e.ToTable("Customers");
+                    }),
+                model =>
+                {
+                    var customersTable = Assert.Single(model.Tables.Where(t => t.Name == "Customers"));
+
+                    Assert.Collection(
+                        customersTable.Columns,
+                        c => Assert.Equal("Id", c.Name),
+                        c => Assert.Equal("Name", c.Name),
+                        c => Assert.Equal("Numbers", c.Name));
+                    Assert.Same(
+                        customersTable.Columns.Single(c => c.Name == "Id"),
+                        Assert.Single(customersTable.PrimaryKey!.Columns));
+                });
+
+        public override Task Add_required_primitve_collection_with_custom_default_value_to_existing_table()
+            => Test(
+                builder => builder.Entity(
+                    "Customer", e =>
+                    {
+                        e.Property<int>("Id").ValueGeneratedOnAdd();
+                        e.HasKey("Id");
+                        e.Property<string>("Name");
+                        e.ToTable("Customers");
+                    }),
+                builder => builder.Entity(
+                    "Customer", e =>
+                    {
+                        e.Property<int>("Id").ValueGeneratedOnAdd();
+                        e.HasKey("Id");
+                        e.Property<string>("Name");
+                        e.Property<List<int>>("Numbers")
+                            .HasMaxLength(127) // <-- MySQL requires a `varchar(n)` instead of a `longtext` type for default value support
+                            .IsRequired().HasDefaultValue(new List<int> { 1, 2, 3 });
+                        e.ToTable("Customers");
+                    }),
+                model =>
+                {
+                    var customersTable = Assert.Single(model.Tables.Where(t => t.Name == "Customers"));
+
+                    Assert.Collection(
+                        customersTable.Columns,
+                        c => Assert.Equal("Id", c.Name),
+                        c => Assert.Equal("Name", c.Name),
+                        c => Assert.Equal("Numbers", c.Name));
+                    Assert.Same(
+                        customersTable.Columns.Single(c => c.Name == "Id"),
+                        Assert.Single(customersTable.PrimaryKey!.Columns));
+                });
 
         // The constraint name for a primary key is always PRIMARY in MySQL.
         protected override bool AssertConstraintNames

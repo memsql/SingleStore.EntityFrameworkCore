@@ -31,10 +31,10 @@ namespace EntityFrameworkCore.SingleStore.Internal
             // This is also being used as the universal fallback character set, if no character set was explicitly defined for the model,
             // which will result in similar behavior as in previous versions and ensure that databases use a decent/the recommended charset
             // by default, if none was explicitly set.
-            DefaultCharSet = CharSet.Utf8;
+            DefaultCharSet = CharSet.Utf8Mb4;
 
             // Optimize space and performance for GUID columns.
-            DefaultGuidCollation = "utf8_general_ci";
+            DefaultGuidCollation = "utf8mb4_bin";
 
             ReplaceLineBreaksWithCharFunction = true;
             DefaultDataTypeMappings = new SingleStoreDefaultDataTypeMappings();

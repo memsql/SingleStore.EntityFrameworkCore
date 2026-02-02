@@ -5,6 +5,7 @@
 using System;
 using System.Data.Common;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Transactions;
@@ -191,10 +192,33 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
                 IsMasterConnection = true
             };
 
+        private static void AddConnectionAttributes(SingleStoreConnectionStringBuilder csb)
+        {
+            var existing = csb.ConnectionAttributes?.TrimEnd(',') ?? "";
+
+            var existingAttrs = existing
+                .Split(',', StringSplitOptions.RemoveEmptyEntries)
+                .Select(attr => attr.Trim())
+                .Where(attr => !string.IsNullOrEmpty(attr))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            var programVersion = typeof(SingleStoreConnectionStringOptionsValidator).Assembly.GetName().Version;
+            var nameAttr = "_connector_name:SingleStore Entity Framework Core provider";
+            var versionAttr = $"_connector_version:{programVersion}";
+
+            var addedNameAttr = existingAttrs.Add(nameAttr);
+            var addedVersionAttr = existingAttrs.Add(versionAttr);
+            var changed = addedNameAttr || addedVersionAttr;
+
+            if (changed)
+            {
+                csb.ConnectionAttributes = string.Join(",", existingAttrs);
+            }
+        }
+
         protected virtual SingleStoreConnectionStringBuilder AddConnectionStringOptions(SingleStoreConnectionStringBuilder builder)
         {
-            var program_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
-            builder.ConnectionAttributes = $"_connector_name:SingleStore Entity Framework Core provider,_connector_version:{program_version}";
+            AddConnectionAttributes(builder);
 
             if (CommandTimeout != null)
             {
