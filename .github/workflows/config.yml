@@ -1,6 +1,12 @@
 name: SingleStore EntityFramework Core
 
-on: [push]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
+  workflow_call:
+  workflow_dispatch:
 
 env:
   DOTNET_VERSION: 8.0.405

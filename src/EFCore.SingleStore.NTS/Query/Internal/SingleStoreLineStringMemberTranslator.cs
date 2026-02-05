@@ -88,7 +88,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                         {
                             new CaseWhenClause(
                                 _sqlExpressionFactory.IsNull(instance),
-                                _sqlExpressionFactory.Constant(null, RelationalTypeMapping.NullMapping))
+                                _sqlExpressionFactory.Constant(null, returnType, resultTypeMapping))
                         },
                         sqlExpression);
                 }

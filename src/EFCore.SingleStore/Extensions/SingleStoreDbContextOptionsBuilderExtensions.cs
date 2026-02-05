@@ -55,7 +55,11 @@ namespace Microsoft.EntityFrameworkCore
 
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
             ConfigureWarnings(optionsBuilder);
-            mySqlOptionsAction?.Invoke(new SingleStoreDbContextOptionsBuilder(optionsBuilder));
+
+            var mySqlDbContextOptionsBuilder = new SingleStoreDbContextOptionsBuilder(optionsBuilder)
+                .TranslateParameterizedCollectionsToConstants();
+
+            mySqlOptionsAction?.Invoke(mySqlDbContextOptionsBuilder);
 
             return optionsBuilder;
         }
@@ -98,7 +102,11 @@ namespace Microsoft.EntityFrameworkCore
 
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
             ConfigureWarnings(optionsBuilder);
-            mySqlOptionsAction?.Invoke(new SingleStoreDbContextOptionsBuilder(optionsBuilder));
+
+            var mySqlDbContextOptionsBuilder = new SingleStoreDbContextOptionsBuilder(optionsBuilder)
+                .TranslateParameterizedCollectionsToConstants();
+
+            mySqlOptionsAction?.Invoke(mySqlDbContextOptionsBuilder);
 
             return optionsBuilder;
         }
@@ -144,7 +152,11 @@ namespace Microsoft.EntityFrameworkCore
 
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
             ConfigureWarnings(optionsBuilder);
-            mySqlOptionsAction?.Invoke(new SingleStoreDbContextOptionsBuilder(optionsBuilder));
+
+            var mySqlDbContextOptionsBuilder = new SingleStoreDbContextOptionsBuilder(optionsBuilder)
+                .TranslateParameterizedCollectionsToConstants();
+
+            mySqlOptionsAction?.Invoke(mySqlDbContextOptionsBuilder);
 
             return optionsBuilder;
         }
@@ -189,7 +201,11 @@ namespace Microsoft.EntityFrameworkCore
 
             ((IDbContextOptionsBuilderInfrastructure)optionsBuilder).AddOrUpdateExtension(extension);
             ConfigureWarnings(optionsBuilder);
-            mySqlOptionsAction?.Invoke(new SingleStoreDbContextOptionsBuilder(optionsBuilder));
+
+            var mySqlDbContextOptionsBuilder = new SingleStoreDbContextOptionsBuilder(optionsBuilder)
+                .TranslateParameterizedCollectionsToConstants();
+
+            mySqlOptionsAction?.Invoke(mySqlDbContextOptionsBuilder);
 
             return optionsBuilder;
         }
