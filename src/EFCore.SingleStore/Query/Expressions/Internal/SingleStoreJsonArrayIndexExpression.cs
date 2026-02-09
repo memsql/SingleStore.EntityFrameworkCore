@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -16,6 +17,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
     /// </summary>
     public class SingleStoreJsonArrayIndexExpression : SqlExpression, IEquatable<SingleStoreJsonArrayIndexExpression>
     {
+        private static ConstructorInfo _quotingConstructor;
+
         [NotNull]
         public virtual SqlExpression Expression { get; }
 
@@ -30,6 +33,15 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
             => Update((SqlExpression)visitor.Visit(Expression));
+
+        /// <inheritdoc />
+        public override Expression Quote()
+            => New(
+                _quotingConstructor ??= typeof(SingleStoreInlinedParameterExpression).GetConstructor(
+                    [typeof(SqlExpression), typeof(Type), typeof(RelationalTypeMapping)])!,
+                Expression.Quote(),
+                Constant(Type),
+                RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreJsonArrayIndexExpression Update(
             [NotNull] SqlExpression expression)

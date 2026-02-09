@@ -6,6 +6,8 @@
     <AssemblyName>EntityFrameworkCore.SingleStore</AssemblyName>
     <RootNamespace>EntityFrameworkCore.SingleStore</RootNamespace>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <NoWarn>$(NoWarn);EF9100</NoWarn> <!-- Precompiled query is experimental -->
+    <NoWarn>$(NoWarn);CS1591</NoWarn> <!-- TODO: Missing XML comment for publicly visible type or member 'Type_or_Member' -->
   </PropertyGroup>
 
   <PropertyGroup>

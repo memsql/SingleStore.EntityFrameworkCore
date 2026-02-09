@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Utilities;
@@ -12,6 +13,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal;
 
 public class SingleStoreInlinedParameterExpression : SqlExpression
 {
+    private static ConstructorInfo _quotingConstructor;
+
     public SingleStoreInlinedParameterExpression(
         SqlParameterExpression parameterExpression,
         SqlConstantExpression valueExpression)
@@ -23,7 +26,7 @@ public class SingleStoreInlinedParameterExpression : SqlExpression
         ValueExpression = valueExpression;
     }
 
-    public virtual Expression ParameterExpression { get; }
+    public virtual SqlParameterExpression ParameterExpression { get; }
     public virtual SqlConstantExpression ValueExpression { get; }
 
     protected override Expression VisitChildren(ExpressionVisitor visitor)
@@ -33,6 +36,14 @@ public class SingleStoreInlinedParameterExpression : SqlExpression
 
         return Update(parameterExpression, valueExpression);
     }
+
+    /// <inheritdoc />
+    public override Expression Quote()
+        => New(
+            _quotingConstructor ??= typeof(SingleStoreInlinedParameterExpression).GetConstructor(
+                [typeof(SqlParameterExpression), typeof(SqlConstantExpression)])!,
+            ParameterExpression.Quote(),
+            ValueExpression.Quote());
 
     protected override void Print(ExpressionPrinter expressionPrinter)
     {

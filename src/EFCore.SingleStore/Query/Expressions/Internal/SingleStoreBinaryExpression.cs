@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -28,6 +29,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 
     public class SingleStoreBinaryExpression : SqlExpression
     {
+        private static ConstructorInfo _quotingConstructor;
+
         public SingleStoreBinaryExpression(
             SingleStoreBinaryExpressionOperatorType operatorType,
             SqlExpression left,
@@ -61,6 +64,16 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 
             return Update(left, right);
         }
+
+        public override Expression Quote()
+            => New(
+                _quotingConstructor ??= typeof(SingleStoreBinaryExpression).GetConstructor(
+                    [typeof(SingleStoreBinaryExpressionOperatorType), typeof(SqlExpression), typeof(SqlExpression), typeof(Type), typeof(RelationalTypeMapping)])!,
+                Constant(OperatorType),
+                Left.Quote(),
+                Right.Quote(),
+                Constant(Type),
+                RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreBinaryExpression Update(SqlExpression left, SqlExpression right)
             => left != Left || right != Right

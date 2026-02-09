@@ -3,6 +3,7 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Utilities;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -14,6 +15,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 {
     public class SingleStoreRegexpExpression : SqlExpression
     {
+        private static ConstructorInfo _quotingConstructor;
+
         public SingleStoreRegexpExpression(
             [NotNull] SqlExpression match,
             [NotNull] SqlExpression pattern,
@@ -46,6 +49,15 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 
             return Update(match, pattern);
         }
+
+        /// <inheritdoc />
+        public override Expression Quote()
+            => New(
+                _quotingConstructor ??= typeof(SingleStoreInlinedParameterExpression).GetConstructor(
+                    [typeof(SqlExpression), typeof(SqlExpression), typeof(RelationalTypeMapping)])!,
+                Match.Quote(),
+                Pattern.Quote(),
+                RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreRegexpExpression Update(SqlExpression match, SqlExpression pattern)
             => match != Match ||

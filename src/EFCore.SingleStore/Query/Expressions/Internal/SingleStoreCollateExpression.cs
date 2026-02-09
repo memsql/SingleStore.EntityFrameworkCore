@@ -5,6 +5,7 @@
 using System;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -18,6 +19,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
     /// </summary>
     public class SingleStoreCollateExpression : SqlExpression
     {
+        private static ConstructorInfo _quotingConstructor;
+
         private readonly SqlExpression _valueExpression;
         private readonly string _charset;
         private readonly string _collation;
@@ -77,6 +80,15 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 
             return Update(valueExpression);
         }
+
+        public override Expression Quote()
+            => New(
+                _quotingConstructor ??= typeof(SingleStoreInlinedParameterExpression).GetConstructor(
+                    [typeof(SqlExpression), typeof(string), typeof(string), typeof(RelationalTypeMapping)])!,
+                ValueExpression.Quote(),
+                Constant(Charset),
+                Constant(Collation),
+                RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreCollateExpression Update(SqlExpression valueExpression)
             => valueExpression != _valueExpression &&

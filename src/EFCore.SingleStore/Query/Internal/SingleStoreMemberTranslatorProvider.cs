@@ -5,19 +5,20 @@
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
+using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Query.Internal
 {
     public class SingleStoreMemberTranslatorProvider : RelationalMemberTranslatorProvider
     {
-        public SingleStoreMemberTranslatorProvider([NotNull] RelationalMemberTranslatorProviderDependencies dependencies, IDbContextOptions dbContextOptions)
+        public SingleStoreMemberTranslatorProvider([NotNull] RelationalMemberTranslatorProviderDependencies dependencies, IDbContextOptions dbContextOptions, ISingleStoreOptions mySqlOptions)
             : base(dependencies)
         {
             var sqlExpressionFactory = (SingleStoreSqlExpressionFactory)dependencies.SqlExpressionFactory;
 
             AddTranslators(
                 new IMemberTranslator[] {
-                    new SingleStoreDateTimeMemberTranslator(sqlExpressionFactory, dbContextOptions),
+                    new SingleStoreDateTimeMemberTranslator(sqlExpressionFactory, dbContextOptions, mySqlOptions),
                     new SingleStoreStringMemberTranslator(sqlExpressionFactory),
                     new SingleStoreTimeSpanMemberTranslator(sqlExpressionFactory),
                 });

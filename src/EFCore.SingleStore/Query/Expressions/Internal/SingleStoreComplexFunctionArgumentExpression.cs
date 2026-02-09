@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Storage;
@@ -15,6 +16,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 {
     public class SingleStoreComplexFunctionArgumentExpression : SqlExpression
     {
+        private static ConstructorInfo _quotingConstructor;
+
         public SingleStoreComplexFunctionArgumentExpression(
             IEnumerable<SqlExpression> argumentParts,
             string delimiter,
@@ -52,6 +55,16 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 
             return Update(argumentParts, Delimiter);
         }
+
+        /// <inheritdoc />
+        public override Expression Quote()
+            => New(
+                _quotingConstructor ??= typeof(SingleStoreColumnAliasReferenceExpression).GetConstructor(
+                    [typeof(IReadOnlyList<SqlExpression>), typeof(string), typeof(Type), typeof(RelationalTypeMapping)])!,
+                NewArrayInit(typeof(SqlExpression), ArgumentParts.Select(p => p.Quote())),
+                Constant(Delimiter),
+                Constant(Type),
+                RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreComplexFunctionArgumentExpression Update(IReadOnlyList<SqlExpression> argumentParts, string delimiter)
             => !argumentParts.SequenceEqual(ArgumentParts)

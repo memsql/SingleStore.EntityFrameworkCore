@@ -21,7 +21,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             _options = options;
         }
 
-        public virtual RelationalParameterBasedSqlProcessor Create(bool useRelationalNulls)
-            => new SingleStoreParameterBasedSqlProcessor(_dependencies, useRelationalNulls, _options);
+        public virtual RelationalParameterBasedSqlProcessor Create(RelationalParameterBasedSqlProcessorParameters parameters)
+            => new SingleStoreParameterBasedSqlProcessor(_dependencies, parameters, _options);
     }
 }

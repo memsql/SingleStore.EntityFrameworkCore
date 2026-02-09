@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -15,6 +16,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 {
     public class SingleStoreMatchExpression : SqlExpression
     {
+        private static ConstructorInfo _quotingConstructor;
+
         public SingleStoreMatchExpression(
             SqlExpression match,
             SqlExpression against,
@@ -48,6 +51,16 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 
             return Update(match, against);
         }
+
+        /// <inheritdoc />
+        public override Expression Quote()
+            => New(
+                _quotingConstructor ??= typeof(SingleStoreInlinedParameterExpression).GetConstructor(
+                    [typeof(SqlExpression), typeof(SqlExpression), typeof(SingleStoreMatchSearchMode), typeof(RelationalTypeMapping)])!,
+                Match.Quote(),
+                Against.Quote(),
+                Constant(SearchMode),
+                RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreMatchExpression Update(SqlExpression match, SqlExpression against)
             => match != Match || against != Against
