@@ -15,7 +15,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal;
 /// <summary>
 ///     An expression that represents a MySQL JSON_TABLE() function call in a SQL tree.
 /// </summary>
-public class SingleStoreJsonTableExpression : TableValuedFunctionExpression, IClonableTableExpressionBase
+public class SingleStoreJsonTableExpression : TableValuedFunctionExpression
 {
     /// <summary>
     ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
@@ -134,26 +134,6 @@ public class SingleStoreJsonTableExpression : TableValuedFunctionExpression, ICl
         && (ReferenceEquals(columnInfos, ColumnInfos) || columnInfos is not null && ColumnInfos is not null && columnInfos.SequenceEqual(ColumnInfos))
             ? this
             : new SingleStoreJsonTableExpression(Alias, jsonExpression, path, columnInfos);
-
-
-    /// <summary>
-    ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
-    ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
-    ///     any release. You should only use it directly in your code with extreme caution and knowing that
-    ///     doing so can result in application failures when updating to a new Entity Framework Core release.
-    /// </summary>
-    // TODO: Deep clone, see #30982
-    public virtual TableExpressionBase Clone()
-    {
-        var clone = new SingleStoreJsonTableExpression(Alias, JsonExpression, Path, ColumnInfos);
-
-        foreach (var annotation in GetAnnotations())
-        {
-            clone.AddAnnotation(annotation.Name, annotation.Value);
-        }
-
-        return clone;
-    }
 
     /// <summary>
     ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to

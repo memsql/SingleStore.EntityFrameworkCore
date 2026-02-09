@@ -91,6 +91,11 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
                         method.ReturnType,
                         _sqlExpressionFactory.FindMapping(method.ReturnType, "json"),
                         false),
+                nameof(SingleStoreJsonDbFunctionsExtensions.JsonOverlaps)
+                    => _sqlExpressionFactory.NullableFunction(
+                        "JSON_OVERLAPS",
+                        new[] { Json(args[0]), args[1] },
+                        typeof(bool)),
                 nameof(SingleStoreJsonDbFunctionsExtensions.JsonContains)
                     => _sqlExpressionFactory.NullableFunction(
                         "JSON_CONTAINS",
@@ -128,9 +133,10 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
                                 .Append(_sqlExpressionFactory.Constant("one"))
                                 .Append(args[1])
                                 .AppendIfTrue(
-                                    args.Length >= 3, () => args.Length >= 4
+                                    args.Length >= 3,
+                                    () => args.Length >= 4
                                         ? args[3]
-                                        : _sqlExpressionFactory.Constant(null, RelationalTypeMapping.NullMapping))
+                                        : _sqlExpressionFactory.Constant(null, typeof(string)))
                                 .AppendIfTrue(args.Length >= 3, () => args[2]),
                             typeof(bool),
                             null,

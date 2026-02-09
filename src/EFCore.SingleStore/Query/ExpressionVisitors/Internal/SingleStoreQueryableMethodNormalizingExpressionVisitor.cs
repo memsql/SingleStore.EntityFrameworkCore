@@ -11,6 +11,10 @@ using EntityFrameworkCore.SingleStore.Query.Expressions.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal;
 
+// TODO: 9.0
+// Remove SingleStoreQueryableMethodNormalizingExpressionVisitor, SingleStoreBipolarExpression and
+// SingleStoreQueryTranslationPreprocessor.NormalizeQueryableMethod (or the whole class) and use ElementAt() directly in Json translation classes.
+
 /// <summary>
 /// Skips normalization of array[index].Property to array.Select(e => e.Property).ElementAt(index),
 /// because it messes-up our JSON-Array handling in `SingleStoreSqlTranslatingExpressionVisitor`.
@@ -19,7 +23,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal;
 public class SingleStoreQueryableMethodNormalizingExpressionVisitor : QueryableMethodNormalizingExpressionVisitor
 {
     public SingleStoreQueryableMethodNormalizingExpressionVisitor(QueryCompilationContext queryCompilationContext)
-        : base(queryCompilationContext)
+        : base(queryCompilationContext, isEfConstantSupported: true)
     {
     }
 
@@ -76,7 +80,7 @@ public class SingleStoreQueryableMethodNormalizingExpressionVisitor : QueryableM
             {
                 foreach (var expression in arguments)
                 {
-                    yield return VisitExtension(expression);
+                    yield return Visit(expression);
                 }
             }
 

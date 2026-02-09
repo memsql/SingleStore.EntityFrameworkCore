@@ -32,7 +32,8 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
         protected static readonly MethodInfo[] NewArrayExpressionSupportMethodInfos = Array.Empty<MethodInfo>()
             .Concat(typeof(SingleStoreDbFunctionsExtensions).GetRuntimeMethods().Where(m => m.Name is nameof(SingleStoreDbFunctionsExtensions.Match)
                 or nameof(SingleStoreDbFunctionsExtensions.IsMatch)))
-            .Concat(typeof(string).GetRuntimeMethods().Where(m => m.Name == nameof(string.Concat)))
+            .Concat(typeof(string).GetRuntimeMethods().Where(m => m.Name is nameof(string.Concat)
+                or nameof(string.Join)))
             .Where(m => m.GetParameters().Any(p => p.ParameterType.IsArray))
             .ToArray();
 
@@ -126,21 +127,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
                 ResetTranslationErrorDetails();
             }
 
-            var visitedExpression = base.VisitUnary(unaryExpression);
-
-            if (visitedExpression is SqlUnaryExpression sqlUnaryExpression &&
-                sqlUnaryExpression.OperatorType == ExpressionType.Not &&
-                sqlUnaryExpression.Type != typeof(bool))
-            {
-                // MySQL implicitly casts numbers used in BITWISE NOT operations (~ operator) to BIGINT UNSIGNED.
-                // We need to cast them back, to get the expected result.
-                return _sqlExpressionFactory.Convert(
-                    sqlUnaryExpression,
-                    sqlUnaryExpression.Type,
-                    sqlUnaryExpression.TypeMapping);
-            }
-
-            return visitedExpression;
+            return base.VisitUnary(unaryExpression);
         }
 
         protected override Expression VisitBinary(BinaryExpression binaryExpression)
@@ -327,7 +314,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 
         protected virtual Expression VisitMethodCallNewArray(NewArrayExpression newArrayExpression)
         {
-            // Needed for SingleStoreDbFunctionsExtensions.Match() and String.Concat() translation.
+            // Needed for SingleStoreDbFunctionsExtensions.Match(), String.Concat() and String.Join() translations.
             if (newArrayExpression.Type == typeof(string[]))
             {
                 return _sqlExpressionFactory.ComplexFunctionArgument(
@@ -337,7 +324,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
                     typeof(string[]));
             }
 
-            // Needed for String.Concat() translation.
+            // Needed for String.Concat() translation and String.Join() translations.
             if (newArrayExpression.Type == typeof(object[]))
             {
                 var typeMapping = ((SingleStoreStringTypeMapping)Dependencies.TypeMappingSource.GetMapping(typeof(string))).Clone(forceToString: true);
@@ -455,6 +442,20 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             // TranslationErrorDetails functionality and maintain everything just to support resetting the TranslationErrorDetails property.
             base.Translate(Expression.Constant(0));
         }
+
+        public override SqlExpression GenerateGreatest(IReadOnlyList<SqlExpression> expressions, Type resultType)
+            => _sqlExpressionFactory.NullableFunction(
+                "GREATEST",
+                expressions,
+                resultType,
+                true);
+
+        public override SqlExpression GenerateLeast(IReadOnlyList<SqlExpression> expressions, Type resultType)
+            => _sqlExpressionFactory.NullableFunction(
+                "LEAST",
+                expressions,
+                resultType,
+                true);
 
         #region Copied from RelationalSqlTranslatingExpressionVisitor
 
