@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
 
@@ -55,7 +56,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             var mySqlOptions = options.FindExtension<SingleStoreOptionsExtension>() ?? new SingleStoreOptionsExtension();
             var mySqlJsonOptions = (SingleStoreJsonOptionsExtension)options.Extensions.LastOrDefault(e => e is SingleStoreJsonOptionsExtension);
 
-            ConnectionSettings = GetConnectionSettings(mySqlOptions);
+            ConnectionSettings = GetConnectionSettings(mySqlOptions, options);
             DataSource = mySqlOptions.DataSource;
             ServerVersion = mySqlOptions.ServerVersion ?? throw new InvalidOperationException($"The {nameof(ServerVersion)} has not been set.");
             NoBackslashEscapes = mySqlOptions.NoBackslashEscapes;
@@ -75,7 +76,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
         {
             var mySqlOptions = options.FindExtension<SingleStoreOptionsExtension>() ?? new SingleStoreOptionsExtension();
             var mySqlJsonOptions = (SingleStoreJsonOptionsExtension)options.Extensions.LastOrDefault(e => e is SingleStoreJsonOptionsExtension);
-            var connectionSettings = GetConnectionSettings(mySqlOptions);
+            var connectionSettings = GetConnectionSettings(mySqlOptions, options);
 
             //
             // CHECK: To we have to ensure that the ApplicationServiceProvider itself is not replaced, because we rely on it in our
@@ -245,10 +246,12 @@ namespace EntityFrameworkCore.SingleStore.Internal
             return defaultDataTypeMappings;
         }
 
-        private static SingleStoreConnectionSettings GetConnectionSettings(SingleStoreOptionsExtension relationalOptions)
+        private static SingleStoreConnectionSettings GetConnectionSettings(SingleStoreOptionsExtension relationalOptions, IDbContextOptions options)
             => relationalOptions.Connection != null
                 ? new SingleStoreConnectionSettings(relationalOptions.Connection)
-                : new SingleStoreConnectionSettings(relationalOptions.ConnectionString);
+                : new SingleStoreConnectionSettings(
+                    new NamedConnectionStringResolver(options)
+                        .ResolveConnectionString(relationalOptions.ConnectionString ?? string.Empty));
 
         protected virtual bool Equals(SingleStoreOptions other)
         {

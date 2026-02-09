@@ -33,11 +33,13 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
         public SingleStoreMigrationsModelDiffer(
             IRelationalTypeMappingSource typeMappingSource,
             IMigrationsAnnotationProvider migrationsAnnotationProvider,
+            IRelationalAnnotationProvider relationalAnnotationProvider,
             IRowIdentityMapFactory rowIdentityMapFactory,
             CommandBatchPreparerDependencies commandBatchPreparerDependencies)
             : base(
                 typeMappingSource,
                 migrationsAnnotationProvider,
+                relationalAnnotationProvider,
                 rowIdentityMapFactory,
                 commandBatchPreparerDependencies)
         {

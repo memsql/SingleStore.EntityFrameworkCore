@@ -322,8 +322,82 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             CreateTableCheckConstraints(operation, model, builder);
             CreateTableForeignKeys(operation, model, builder);*/
         }
+
         protected override void Generate(AlterTableOperation operation, IModel model, MigrationCommandListBuilder builder)
         {
+            var oldCharSet = operation.OldTable[SingleStoreAnnotationNames.CharSet] as string;
+            var newCharSet = operation[SingleStoreAnnotationNames.CharSet] as string;
+
+            var oldCollation = operation.OldTable[RelationalAnnotationNames.Collation] as string;
+            var newCollation = operation[RelationalAnnotationNames.Collation] as string;
+
+            if (newCollation != oldCollation && newCollation != null)
+            {
+                // A new collation has been set. It takes precedence over any defined charset.
+                // if charset also changed, emit it in the same ALTER TABLE.
+                builder.Append("ALTER TABLE ").Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema));
+
+                if (newCharSet != oldCharSet && newCharSet != null)
+                {
+                    builder.Append(" CHARACTER SET ").Append(newCharSet).Append(", ");
+                }
+                else
+                {
+                    builder.Append(" ");
+                }
+
+                builder
+                    .Append("COLLATE ")
+                    .Append(newCollation)
+                    .AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+
+                EndStatement(builder);
+            }
+            else if (newCharSet != oldCharSet ||
+                     newCollation != oldCollation && newCollation == null)
+            {
+                // The charset has been changed or the collation has been reset to the default.
+                if (newCharSet != null)
+                {
+                    // A new charset has been set without an explicit collation.
+                    builder
+                        .Append("ALTER TABLE ")
+                        .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema))
+                        .Append(" CHARACTER SET ")
+                        .Append(newCharSet)
+                        .AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+
+                    EndStatement(builder);
+                }
+                else
+                {
+                    // Reset to database defaults (SingleStore): use INFORMATION_SCHEMA.SCHEMATA
+                    var resetSql = $@"
+SET @__ss_charset = (
+  SELECT DEFAULT_CHARACTER_SET_NAME
+  FROM INFORMATION_SCHEMA.SCHEMATA
+  WHERE SCHEMA_NAME = DATABASE()
+);
+SET @__ss_collation = (
+  SELECT DEFAULT_COLLATION_NAME
+  FROM INFORMATION_SCHEMA.SCHEMATA
+  WHERE SCHEMA_NAME = DATABASE()
+);
+SET @__ss_stmt = CONCAT(
+  'ALTER TABLE {Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema)} ',
+  'CHARACTER SET ', @__ss_charset,
+  ', COLLATE ', @__ss_collation,
+  '{Dependencies.SqlGenerationHelper.StatementTerminator}'
+);
+PREPARE __ss_exec FROM @__ss_stmt;
+EXECUTE __ss_exec;
+DEALLOCATE PREPARE __ss_exec;
+";
+                    builder.AppendLine(resetSql);
+                    EndStatement(builder);
+                }
+            }
+
             if (operation.Comment != operation.OldTable.Comment)
             {
                 builder.Append("ALTER TABLE ")
@@ -941,7 +1015,8 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
             if (operation.ComputedColumnSql == null)
             {
-                ColumnDefinitionWithCharSet(schema, table, name, operation, model, builder);
+                // AUTO_INCREMENT columns don't support DEFAULT values.
+                ColumnDefinitionWithCharSet(schema, table, name, operation, model, builder, withDefaultValue: !autoIncrement);
 
                 GenerateComment(operation.Comment, builder);
 
@@ -1033,7 +1108,14 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 .Append(SingleStoreStringTypeMapping.EscapeSqlLiteralWithLineBreaks(comment, !_options.NoBackslashEscapes, false));
         }
 
-        private void ColumnDefinitionWithCharSet(string schema, string table, string name, ColumnOperation operation, IModel model, MigrationCommandListBuilder builder)
+        private void ColumnDefinitionWithCharSet(
+            string schema,
+            string table,
+            string name,
+            ColumnOperation operation,
+            IModel model,
+            MigrationCommandListBuilder builder,
+            bool withDefaultValue)
         {
             if (operation.ComputedColumnSql != null)
             {
@@ -1050,7 +1132,10 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
             builder.Append(operation.IsNullable ? " NULL" : " NOT NULL");
 
-            DefaultValue(operation.DefaultValue, operation.DefaultValueSql, columnType, builder);
+            if (withDefaultValue)
+            {
+                DefaultValue(operation.DefaultValue, operation.DefaultValueSql, columnType, builder);
+            }
 
             var srid = operation[SingleStoreAnnotationNames.SpatialReferenceSystemId];
             if (srid is int &&
@@ -1212,47 +1297,16 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             [CanBeNull] IModel model,
             [NotNull] MigrationCommandListBuilder builder)
         {
-            Check.NotNull(operation, nameof(operation));
-            Check.NotNull(builder, nameof(builder));
+            // We used to move an AUTO_INCREMENT column to the first position in a primary key, if the PK was a compound key and the column
+            // was not in the first position. We did this to satisfy InnoDB.
+            // However, this is technically an inaccuracy, and leads to incompatible FK -> PK mappings in MySQL 8.4.
+            // We will therefore reverse that behavior to leaving the key order unchanged again.
+            // This will lead to two issues:
+            //     - Migrations that upgrade vom Pomelo < 9.0 to Pomelo 9.0 will not include this change automatically, because the model
+            //       never changed (we only made the change (before and now) here in MySqlMigrationsSqlGenerator).
+            //     - There now needs to be an index for those cases, that contains the AUTO_INCREMENT column as its first column.
 
-            var primaryKey = operation.PrimaryKey;
-            if (primaryKey != null)
-            {
-                builder.AppendLine(",");
-
-                // MySQL InnoDB has the requirement, that an AUTO_INCREMENT column has to be the first
-                // column participating in an index.
-
-                var sortedColumnNames = primaryKey.Columns.Length > 1
-                    ? primaryKey.Columns
-                        .Select(columnName => operation.Columns.First(co => co.Name == columnName))
-                        .OrderBy(co => co[SingleStoreAnnotationNames.ValueGenerationStrategy] is SingleStoreValueGenerationStrategy generationStrategy
-                                       && generationStrategy == SingleStoreValueGenerationStrategy.IdentityColumn
-                            ? 0
-                            : 1)
-                        .Select(co => co.Name)
-                        .ToArray()
-                    : primaryKey.Columns;
-
-                var sortedPrimaryKey = new AddPrimaryKeyOperation()
-                {
-                    Schema = primaryKey.Schema,
-                    Table = primaryKey.Table,
-                    Name = primaryKey.Name,
-                    Columns = sortedColumnNames,
-                    IsDestructiveChange = primaryKey.IsDestructiveChange,
-                };
-
-                foreach (var annotation in primaryKey.GetAnnotations())
-                {
-                    sortedPrimaryKey[annotation.Name] = annotation.Value;
-                }
-
-                PrimaryKeyConstraint(
-                    sortedPrimaryKey,
-                    model,
-                    builder);
-            }
+            base.CreateTablePrimaryKeyConstraint(operation, model, builder);
         }
 
         protected override void Generate(
@@ -1415,7 +1469,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             }
         }
 
-        protected override void IndexOptions(CreateIndexOperation operation, IModel model, MigrationCommandListBuilder builder)
+        protected override void IndexOptions(MigrationOperation operation, IModel model, MigrationCommandListBuilder builder)
         {
             // The base implementation supports index filters in form of a WHERE clause.
             // This is not supported by MySQL, so we don't call it here.

@@ -7,10 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Migrations.Internal;
 using Microsoft.EntityFrameworkCore.Migrations.Operations;
@@ -39,19 +39,23 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
         private readonly IRelationalCommandDiagnosticsLogger _commandLogger;
 
         public SingleStoreMigrator(
-            [NotNull] IMigrationsAssembly migrationsAssembly,
-            [NotNull] IHistoryRepository historyRepository,
-            [NotNull] IDatabaseCreator databaseCreator,
-            [NotNull] IMigrationsSqlGenerator migrationsSqlGenerator,
-            [NotNull] IRawSqlCommandBuilder rawSqlCommandBuilder,
-            [NotNull] IMigrationCommandExecutor migrationCommandExecutor,
-            [NotNull] IRelationalConnection connection,
-            [NotNull] ISqlGenerationHelper sqlGenerationHelper,
-            [NotNull] ICurrentDbContext currentContext,
-            [NotNull] IModelRuntimeInitializer modelRuntimeInitializer,
-            [NotNull] IDiagnosticsLogger<DbLoggerCategory.Migrations> logger,
-            [NotNull] IRelationalCommandDiagnosticsLogger commandLogger,
-            [NotNull] IDatabaseProvider databaseProvider)
+            IMigrationsAssembly migrationsAssembly,
+            IHistoryRepository historyRepository,
+            IDatabaseCreator databaseCreator,
+            IMigrationsSqlGenerator migrationsSqlGenerator,
+            IRawSqlCommandBuilder rawSqlCommandBuilder,
+            IMigrationCommandExecutor migrationCommandExecutor,
+            IRelationalConnection connection,
+            ISqlGenerationHelper sqlGenerationHelper,
+            ICurrentDbContext currentContext,
+            IModelRuntimeInitializer modelRuntimeInitializer,
+            IDiagnosticsLogger<DbLoggerCategory.Migrations> logger,
+            IRelationalCommandDiagnosticsLogger commandLogger,
+            IDatabaseProvider databaseProvider,
+            IMigrationsModelDiffer migrationsModelDiffer,
+            IDesignTimeModel designTimeModel,
+            IDbContextOptions contextOptions,
+            IExecutionStrategy executionStrategy)
             : base(
                 migrationsAssembly,
                 historyRepository,
@@ -65,7 +69,11 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
                 modelRuntimeInitializer,
                 logger,
                 commandLogger,
-                databaseProvider)
+                databaseProvider,
+                migrationsModelDiffer,
+                designTimeModel,
+                contextOptions,
+                executionStrategy)
         {
             _migrationsAssembly = migrationsAssembly;
             _rawSqlCommandBuilder = rawSqlCommandBuilder;
@@ -146,13 +154,11 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
             PopulateMigrations(
                 appliedMigrations,
                 toMigration,
-                out var migrationsToApply,
-                out var migrationsToRevert,
-                out var actualTargetMigration);
+                out var migratorData);
 
-            return migrationsToApply
+            return migratorData.AppliedMigrations
                 .SelectMany(x => x.UpOperations)
-                .Concat(migrationsToRevert.SelectMany(x => x.DownOperations))
+                .Concat(migratorData.RevertedMigrations.SelectMany(x => x.DownOperations))
                 .ToList();
         }
 
