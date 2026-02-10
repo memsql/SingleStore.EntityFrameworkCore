@@ -27,7 +27,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             IDiagnosticsLogger<DbLoggerCategory.Query> logger)
         {
             if (member.Name == nameof(string.Length)
-                && instance?.Type == typeof(string))
+                && member.DeclaringType == typeof(string))
             {
                 return _sqlExpressionFactory.NullableFunction(
                     "CHAR_LENGTH",

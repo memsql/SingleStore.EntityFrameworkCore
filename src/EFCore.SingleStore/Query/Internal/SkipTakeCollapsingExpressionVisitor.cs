@@ -53,7 +53,6 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                     && IsZero(selectExpression.Offset))
                 {
                     return selectExpression.Update(
-                        selectExpression.Projection,
                         selectExpression.Tables,
                         selectExpression.GroupBy.Count > 0
                             ? selectExpression.Predicate
@@ -62,9 +61,10 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                         selectExpression.GroupBy.Count > 0
                             ? _sqlExpressionFactory.ApplyDefaultTypeMapping(_sqlExpressionFactory.Constant(false))
                             : null,
+                        selectExpression.Projection,
                         new List<OrderingExpression>(0),
-                        limit: null,
-                        offset: null);
+                        offset: null,
+                        limit: null);
                 }
 
                 bool IsZero(SqlExpression? sqlExpression)

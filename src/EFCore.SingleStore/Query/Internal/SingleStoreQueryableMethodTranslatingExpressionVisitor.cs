@@ -3,12 +3,13 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -16,7 +17,6 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Utilities;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal;
-using EntityFrameworkCore.SingleStore.Storage.Internal;
 
 namespace EntityFrameworkCore.SingleStore.Query.Internal;
 
@@ -25,16 +25,18 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
     private readonly ISingleStoreOptions _options;
     private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
     private readonly IRelationalTypeMappingSource _typeMappingSource;
+    private readonly SqlAliasManager _sqlAliasManager;
 
     public SingleStoreQueryableMethodTranslatingExpressionVisitor(
         QueryableMethodTranslatingExpressionVisitorDependencies dependencies,
         RelationalQueryableMethodTranslatingExpressionVisitorDependencies relationalDependencies,
-        QueryCompilationContext queryCompilationContext,
+        RelationalQueryCompilationContext relationalQueryCompilationContext,
         ISingleStoreOptions options)
-        : base(dependencies, relationalDependencies, queryCompilationContext)
+        : base(dependencies, relationalDependencies, relationalQueryCompilationContext)
     {
         _sqlExpressionFactory = (SingleStoreSqlExpressionFactory)relationalDependencies.SqlExpressionFactory;
         _typeMappingSource = relationalDependencies.TypeMappingSource;
+        _sqlAliasManager = relationalQueryCompilationContext.SqlAliasManager;
         _options = options;
     }
 
@@ -58,19 +60,20 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
                    Orderings:
                    [
                        {
-                           Expression: ColumnExpression { Name: "key", Table: var orderingTable } orderingColumn,
+                           Expression: ColumnExpression { Name: "key", TableAlias: var orderingTable } orderingColumn,
                            IsAscending: true
                        }
                    ]
                }
-               && orderingTable == mainTable
-               && IsJsonEachKeyColumn(orderingColumn);
+               && orderingTable == mainTable.Alias
+               && IsJsonEachKeyColumn(selectExpression, orderingColumn);
 
-        bool IsJsonEachKeyColumn(ColumnExpression orderingColumn)
-            => orderingColumn.Table is SingleStoreJsonTableExpression
-               || (orderingColumn.Table is SelectExpression subquery
-                   && subquery.Projection.FirstOrDefault(p => p.Alias == "key")?.Expression is ColumnExpression projectedColumn
-                   && IsJsonEachKeyColumn(projectedColumn));
+        bool IsJsonEachKeyColumn(SelectExpression selectExpression, ColumnExpression orderingColumn)
+            => selectExpression.Tables.FirstOrDefault(t => t.Alias == orderingColumn.TableAlias)?.UnwrapJoin() is TableExpressionBase table
+               && (table is SingleStoreJsonTableExpression
+                   || (table is SelectExpression subquery
+                       && subquery.Projection.FirstOrDefault(p => p.Alias == "key")?.Expression is ColumnExpression projectedColumn
+                       && IsJsonEachKeyColumn(subquery, projectedColumn)));
     }
 
     protected override bool IsValidSelectExpressionForExecuteDelete(
@@ -93,11 +96,7 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
                 var projectionBindingExpression = (ProjectionBindingExpression)shaper.ValueBufferExpression;
                 var entityProjectionExpression = (StructuralTypeProjectionExpression)selectExpression.GetProjection(projectionBindingExpression);
                 var column = entityProjectionExpression.BindProperty(shaper.StructuralType.GetProperties().First());
-                table = column.Table;
-                if (table is JoinExpressionBase joinExpressionBase)
-                {
-                    table = joinExpressionBase.Table;
-                }
+                table = selectExpression.GetTable(column).UnwrapJoin();
             }
 
             if (table is TableExpression te)
@@ -175,7 +174,7 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
                         typeof(int)),
                     _sqlExpressionFactory.Constant(0));
 
-            return source.UpdateQueryExpression(_sqlExpressionFactory.Select(translation));
+            return source.UpdateQueryExpression(new SelectExpression(translation, _sqlAliasManager));
         }
 
         return base.TranslateAny(source, predicate);
@@ -203,7 +202,7 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
                 Limit: null,
                 Offset: null
             } selectExpression
-            && orderingColumn.Table == jsonEachExpression
+            && orderingColumn.TableAlias == jsonEachExpression.Alias
             && TranslateExpression(index) is { } translatedIndex)
         {
             // Index on JSON array
@@ -235,7 +234,7 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
                         translation, _sqlExpressionFactory, projectionColumn.TypeMapping, projectionColumn.IsNullable);
                 }
 
-                return source.UpdateQueryExpression(_sqlExpressionFactory.Select(translation));
+                return source.UpdateQueryExpression(new SelectExpression(translation, _sqlAliasManager));
             }
         }
 
@@ -252,8 +251,10 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
     {
         if (!_options.PrimitiveCollectionsSupport)
         {
-            AddTranslationErrorDetails("Primitive collections support has not been enabled.");
-            return null;
+            throw new InvalidOperationException(
+                CoreStrings.TranslationFailedWithDetails(
+                    sqlExpression.Print(),
+                    "Primitive collections support has not been enabled."));
         }
 
         // if (!_options.ServerVersion.Supports.JsonTableImplementationUsesImplicitLateralJoin &&
@@ -293,21 +294,21 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
         // which case we only have the CLR type (note that we cannot produce different SQLs based on the nullability of an *element* in
         // a parameter collection - our caching mechanism only supports varying by the nullability of the parameter itself (i.e. the
         // collection).
-        // TODO: if property is non-null, GetElementType() should never be null, but we have #31469 for shadow properties
-        var isElementNullable = property?.GetElementType() is null
-            ? elementClrType.IsNullableType()
-            : property.GetElementType()!.IsNullable;
+        var isElementNullable = property?.GetElementType()!.IsNullable;
+
+        var keyColumnTypeMapping = _typeMappingSource.FindMapping(typeof(int))!;
 
 #pragma warning disable EF1001 // Internal EF Core API usage.
         var selectExpression = new SelectExpression(
-            jsonTableExpression,
-            columnName: "value",
-            columnType: elementClrType,
-            columnTypeMapping: elementTypeMapping,
-            isElementNullable,
-            identifierColumnName: "key",
-            identifierColumnType: typeof(uint),
-            identifierColumnTypeMapping: _typeMappingSource.FindMapping(typeof(uint)));
+            [jsonTableExpression],
+            new ColumnExpression(
+                "value",
+                tableAlias,
+                elementClrType.UnwrapNullableType(),
+                elementTypeMapping,
+                isElementNullable ?? elementClrType.IsNullableType()),
+            identifier: [(new ColumnExpression("key", tableAlias, typeof(int), keyColumnTypeMapping, nullable: false), keyColumnTypeMapping.Comparer)],
+            _sqlAliasManager);
 #pragma warning restore EF1001 // Internal EF Core API usage.
 
         // JSON_TABLE() doesn't guarantee the ordering of the elements coming out; when using JSON_TABLE() without COLUMNS, a [key] column is returned
@@ -342,12 +343,6 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
         return new ShapedQueryExpression(selectExpression, shaperExpression);
     }
 
-    protected override Expression ApplyInferredTypeMappings(
-        Expression expression,
-        IReadOnlyDictionary<(TableExpressionBase, string), RelationalTypeMapping> inferredTypeMappings)
-        => new SingleStoreInferredTypeMappingApplier(
-            RelationalDependencies.Model, _typeMappingSource, _sqlExpressionFactory, inferredTypeMappings).Visit(expression);
-
     /// <summary>
     /// Wraps the given expression with any SQL logic necessary to convert a value coming out of a JSON document into the relational value
     /// represented by the given type mapping.
@@ -363,128 +358,6 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
             ByteArrayTypeMapping => sqlExpressionFactory.Function("FROM_BASE64", new[] { expression }, isNullable, new[] { true }, typeof(byte[]), typeMapping),
             _ => expression
         };
-
-    protected class SingleStoreInferredTypeMappingApplier : RelationalInferredTypeMappingApplier
-    {
-        private readonly IRelationalTypeMappingSource _typeMappingSource;
-        private readonly ISqlExpressionFactory _sqlExpressionFactory;
-        private Dictionary<TableExpressionBase, RelationalTypeMapping> _currentSelectInferredTypeMappings;
-
-        /// <summary>
-        ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
-        ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
-        ///     any release. You should only use it directly in your code with extreme caution and knowing that
-        ///     doing so can result in application failures when updating to a new Entity Framework Core release.
-        /// </summary>
-        public SingleStoreInferredTypeMappingApplier(
-            IModel model,
-            IRelationalTypeMappingSource typeMappingSource,
-            ISqlExpressionFactory sqlExpressionFactory,
-            IReadOnlyDictionary<(TableExpressionBase, string), RelationalTypeMapping> inferredTypeMappings)
-            : base(model, sqlExpressionFactory, inferredTypeMappings)
-        {
-            (_typeMappingSource, _sqlExpressionFactory) = (typeMappingSource, sqlExpressionFactory);
-        }
-
-        /// <summary>
-        ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
-        ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
-        ///     any release. You should only use it directly in your code with extreme caution and knowing that
-        ///     doing so can result in application failures when updating to a new Entity Framework Core release.
-        /// </summary>
-        protected override Expression VisitExtension(Expression expression)
-        {
-            switch (expression)
-            {
-                case SingleStoreJsonTableExpression { Name: "JSON_TABLE", Schema: null, IsBuiltIn: true } jsonTableExpression
-                    when TryGetInferredTypeMapping(jsonTableExpression, "value", out var typeMapping):
-                    return ApplyTypeMappingsOnJsonTableExpression(jsonTableExpression, typeMapping);
-
-                // Above, we applied the type mapping the the parameter that JSON_TABLE accepts as an argument.
-                // But the inferred type mapping also needs to be applied as a SQL conversion on the column projections coming out of the
-                // SelectExpression containing the JSON_TABLE call. So we set state to know about JSON_TABLE tables and their type mappings
-                // in the immediate SelectExpression, and continue visiting down (see ColumnExpression visitation below).
-                case SelectExpression selectExpression:
-                {
-                    Dictionary<TableExpressionBase, RelationalTypeMapping> previousSelectInferredTypeMappings = null;
-
-                    foreach (var table in selectExpression.Tables)
-                    {
-                        if (table is TableValuedFunctionExpression { Name: "JSON_TABLE", Schema: null, IsBuiltIn: true } jsonTableExpression
-                            && TryGetInferredTypeMapping(jsonTableExpression, "value", out var inferredTypeMapping))
-                        {
-                            if (previousSelectInferredTypeMappings is null)
-                            {
-                                previousSelectInferredTypeMappings = _currentSelectInferredTypeMappings;
-                                _currentSelectInferredTypeMappings = new Dictionary<TableExpressionBase, RelationalTypeMapping>();
-                            }
-
-                            _currentSelectInferredTypeMappings![jsonTableExpression] = inferredTypeMapping;
-                        }
-                    }
-
-                    var visited = base.VisitExtension(expression);
-
-                    _currentSelectInferredTypeMappings = previousSelectInferredTypeMappings;
-
-                    return visited;
-                }
-
-                // Note that we match also ColumnExpressions which already have a type mapping, i.e. coming out of column collections (as
-                // opposed to parameter collections, where the type mapping needs to be inferred). This is in order to apply SQL conversion
-                // logic later in the process, see note in TranslateCollection.
-                case ColumnExpression { Name: "value" } columnExpression
-                    when _currentSelectInferredTypeMappings?.TryGetValue(columnExpression.Table, out var inferredTypeMapping) is true:
-                    return ApplyJsonSqlConversion(
-                        columnExpression.ApplyTypeMapping(inferredTypeMapping),
-                        _sqlExpressionFactory,
-                        inferredTypeMapping,
-                        columnExpression.IsNullable);
-
-                default:
-                    return base.VisitExtension(expression);
-            }
-        }
-
-        /// <summary>
-        ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
-        ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
-        ///     any release. You should only use it directly in your code with extreme caution and knowing that
-        ///     doing so can result in application failures when updating to a new Entity Framework Core release.
-        /// </summary>
-        protected virtual TableValuedFunctionExpression ApplyTypeMappingsOnJsonTableExpression(
-            SingleStoreJsonTableExpression jsonTableExpression,
-            RelationalTypeMapping inferredTypeMapping)
-        {
-            // Constant queryables are translated to VALUES, no need for JSON.
-            // Column queryables have their type mapping from the model, so we don't ever need to apply an inferred mapping on them.
-            if (jsonTableExpression.JsonExpression is not SqlParameterExpression parameterExpression)
-            {
-                return jsonTableExpression;
-            }
-
-            if (_typeMappingSource.FindMapping(parameterExpression.Type, Model, inferredTypeMapping) is not SingleStoreStringTypeMapping
-                parameterTypeMapping)
-            {
-                throw new InvalidOperationException("Type mapping for 'string' could not be found or was not a SingleStoreStringTypeMapping");
-            }
-
-            Check.DebugAssert(parameterTypeMapping.ElementTypeMapping != null, "Collection type mapping missing element mapping.");
-
-            return jsonTableExpression.Update(
-                parameterExpression.ApplyTypeMapping(parameterTypeMapping),
-                jsonTableExpression.Path,
-                new[]
-                {
-                    new SingleStoreJsonTableExpression.ColumnInfo
-                    {
-                        Name = "value",
-                        TypeMapping = (RelationalTypeMapping)parameterTypeMapping.ElementTypeMapping,
-                        Path = new[] { new PathSegment(_sqlExpressionFactory.Constant(0, _typeMappingSource.FindMapping(typeof(int)))) },
-                    }
-                });
-        }
-    }
 
     private sealed class FakeMemberInfo : MemberInfo
     {
