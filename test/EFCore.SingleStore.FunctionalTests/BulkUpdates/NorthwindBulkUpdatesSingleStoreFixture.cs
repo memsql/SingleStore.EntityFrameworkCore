@@ -7,8 +7,8 @@ using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
-public class NorthwindBulkUpdatesSingleStoreFixture<TModelCustomizer> : NorthwindBulkUpdatesFixture<TModelCustomizer>
-    where TModelCustomizer : IModelCustomizer, new()
+public class NorthwindBulkUpdatesSingleStoreFixture<TModelCustomizer> : NorthwindBulkUpdatesRelationalFixture<TModelCustomizer>
+    where TModelCustomizer : ITestModelCustomizer, new()
 {
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreNorthwindTestStoreFactory.Instance;

@@ -168,10 +168,10 @@ namespace EntityFrameworkCore.SingleStore.Storage.Internal
 
             // Apply modified connection string.
             var masterMySqlOptions = _dataSource is not null
-                ? mySqlOptions.WithConnection(((SingleStoreConnection)CreateDbConnection()).CloneWith(masterConnectionString))
+                ? mySqlOptions.WithConnection(((SingleStoreConnection)CreateDbConnection()).CloneWith(masterConnectionString), owned: true)
                 : mySqlOptions.Connection is null
                     ? mySqlOptions.WithConnectionString(masterConnectionString)
-                    : mySqlOptions.WithConnection(DbConnection.CloneWith(masterConnectionString));
+                    : mySqlOptions.WithConnection(DbConnection.CloneWith(masterConnectionString), owned: true);
 
             var optionsBuilder = new DbContextOptionsBuilder();
             var optionsBuilderInfrastructure = (IDbContextOptionsBuilderInfrastructure)optionsBuilder;

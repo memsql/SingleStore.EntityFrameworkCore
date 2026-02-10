@@ -2,19 +2,27 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using SingleStoreConnector;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
 public class TPHInheritanceBulkUpdatesSingleStoreTest : TPHInheritanceBulkUpdatesTestBase<TPHInheritanceBulkUpdatesSingleStoreFixture>
 {
-    public TPHInheritanceBulkUpdatesSingleStoreTest(TPHInheritanceBulkUpdatesSingleStoreFixture fixture)
-        : base(fixture)
+    public TPHInheritanceBulkUpdatesSingleStoreTest(
+        TPHInheritanceBulkUpdatesSingleStoreFixture fixture,
+        ITestOutputHelper testOutputHelper)
+        : base(fixture, testOutputHelper)
     {
         ClearLog();
     }
+
+    [ConditionalFact]
+    public virtual void Check_all_tests_overridden()
+        => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
     public override async Task Delete_where_hierarchy(bool async)
     {

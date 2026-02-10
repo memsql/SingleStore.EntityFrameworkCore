@@ -56,10 +56,9 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
         public override Expression Quote()
             => New(
                 _quotingConstructor ??= typeof(SingleStoreInlinedParameterExpression).GetConstructor(
-                    [typeof(SqlExpression), typeof(SqlExpression), typeof(SingleStoreMatchSearchMode), typeof(RelationalTypeMapping)])!,
+                    [typeof(SqlExpression), typeof(SqlExpression), typeof(RelationalTypeMapping)])!,
                 Match.Quote(),
                 Against.Quote(),
-                Constant(SearchMode),
                 RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreMatchExpression Update(SqlExpression match, SqlExpression against)
