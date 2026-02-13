@@ -21,7 +21,7 @@ public class Ef6GroupBySingleStoreTest : Ef6GroupByTestBase<Ef6GroupBySingleStor
 
     [ConditionalFact]
     public virtual void Check_all_tests_overridden()
-        => TestHelpers.AssertAllMethodsOverridden(GetType());
+        => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
     public override async Task GroupBy_is_optimized_when_projecting_group_key(bool async)
     {
@@ -165,16 +165,14 @@ GROUP BY `a`.`FirstName`
         await base.GroupBy_is_optimized_when_projecting_conditional_expression_containing_group_key(async);
 
         AssertSql(
-"""
-@__p_0='False'
-
-SELECT CASE
-    WHEN `a`.`FirstName` IS NULL THEN 'is null'
-    ELSE 'not null'
-END AS `keyIsNull`, @__p_0 AS `logicExpression`
-FROM `ArubaOwner` AS `a`
-GROUP BY `a`.`FirstName`
-""");
+            """
+            SELECT CASE
+                WHEN `a`.`FirstName` IS NULL THEN 'is null'
+                ELSE 'not null'
+            END AS `keyIsNull`, FALSE AS `logicExpression`
+            FROM `ArubaOwner` AS `a`
+            GROUP BY `a`.`FirstName`
+            """);
 
         // EF6 SQL:
         // @"SELECT
@@ -187,18 +185,18 @@ GROUP BY `a`.`FirstName`
         // )  AS [Distinct1]";
     }
 
-    public override async Task GroupBy_is_optimized_when_filerting_and_projecting_anonymous_type_with_group_key_and_function_aggregate(
+    public override async Task GroupBy_is_optimized_when_filtering_and_projecting_anonymous_type_with_group_key_and_function_aggregate(
         bool async)
     {
-        await base.GroupBy_is_optimized_when_filerting_and_projecting_anonymous_type_with_group_key_and_function_aggregate(async);
+        await base.GroupBy_is_optimized_when_filtering_and_projecting_anonymous_type_with_group_key_and_function_aggregate(async);
 
         AssertSql(
-$"""
-SELECT `a`.`FirstName`, AVG({SingleStoreTestHelpers.CastAsDouble("`a`.`Id`")}) AS `AverageId`
-FROM `ArubaOwner` AS `a`
-WHERE `a`.`Id` > 5
-GROUP BY `a`.`FirstName`
-""");
+            $"""
+             SELECT `a`.`FirstName`, AVG({SingleStoreTestHelpers.CastAsDouble("`a`.`Id`")}) AS `AverageId`
+             FROM `ArubaOwner` AS `a`
+             WHERE `a`.`Id` > 5
+             GROUP BY `a`.`FirstName`
+             """);
 
         // EF6 SQL:
         // @"SELECT
@@ -558,24 +556,24 @@ ORDER BY (
         await base.Whats_new_2021_sample_15(async);
 
         AssertSql(
-"""
-SELECT `t0`.`Id`, `t0`.`Age`, `t0`.`FirstName`, `t0`.`LastName`, `t0`.`MiddleInitial`
-FROM (
-    SELECT `f`.`Id`, `f`.`Size`
-    FROM `Person` AS `p`
-    LEFT JOIN `Feet` AS `f` ON `p`.`Id` = `f`.`Id`
-    GROUP BY `f`.`Id`, `f`.`Size`
-) AS `t`
-LEFT JOIN (
-    SELECT `t1`.`Id`, `t1`.`Age`, `t1`.`FirstName`, `t1`.`LastName`, `t1`.`MiddleInitial`, `t1`.`Id0`, `t1`.`Size`
-    FROM (
-        SELECT `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`, `f0`.`Id` AS `Id0`, `f0`.`Size`, ROW_NUMBER() OVER(PARTITION BY `f0`.`Id`, `f0`.`Size` ORDER BY `p0`.`Id` DESC) AS `row`
-        FROM `Person` AS `p0`
-        LEFT JOIN `Feet` AS `f0` ON `p0`.`Id` = `f0`.`Id`
-    ) AS `t1`
-    WHERE `t1`.`row` <= 1
-) AS `t0` ON ((`t`.`Id` = `t0`.`Id0`) OR (`t`.`Id` IS NULL AND (`t0`.`Id0` IS NULL))) AND ((`t`.`Size` = `t0`.`Size`) OR (`t`.`Size` IS NULL AND (`t0`.`Size` IS NULL)))
-""");
+            """
+            SELECT `s1`.`Id`, `s1`.`Age`, `s1`.`FirstName`, `s1`.`LastName`, `s1`.`MiddleInitial`
+            FROM (
+                SELECT `f`.`Id`, `f`.`Size`
+                FROM `Person` AS `p`
+                LEFT JOIN `Feet` AS `f` ON `p`.`Id` = `f`.`Id`
+                GROUP BY `f`.`Id`, `f`.`Size`
+            ) AS `s`
+            LEFT JOIN (
+                SELECT `s0`.`Id`, `s0`.`Age`, `s0`.`FirstName`, `s0`.`LastName`, `s0`.`MiddleInitial`, `s0`.`Id0`, `s0`.`Size`
+                FROM (
+                    SELECT `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`, `f0`.`Id` AS `Id0`, `f0`.`Size`, ROW_NUMBER() OVER(PARTITION BY `f0`.`Id`, `f0`.`Size` ORDER BY `p0`.`Id` DESC) AS `row`
+                    FROM `Person` AS `p0`
+                    LEFT JOIN `Feet` AS `f0` ON `p0`.`Id` = `f0`.`Id`
+                ) AS `s0`
+                WHERE `s0`.`row` <= 1
+            ) AS `s1` ON ((`s`.`Id` = `s1`.`Id0`) OR (`s`.`Id` IS NULL AND (`s1`.`Id0` IS NULL))) AND ((`s`.`Size` = `s1`.`Size`) OR (`s`.`Size` IS NULL AND (`s1`.`Size` IS NULL)))
+            """);
     }
 
     public override async Task Whats_new_2021_sample_16(bool async)
@@ -614,15 +612,15 @@ GROUP BY `p`.`Category`
         await base.Whats_new_2021_sample_8(async);
 
         AssertSql(
-"""
-SELECT COUNT(*)
-FROM (
-    SELECT `f`.`Id`, `f`.`Size`
-    FROM `Person` AS `p`
-    LEFT JOIN `Feet` AS `f` ON `p`.`Id` = `f`.`Id`
-    GROUP BY `f`.`Id`, `f`.`Size`
-) AS `t`
-""");
+            """
+            SELECT COUNT(*)
+            FROM (
+                SELECT 1
+                FROM `Person` AS `p`
+                LEFT JOIN `Feet` AS `f` ON `p`.`Id` = `f`.`Id`
+                GROUP BY `f`.`Id`, `f`.`Size`
+            ) AS `s`
+            """);
     }
 
     public override async Task Whats_new_2021_sample_12(bool async)
@@ -630,20 +628,20 @@ FROM (
         await base.Whats_new_2021_sample_12(async);
 
         AssertSql(
-"""
-SELECT `t`.`FirstName`, `t0`.`Id`, `t0`.`Age`, `t0`.`FirstName`, `t0`.`LastName`, `t0`.`MiddleInitial`, `t0`.`Id0`, `t0`.`Age0`, `t0`.`PersonId`, `t0`.`Style`
-FROM (
-    SELECT `p`.`FirstName`
-    FROM `Person` AS `p`
-    GROUP BY `p`.`FirstName`
-) AS `t`
-LEFT JOIN (
-    SELECT `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`, `s`.`Id` AS `Id0`, `s`.`Age` AS `Age0`, `s`.`PersonId`, `s`.`Style`
-    FROM `Person` AS `p0`
-    LEFT JOIN `Shoes` AS `s` ON `p0`.`Id` = `s`.`PersonId`
-) AS `t0` ON `t`.`FirstName` = `t0`.`FirstName`
-ORDER BY `t`.`FirstName`, `t0`.`Id`
-""");
+            """
+            SELECT `p1`.`FirstName`, `s0`.`Id`, `s0`.`Age`, `s0`.`FirstName`, `s0`.`LastName`, `s0`.`MiddleInitial`, `s0`.`Id0`, `s0`.`Age0`, `s0`.`PersonId`, `s0`.`Style`
+            FROM (
+                SELECT `p`.`FirstName`
+                FROM `Person` AS `p`
+                GROUP BY `p`.`FirstName`
+            ) AS `p1`
+            LEFT JOIN (
+                SELECT `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`, `s`.`Id` AS `Id0`, `s`.`Age` AS `Age0`, `s`.`PersonId`, `s`.`Style`
+                FROM `Person` AS `p0`
+                LEFT JOIN `Shoes` AS `s` ON `p0`.`Id` = `s`.`PersonId`
+            ) AS `s0` ON `p1`.`FirstName` = `s0`.`FirstName`
+            ORDER BY `p1`.`FirstName`, `s0`.`Id`
+            """);
     }
 
     public override async Task Whats_new_2021_sample_10(bool async)
@@ -651,21 +649,21 @@ ORDER BY `t`.`FirstName`, `t0`.`Id`
         await base.Whats_new_2021_sample_10(async);
 
         AssertSql(
-"""
-SELECT `t`.`Id`, `t`.`Age`, `t`.`Style`, `t0`.`Id`, `t0`.`Style`, `t0`.`Age`, `t0`.`Id0`
-FROM (
-    SELECT `p`.`Id`, `s`.`Age`, `s`.`Style`
-    FROM `Person` AS `p`
-    INNER JOIN `Shoes` AS `s` ON `p`.`Age` = `s`.`Age`
-    GROUP BY `p`.`Id`, `s`.`Style`, `s`.`Age`
-) AS `t`
-LEFT JOIN (
-    SELECT `s0`.`Id`, `s0`.`Style`, `s0`.`Age`, `p0`.`Id` AS `Id0`
-    FROM `Person` AS `p0`
-    INNER JOIN `Shoes` AS `s0` ON `p0`.`Age` = `s0`.`Age`
-) AS `t0` ON ((`t`.`Id` = `t0`.`Id0`) AND ((`t`.`Style` = `t0`.`Style`) OR (`t`.`Style` IS NULL AND (`t0`.`Style` IS NULL)))) AND (`t`.`Age` = `t0`.`Age`)
-ORDER BY `t`.`Id`, `t`.`Style`, `t`.`Age`, `t0`.`Id0`
-""");
+            """
+            SELECT `s1`.`Id`, `s1`.`Age`, `s1`.`Style`, `s2`.`Id`, `s2`.`Style`, `s2`.`Age`, `s2`.`Id0`
+            FROM (
+                SELECT `p`.`Id`, `s`.`Age`, `s`.`Style`
+                FROM `Person` AS `p`
+                INNER JOIN `Shoes` AS `s` ON `p`.`Age` = `s`.`Age`
+                GROUP BY `p`.`Id`, `s`.`Style`, `s`.`Age`
+            ) AS `s1`
+            LEFT JOIN (
+                SELECT `s0`.`Id`, `s0`.`Style`, `s0`.`Age`, `p0`.`Id` AS `Id0`
+                FROM `Person` AS `p0`
+                INNER JOIN `Shoes` AS `s0` ON `p0`.`Age` = `s0`.`Age`
+            ) AS `s2` ON ((`s1`.`Id` = `s2`.`Id0`) AND ((`s1`.`Style` = `s2`.`Style`) OR (`s1`.`Style` IS NULL AND (`s2`.`Style` IS NULL)))) AND (`s1`.`Age` = `s2`.`Age`)
+            ORDER BY `s1`.`Id`, `s1`.`Style`, `s1`.`Age`, `s2`.`Id0`
+            """);
     }
 
     public override async Task Whats_new_2021_sample_13(bool async)
@@ -673,16 +671,16 @@ ORDER BY `t`.`Id`, `t`.`Style`, `t`.`Age`, `t0`.`Id0`
         await base.Whats_new_2021_sample_13(async);
 
         AssertSql(
-"""
-SELECT `t`.`FirstName`, `t`.`MiddleInitial`, `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`
-FROM (
-    SELECT `p`.`FirstName`, `p`.`MiddleInitial`
-    FROM `Person` AS `p`
-    GROUP BY `p`.`FirstName`, `p`.`MiddleInitial`
-) AS `t`
-LEFT JOIN `Person` AS `p0` ON ((`t`.`FirstName` = `p0`.`FirstName`) OR (`t`.`FirstName` IS NULL AND (`p0`.`FirstName` IS NULL))) AND ((`t`.`MiddleInitial` = `p0`.`MiddleInitial`) OR (`t`.`MiddleInitial` IS NULL AND (`p0`.`MiddleInitial` IS NULL)))
-ORDER BY `t`.`FirstName`, `t`.`MiddleInitial`, `p0`.`Id`
-""");
+            """
+            SELECT `p1`.`FirstName`, `p1`.`MiddleInitial`, `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`
+            FROM (
+                SELECT `p`.`FirstName`, `p`.`MiddleInitial`
+                FROM `Person` AS `p`
+                GROUP BY `p`.`FirstName`, `p`.`MiddleInitial`
+            ) AS `p1`
+            LEFT JOIN `Person` AS `p0` ON ((`p1`.`FirstName` = `p0`.`FirstName`) OR (`p1`.`FirstName` IS NULL AND (`p0`.`FirstName` IS NULL))) AND ((`p1`.`MiddleInitial` = `p0`.`MiddleInitial`) OR (`p1`.`MiddleInitial` IS NULL AND (`p0`.`MiddleInitial` IS NULL)))
+            ORDER BY `p1`.`FirstName`, `p1`.`MiddleInitial`, `p0`.`Id`
+            """);
     }
 
     public override async Task Cross_Join_with_Group_Join_from_LINQ_101(bool async)
@@ -690,15 +688,15 @@ ORDER BY `t`.`FirstName`, `t`.`MiddleInitial`, `p0`.`Id`
         await base.Cross_Join_with_Group_Join_from_LINQ_101(async);
 
         AssertSql(
-"""
-SELECT `c`.`Id`, `c`.`CompanyName`, `c`.`Region`, `t`.`Id`
-FROM `CustomerForLinq` AS `c`
-INNER JOIN (
-    SELECT `o`.`Id`, `c0`.`Id` AS `Id0`
-    FROM `OrderForLinq` AS `o`
-    LEFT JOIN `CustomerForLinq` AS `c0` ON `o`.`CustomerId` = `c0`.`Id`
-) AS `t` ON `c`.`Id` = `t`.`Id0`
-""");
+            """
+            SELECT `c`.`Id`, `c`.`CompanyName`, `c`.`Region`, `s`.`Id`
+            FROM `CustomerForLinq` AS `c`
+            INNER JOIN (
+                SELECT `o`.`Id`, `c0`.`Id` AS `Id0`
+                FROM `OrderForLinq` AS `o`
+                LEFT JOIN `CustomerForLinq` AS `c0` ON `o`.`CustomerId` = `c0`.`Id`
+            ) AS `s` ON `c`.`Id` = `s`.`Id0`
+            """);
     }
 
     public override async Task Whats_new_2021_sample_2(bool async)
@@ -706,25 +704,25 @@ INNER JOIN (
         await base.Whats_new_2021_sample_2(async);
 
         AssertSql(
-"""
-SELECT `t0`.`FirstName`, `t0`.`FullName`, `t0`.`c`
-FROM (
-    SELECT `p`.`FirstName`
-    FROM `Person` AS `p`
-    GROUP BY `p`.`FirstName`
-    ORDER BY `p`.`FirstName`
-    LIMIT 1
-) AS `t`
-LEFT JOIN (
-    SELECT `t1`.`FirstName`, `t1`.`FullName`, `t1`.`c`
-    FROM (
-        SELECT `p0`.`FirstName`, CONCAT(CONCAT(CONCAT(CONCAT(COALESCE(`p0`.`FirstName`, ''), ' '), COALESCE(`p0`.`MiddleInitial`, '')), ' '), COALESCE(`p0`.`LastName`, '')) AS `FullName`, 1 AS `c`, ROW_NUMBER() OVER(PARTITION BY `p0`.`FirstName` ORDER BY `p0`.`Id`) AS `row`
-        FROM `Person` AS `p0`
-    ) AS `t1`
-    WHERE `t1`.`row` <= 1
-) AS `t0` ON `t`.`FirstName` = `t0`.`FirstName`
-ORDER BY `t`.`FirstName`
-""");
+            """
+            SELECT `p3`.`FirstName`, `p3`.`FullName`, `p3`.`c`
+            FROM (
+                SELECT `p`.`FirstName`
+                FROM `Person` AS `p`
+                GROUP BY `p`.`FirstName`
+                ORDER BY `p`.`FirstName`
+                LIMIT 1
+            ) AS `p1`
+            LEFT JOIN (
+                SELECT `p2`.`FirstName`, `p2`.`FullName`, `p2`.`c`
+                FROM (
+                    SELECT `p0`.`FirstName`, CONCAT(CONCAT(CONCAT(CONCAT(COALESCE(`p0`.`FirstName`, ''), ' '), COALESCE(`p0`.`MiddleInitial`, '')), ' '), COALESCE(`p0`.`LastName`, '')) AS `FullName`, 1 AS `c`, ROW_NUMBER() OVER(PARTITION BY `p0`.`FirstName` ORDER BY `p0`.`Id`) AS `row`
+                    FROM `Person` AS `p0`
+                ) AS `p2`
+                WHERE `p2`.`row` <= 1
+            ) AS `p3` ON `p1`.`FirstName` = `p3`.`FirstName`
+            ORDER BY `p1`.`FirstName`
+            """);
     }
 
     public override async Task Whats_new_2021_sample_1(bool async)
@@ -732,24 +730,24 @@ ORDER BY `t`.`FirstName`
         await base.Whats_new_2021_sample_1(async);
 
         AssertSql(
-"""
-SELECT `t0`.`Id`, `t0`.`Age`, `t0`.`FirstName`, `t0`.`LastName`, `t0`.`MiddleInitial`, `t`.`FirstName`, `s`.`Id`, `s`.`Age`, `s`.`PersonId`, `s`.`Style`
-FROM (
-    SELECT `p`.`FirstName`
-    FROM `Person` AS `p`
-    GROUP BY `p`.`FirstName`
-) AS `t`
-LEFT JOIN (
-    SELECT `t1`.`Id`, `t1`.`Age`, `t1`.`FirstName`, `t1`.`LastName`, `t1`.`MiddleInitial`
-    FROM (
-        SELECT `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`, ROW_NUMBER() OVER(PARTITION BY `p0`.`FirstName` ORDER BY `p0`.`FirstName`, `p0`.`LastName`) AS `row`
-        FROM `Person` AS `p0`
-    ) AS `t1`
-    WHERE `t1`.`row` <= 1
-) AS `t0` ON `t`.`FirstName` = `t0`.`FirstName`
-LEFT JOIN `Shoes` AS `s` ON `t0`.`Id` = `s`.`PersonId`
-ORDER BY `t`.`FirstName`, `t0`.`Id`
-""");
+            """
+            SELECT `p3`.`Id`, `p3`.`Age`, `p3`.`FirstName`, `p3`.`LastName`, `p3`.`MiddleInitial`, `p1`.`FirstName`, `s`.`Id`, `s`.`Age`, `s`.`PersonId`, `s`.`Style`
+            FROM (
+                SELECT `p`.`FirstName`
+                FROM `Person` AS `p`
+                GROUP BY `p`.`FirstName`
+            ) AS `p1`
+            LEFT JOIN (
+                SELECT `p2`.`Id`, `p2`.`Age`, `p2`.`FirstName`, `p2`.`LastName`, `p2`.`MiddleInitial`
+                FROM (
+                    SELECT `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`, ROW_NUMBER() OVER(PARTITION BY `p0`.`FirstName` ORDER BY `p0`.`FirstName`, `p0`.`LastName`) AS `row`
+                    FROM `Person` AS `p0`
+                ) AS `p2`
+                WHERE `p2`.`row` <= 1
+            ) AS `p3` ON `p1`.`FirstName` = `p3`.`FirstName`
+            LEFT JOIN `Shoes` AS `s` ON `p3`.`Id` = `s`.`PersonId`
+            ORDER BY `p1`.`FirstName`, `p3`.`Id`
+            """);
     }
 
     [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
@@ -853,20 +851,20 @@ GROUP BY `s`.`Style`
         await base.Left_Outer_Join_with_Group_Join_from_LINQ_101(async);
 
         AssertSql(
-"""
-SELECT `c`.`Id`, `c`.`CompanyName`, `c`.`Region`, `t`.`Id`, `t`.`Id0`, `o0`.`Id`, `o0`.`CustomerId`, `o0`.`OrderDate`, `o0`.`Total`, CASE
-    WHEN `t`.`Id` IS NULL THEN -1
-    ELSE `t`.`Id`
-END
-FROM `CustomerForLinq` AS `c`
-LEFT JOIN (
-    SELECT `o`.`Id`, `c0`.`Id` AS `Id0`
-    FROM `OrderForLinq` AS `o`
-    LEFT JOIN `CustomerForLinq` AS `c0` ON `o`.`CustomerId` = `c0`.`Id`
-) AS `t` ON `c`.`Id` = `t`.`Id0`
-LEFT JOIN `OrderForLinq` AS `o0` ON `c`.`Id` = `o0`.`CustomerId`
-ORDER BY `c`.`Id`, `t`.`Id`, `t`.`Id0`
-""");
+            """
+            SELECT `c`.`Id`, `c`.`CompanyName`, `c`.`Region`, `s`.`Id`, `s`.`Id0`, `o0`.`Id`, `o0`.`CustomerId`, `o0`.`OrderDate`, `o0`.`Total`, CASE
+                WHEN `s`.`Id` IS NULL THEN -1
+                ELSE `s`.`Id`
+            END
+            FROM `CustomerForLinq` AS `c`
+            LEFT JOIN (
+                SELECT `o`.`Id`, `c0`.`Id` AS `Id0`
+                FROM `OrderForLinq` AS `o`
+                LEFT JOIN `CustomerForLinq` AS `c0` ON `o`.`CustomerId` = `c0`.`Id`
+            ) AS `s` ON `c`.`Id` = `s`.`Id0`
+            LEFT JOIN `OrderForLinq` AS `o0` ON `c`.`Id` = `o0`.`CustomerId`
+            ORDER BY `c`.`Id`, `s`.`Id`, `s`.`Id0`
+            """);
     }
 
     public override async Task Max_Grouped_from_LINQ_101(bool async)
@@ -886,37 +884,37 @@ GROUP BY `p`.`Category`
         await base.Whats_new_2021_sample_11(async);
 
         AssertSql(
-"""
-SELECT `t`.`LastName`, `t`.`c`, `t0`.`Id`, `t2`.`Id`, `t2`.`Age`, `t2`.`FirstName`, `t2`.`LastName`, `t2`.`MiddleInitial`, `t0`.`Age`, `t0`.`FirstName`, `t0`.`LastName`, `t0`.`MiddleInitial`
-FROM (
-    SELECT `p`.`LastName`, COUNT(*) AS `c`
-    FROM `Person` AS `p`
-    GROUP BY `p`.`LastName`
-) AS `t`
-LEFT JOIN (
-    SELECT `t1`.`Id`, `t1`.`Age`, `t1`.`FirstName`, `t1`.`LastName`, `t1`.`MiddleInitial`
-    FROM (
-        SELECT `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`, ROW_NUMBER() OVER(PARTITION BY `p0`.`LastName` ORDER BY `p0`.`Id`) AS `row`
-        FROM `Person` AS `p0`
-    ) AS `t1`
-    WHERE `t1`.`row` <= 1
-) AS `t0` ON `t`.`LastName` = `t0`.`LastName`
-LEFT JOIN (
-    SELECT `t3`.`Id`, `t3`.`Age`, `t3`.`FirstName`, `t3`.`LastName`, `t3`.`MiddleInitial`
-    FROM (
-        SELECT `p1`.`Id`, `p1`.`Age`, `p1`.`FirstName`, `p1`.`LastName`, `p1`.`MiddleInitial`, ROW_NUMBER() OVER(PARTITION BY `p1`.`LastName` ORDER BY `p1`.`Id`) AS `row`
-        FROM `Person` AS `p1`
-    ) AS `t3`
-    WHERE `t3`.`row` <= 2
-) AS `t2` ON `t`.`LastName` = `t2`.`LastName`
-ORDER BY `t`.`LastName` DESC, `t0`.`Id`, `t2`.`LastName`, `t2`.`Id`
-""");
+            """
+            SELECT `p2`.`LastName`, `p2`.`c`, `p4`.`Id`, `p6`.`Id`, `p6`.`Age`, `p6`.`FirstName`, `p6`.`LastName`, `p6`.`MiddleInitial`, `p4`.`Age`, `p4`.`FirstName`, `p4`.`LastName`, `p4`.`MiddleInitial`
+            FROM (
+                SELECT `p`.`LastName`, COUNT(*) AS `c`
+                FROM `Person` AS `p`
+                GROUP BY `p`.`LastName`
+            ) AS `p2`
+            LEFT JOIN (
+                SELECT `p3`.`Id`, `p3`.`Age`, `p3`.`FirstName`, `p3`.`LastName`, `p3`.`MiddleInitial`
+                FROM (
+                    SELECT `p0`.`Id`, `p0`.`Age`, `p0`.`FirstName`, `p0`.`LastName`, `p0`.`MiddleInitial`, ROW_NUMBER() OVER(PARTITION BY `p0`.`LastName` ORDER BY `p0`.`Id`) AS `row`
+                    FROM `Person` AS `p0`
+                ) AS `p3`
+                WHERE `p3`.`row` <= 1
+            ) AS `p4` ON `p2`.`LastName` = `p4`.`LastName`
+            LEFT JOIN (
+                SELECT `p5`.`Id`, `p5`.`Age`, `p5`.`FirstName`, `p5`.`LastName`, `p5`.`MiddleInitial`
+                FROM (
+                    SELECT `p1`.`Id`, `p1`.`Age`, `p1`.`FirstName`, `p1`.`LastName`, `p1`.`MiddleInitial`, ROW_NUMBER() OVER(PARTITION BY `p1`.`LastName` ORDER BY `p1`.`Id`) AS `row`
+                    FROM `Person` AS `p1`
+                ) AS `p5`
+                WHERE `p5`.`row` <= 2
+            ) AS `p6` ON `p2`.`LastName` = `p6`.`LastName`
+            ORDER BY `p2`.`LastName` DESC, `p4`.`Id`, `p6`.`LastName`, `p6`.`Id`
+            """);
     }
 
     private void AssertSql(params string[] expected)
         => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 
-    public class Ef6GroupBySingleStoreFixture : Ef6GroupByFixtureBase
+    public class Ef6GroupBySingleStoreFixture : Ef6GroupByFixtureBase, ITestSqlLoggerFactory
     {
         public TestSqlLoggerFactory TestSqlLoggerFactory
             => (TestSqlLoggerFactory)ListLoggerFactory;

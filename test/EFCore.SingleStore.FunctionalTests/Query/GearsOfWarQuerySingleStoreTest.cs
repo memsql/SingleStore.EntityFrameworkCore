@@ -21,9 +21,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        protected override bool CanExecuteQueryString
-            => true;
-
         public override Task DateTimeOffset_Contains_Less_than_Greater_than(bool async)
         {
             var dto = SingleStoreTestHelpers.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
@@ -453,12 +450,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
             AssertSql(
 """
-SELECT `t`.`Key`
+SELECT `g0`.`Key`
 FROM (
     SELECT FALSE AS `Key`
     FROM `Gears` AS `g`
-) AS `t`
-GROUP BY `t`.`Key`
+) AS `g0`
+GROUP BY `g0`.`Key`
 """);
         }
 
@@ -522,10 +519,13 @@ ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 
             AssertSql(
 """
-SELECT `g`.`FullName`
-FROM `Gears` AS `g`
-GROUP BY `g`.`FullName`
-HAVING FALSE
+SELECT `g0`.`FullName`
+FROM (
+    SELECT `g`.`FullName`, FALSE AS `c`
+    FROM `Gears` AS `g`
+    GROUP BY `g`.`FullName`, `c`
+    HAVING `c`
+) AS `g0`
 """);
         }
 
@@ -558,7 +558,7 @@ FROM `Gears` AS `g`
 
             AssertSql(
 """
-SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
+SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
 WHERE EXTRACT(hour FROM `m`.`Timeline`) = 8
 """);
@@ -574,6 +574,13 @@ WHERE EXTRACT(hour FROM `m`.`Timeline`) = 8
         public override async Task Nav_expansion_with_member_pushdown_inside_Contains_argument(bool async)
         {
             await base.Nav_expansion_with_member_pushdown_inside_Contains_argument(async);
+        }
+
+        // TODO: Implement once TimeSpan is translated as ticks instead of TIME.
+        public override async Task Non_string_concat_uses_appropriate_type_mapping(bool async)
+        {
+            var exception = await Assert.ThrowsAsync<InvalidCastException>(() => base.Non_string_concat_uses_appropriate_type_mapping(async));
+            Assert.Equal("Unable to cast object of type 'System.Decimal' to type 'System.TimeSpan'.", exception.Message);
         }
     }
 }

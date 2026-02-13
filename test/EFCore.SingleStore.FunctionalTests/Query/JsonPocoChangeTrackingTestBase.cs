@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.TestUtilities;
@@ -248,12 +249,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 addOrUpdateExtensionMethod.Invoke(optionsBuilder, new object[] {mySqlJsonOptions});
             }
 
-            public void Seed()
+            public async Task SeedAsync()
             {
                 JsonEntities.AddRange(
                     new JsonEntity { Id = 1, Customer = CreateCustomer1(), ToplevelArray = new[] { "one", "two", "three" } },
                     new JsonEntity { Id = 2, Customer = CreateCustomer2() });
-                SaveChanges();
+                await SaveChangesAsync();
             }
 
             public static Customer CreateCustomer1()
@@ -300,7 +301,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         {
             protected override string StoreName => "JsonPocoChangeTrackingTest";
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
-            protected override void Seed(JsonPocoChangeTrackingContext context) => context.Seed();
+            protected override Task SeedAsync(JsonPocoChangeTrackingContext context) => context.SeedAsync();
 
             public virtual DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder, SingleStoreJsonChangeTrackingOptions? changeTrackingOptions)
                 => builder;

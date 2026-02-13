@@ -183,7 +183,7 @@ public abstract class DateOnlyQuerySingleStoreTestBase<TFixture> : QueryTestBase
 
     protected virtual DbContext CreateContext() => Fixture.CreateContext();
 
-    public abstract class DateOnlyQuerySingleStoreFixtureBase : SharedStoreFixtureBase<PoolableDbContext>, IQueryFixtureBase
+    public abstract class DateOnlyQuerySingleStoreFixtureBase : SharedStoreFixtureBase<PoolableDbContext>, IQueryFixtureBase, ITestSqlLoggerFactory
     {
         protected override string StoreName => "DateOnlyQueryTest";
         public TestSqlLoggerFactory TestSqlLoggerFactory => (TestSqlLoggerFactory)ListLoggerFactory;
