@@ -21,9 +21,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        protected override bool CanExecuteQueryString
-            => true;
-
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Collection_FirstOrDefault_property_accesses_in_projection(bool async)
         {
@@ -40,18 +37,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override Task Contains_over_optional_navigation_with_null_entity_reference(bool async)
         {
             return base.Contains_over_optional_navigation_with_null_entity_reference(async);
-        }
-
-        [ConditionalTheory(Skip = "SingleStore has no implicit ordering of results by primary key")]
-        public override Task Distinct_skip_without_orderby(bool async)
-        {
-            return base.Distinct_skip_without_orderby(async);
-        }
-
-        [ConditionalTheory(Skip = "SingleStore has no implicit ordering of results by primary key")]
-        public override Task Distinct_take_without_orderby(bool async)
-        {
-            return base.Distinct_take_without_orderby(async);
         }
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect inside HAVING")]
@@ -160,20 +145,22 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 async () => await base.Nested_SelectMany_correlated_with_join_table_correctly_translated_to_apply(async));
 
             AssertSql(
-                @"SELECT `t0`.`l1Name`, `t0`.`l2Name`, `t0`.`l3Name`
-FROM `LevelOne` AS `l`
-LEFT JOIN LATERAL (
-    SELECT `t`.`l1Name`, `t`.`l2Name`, `t`.`l3Name`
-    FROM `LevelTwo` AS `l0`
-    LEFT JOIN `LevelThree` AS `l1` ON `l0`.`Id` = `l1`.`Id`
-    JOIN LATERAL (
-        SELECT `l`.`Name` AS `l1Name`, `l1`.`Name` AS `l2Name`, `l3`.`Name` AS `l3Name`
-        FROM `LevelFour` AS `l2`
-        LEFT JOIN `LevelThree` AS `l3` ON `l2`.`OneToOne_Optional_PK_Inverse4Id` = `l3`.`Id`
-        WHERE `l1`.`Id` IS NOT NULL AND (`l1`.`Id` = `l2`.`OneToMany_Optional_Inverse4Id`)
-    ) AS `t` ON TRUE
-    WHERE `l`.`Id` = `l0`.`OneToMany_Optional_Inverse2Id`
-) AS `t0` ON TRUE");
+                """
+                SELECT `s0`.`l1Name`, `s0`.`l2Name`, `s0`.`l3Name`
+                FROM `LevelOne` AS `l`
+                LEFT JOIN LATERAL (
+                    SELECT `s`.`l1Name`, `s`.`l2Name`, `s`.`l3Name`
+                    FROM `LevelTwo` AS `l0`
+                    LEFT JOIN `LevelThree` AS `l1` ON `l0`.`Id` = `l1`.`Id`
+                    JOIN LATERAL (
+                        SELECT `l`.`Name` AS `l1Name`, `l1`.`Name` AS `l2Name`, `l3`.`Name` AS `l3Name`
+                        FROM `LevelFour` AS `l2`
+                        LEFT JOIN `LevelThree` AS `l3` ON `l2`.`OneToOne_Optional_PK_Inverse4Id` = `l3`.`Id`
+                        WHERE `l1`.`Id` IS NOT NULL AND (`l1`.`Id` = `l2`.`OneToMany_Optional_Inverse4Id`)
+                    ) AS `s` ON TRUE
+                    WHERE `l`.`Id` = `l0`.`OneToMany_Optional_Inverse2Id`
+                ) AS `s0` ON TRUE
+                """);
         }
 
         public override async Task Method_call_on_optional_navigation_translates_to_null_conditional_properly_for_arguments(bool async)
