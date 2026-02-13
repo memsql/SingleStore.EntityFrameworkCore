@@ -28,6 +28,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
     public class MigrationsSingleStoreTest : MigrationsTestBase<MigrationsSingleStoreTest.MigrationsSingleStoreFixture>
     {
+        private readonly IRelationalTypeMappingSource _typeMappingSource;
+
         public MigrationsSingleStoreTest(MigrationsSingleStoreFixture fixture, ITestOutputHelper testOutputHelper)
             : base(fixture)
         {
@@ -41,6 +43,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 command.ExecuteNonQuery();
             }
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
+
+            _typeMappingSource = Fixture.ServiceProvider.GetService<IRelationalTypeMappingSource>();
         }
 
         [ConditionalTheory(Skip = "SingleStore only supports online ALTER TABLE")]
@@ -55,34 +59,52 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             return base.Alter_index_make_unique();
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Alter_column_change_computed_recreates_indexes()
+        public override async Task Alter_check_constraint()
         {
-            return base.Alter_column_change_computed_recreates_indexes();
+            await base.Alter_check_constraint();
+
+            AssertSql(
+                """
+                ALTER TABLE `People` DROP CONSTRAINT `CK_People_Foo`;
+                """,
+                //
+                """
+                ALTER TABLE `People` ADD CONSTRAINT `CK_People_Foo` CHECK (`DriverLicense` > 1);
+                """);
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Alter_column_reset_collation()
+        public override async Task Alter_column_make_computed(bool? stored)
         {
-            return base.Alter_column_reset_collation();
+            if (stored == true)
+            {
+                await base.Alter_column_make_computed(stored);
+
+                var computedColumnTypeSql = stored == true ? " STORED" : "";
+
+                AssertSql(
+                    $"""
+                     ALTER TABLE `People` MODIFY COLUMN `Sum` int AS (`X` + `Y`){computedColumnTypeSql};
+                     """);
+            }
+            else
+            {
+                var exception = await Assert.ThrowsAsync<SingleStoreException>(() => base.Alter_column_make_computed(stored));
+                Assert.True(exception.Message is "'Changing the STORED status' is not supported for generated columns."
+                    or "This is not yet supported for generated columns");
+            }
         }
 
-        [ConditionalTheory(Skip = "TODO: Syntax issue in MySQL 7 only.")]
-        public override Task Alter_check_constraint()
+        public override async Task Add_column_computed_with_collation(bool stored)
         {
-            return base.Alter_check_constraint();
-        }
+            await base.Add_column_computed_with_collation(stored);
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Alter_column_make_computed(bool? stored)
-        {
-            return base.Alter_column_make_computed(stored);
-        }
+            var computedColumnTypeSql = stored ? " STORED" : "";
+            var nullableGeneratedColumnSql = AppConfig.ServerVersion.Supports.NullableGeneratedColumns ? " NULL" : string.Empty;
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_column_computed_with_collation(bool stored)
-        {
-            return base.Add_column_computed_with_collation(stored);
+            AssertSql(
+                $"""
+                 ALTER TABLE `People` ADD `Name` longtext CHARACTER SET utf8mb4 COLLATE {NonDefaultCollation} AS ('hello'){computedColumnTypeSql}{nullableGeneratedColumnSql};
+                 """);
         }
 
         [ConditionalFact(Skip = "BLOB/TEXT columns can't have a default value in SingleStore.")]
@@ -309,57 +331,75 @@ SELECT ROW_COUNT();",
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_primary_key_int()
-        {
-            return base.Add_primary_key_int();
-        }
-
-        [ConditionalTheory(Skip = "TODO")]
         public override async Task Add_primary_key_string()
         {
             await base.Add_primary_key_string();
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_primary_key_composite_with_name()
+        public override async Task Add_primary_key_composite_with_name()
         {
-            return base.Add_primary_key_composite_with_name();
+            await base.Add_primary_key_composite_with_name();
+
+            AssertSql(
+"""
+ALTER TABLE `People` ADD CONSTRAINT `PK_Foo` PRIMARY KEY (`SomeField1`, `SomeField2`);
+""");
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_primary_key_with_name()
+        public override async Task Add_primary_key_with_name()
         {
-            return base.Add_primary_key_with_name();
+            await base.Add_primary_key_with_name();
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_unique_constraint()
+        public override async Task Add_unique_constraint()
         {
-            return base.Add_unique_constraint();
+            await base.Add_unique_constraint();
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Add_unique_constraint_composite_with_name()
+        public override async Task Add_unique_constraint_composite_with_name()
         {
-            return base.Add_unique_constraint_composite_with_name();
+            await base.Add_unique_constraint_composite_with_name();
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Alter_column_change_computed_type()
+        public override async Task Alter_column_change_computed_type()
         {
-            return base.Alter_column_change_computed_type();
+            var exception = await Assert.ThrowsAsync<SingleStoreException>(() => base.Alter_column_change_computed_type());
+            Assert.True(exception.Message is "'Changing the STORED status' is not supported for generated columns."
+                or "This is not yet supported for generated columns");
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Alter_column_change_type()
+        public override async Task Alter_column_change_type()
         {
-            return base.Alter_column_change_type();
+            // await base.Alter_column_change_type();
+            await Test(
+                builder => builder.Entity("People").Property<int>("Id"),
+                builder => builder.Entity("People").Property<int>("SomeColumn"),
+                builder => builder.Entity("People").Property<long>("SomeColumn"),
+                model =>
+                {
+                    var table = Assert.Single(model.Tables);
+                    var column = Assert.Single(table.Columns, c => c.Name == "SomeColumn");
+                    Assert.StartsWith(_typeMappingSource.FindMapping(typeof(long)).StoreTypeNameBase, column.StoreType);
+                });
+
+            AssertSql(
+"""
+ALTER TABLE `People` MODIFY COLUMN `SomeColumn` bigint NOT NULL;
+""");
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Alter_column_set_collation()
+        public override async Task Alter_column_set_collation()
         {
-            return base.Alter_column_set_collation();
+            await base.Alter_column_set_collation();
+
+            AssertSql(
+                $"""
+                 ALTER TABLE `People` MODIFY COLUMN `Name` longtext CHARACTER SET utf8mb4 COLLATE {NonDefaultCollation} NULL;
+                 """);
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
@@ -368,19 +408,24 @@ SELECT ROW_COUNT();",
             await base.Alter_sequence_all_settings();
 
             AssertSql(
-                """
+"""
 ALTER SEQUENCE `foo` INCREMENT BY 2 MINVALUE -5 MAXVALUE 10 CYCLE;
 """,
                 //
-                """
+"""
 ALTER SEQUENCE `foo` START WITH -3 RESTART;
 """);
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
-        public override Task Alter_sequence_increment_by()
+        public override async Task Alter_sequence_increment_by()
         {
-            return base.Alter_sequence_increment_by();
+            await base.Alter_sequence_increment_by();
+
+            AssertSql(
+"""
+ALTER SEQUENCE `foo` INCREMENT BY 2 NO MINVALUE NO MAXVALUE NOCYCLE;
+""");
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
@@ -404,7 +449,7 @@ ALTER SEQUENCE `foo` START WITH -3 RESTART;
             await base.Alter_table_add_comment_non_default_schema();
 
             AssertSql(
-                @"ALTER TABLE `SomeOtherSchema_People` COMMENT 'Table comment';");
+                @"ALTER TABLE `People` COMMENT 'Table comment';");
         }
 
         [ConditionalFact(Skip = "SingleStore's ALTER TABLE command doesn't work with comments")]
@@ -425,34 +470,58 @@ ALTER SEQUENCE `foo` START WITH -3 RESTART;
             return base.Create_index_unique();
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Create_index_with_filter()
+        [ConditionalFact(Skip = "SingleStore does not support filtered indices.")]
+        public override async Task Create_index_with_filter()
         {
-            return base.Create_index_with_filter();
+            await base.Create_index_with_filter();
+
+            AssertSql("");
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Create_schema()
+        public override async Task Create_schema()
         {
-            return base.Create_schema();
-        }
+            await base.Create_schema();
 
-        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
-        public override Task Create_sequence()
-        {
-            return base.Create_sequence();
-        }
-
-        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
-        public override Task Create_sequence_long()
-        {
-            return base.Create_sequence_long();
+            AssertSql(
+"""
+CREATE TABLE `People` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+""");
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
-        public override Task Create_sequence_short()
+        public override async Task Create_sequence()
         {
-            return base.Create_sequence_short();
+            await base.Create_sequence();
+
+            AssertSql(
+"""
+CREATE SEQUENCE `TestSequence` START WITH 1 INCREMENT BY 1 NOCYCLE;
+""");
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override async Task Create_sequence_long()
+        {
+            await base.Create_sequence_long();
+
+            AssertSql(
+"""
+CREATE SEQUENCE `TestSequence` START WITH 1 INCREMENT BY 1 NOCYCLE;
+""");
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
+        public override async Task Create_sequence_short()
+        {
+            await base.Create_sequence_short();
+
+            AssertSql(
+"""
+CREATE SEQUENCE `TestSequence` START WITH 1 INCREMENT BY 1 NOCYCLE;
+""");
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
@@ -472,7 +541,7 @@ ALTER SEQUENCE `foo` START WITH -3 RESTART;
 
                     // Assert.Equal("TestSequence", sequence.Name);
                     // Assert.Equal("dbo2", sequence.Schema);
-                    Assert.Equal("dbo2_TestSequence", sequence.Name);
+                    Assert.Equal("TestSequence", sequence.Name);
 
                     Assert.Equal(3, sequence.StartValue);
                     Assert.Equal(2, sequence.IncrementBy);
@@ -483,14 +552,14 @@ ALTER SEQUENCE `foo` START WITH -3 RESTART;
 
             AssertSql(
 """
-CREATE SEQUENCE `dbo2_TestSequence` START WITH 3 INCREMENT BY 2 MINVALUE 2 MAXVALUE 916 CYCLE;
+CREATE SEQUENCE `TestSequence` START WITH 3 INCREMENT BY 2 MINVALUE 2 MAXVALUE 916 CYCLE;
 """);
         }
 
         [ConditionalTheory(Skip = "TODO")]
-        public override Task Create_table_all_settings()
+        public override async Task Create_table_all_settings()
         {
-            return base.Create_table_all_settings();
+            await base.Create_table_all_settings();
         }
 
         public override async Task Create_table_with_multiline_comments()
@@ -511,10 +580,12 @@ More information can
 be found in the docs.';");
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Create_unique_index_with_filter()
+        [ConditionalFact(Skip = "SingleStore does not support filtered indices.")]
+        public override async Task Create_unique_index_with_filter()
         {
-            return base.Create_unique_index_with_filter();
+            await base.Create_unique_index_with_filter();
+
+            AssertSql("");
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.DescendingIndexes))]
@@ -546,10 +617,14 @@ be found in the docs.';");
                 @"CREATE INDEX `IX_People_X_Y_Z` ON `People` (`X`, `Y` DESC, `Z`);");
         }
 
-        [ConditionalTheory(Skip = "TODO: Syntax issue in MySQL 7 only.")]
-        public override Task Drop_check_constraint()
+        public override async Task Drop_check_constraint()
         {
-            return base.Drop_check_constraint();
+            await base.Drop_check_constraint();
+
+            AssertSql(
+                """
+                ALTER TABLE `People` DROP CONSTRAINT `CK_People_Foo`;
+                """);
         }
 
         [ConditionalTheory(Skip = "TODO")]
@@ -571,9 +646,14 @@ be found in the docs.';");
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
-        public override Task Drop_sequence()
+        public override async Task Drop_sequence()
         {
-            return base.Drop_sequence();
+            await base.Drop_sequence();
+
+            AssertSql(
+"""
+DROP SEQUENCE `TestSequence`;
+""");
         }
 
         [ConditionalFact(Skip = "Unique indexes won't be created due to the suppression of foreign keys implementation.")]
@@ -582,6 +662,7 @@ be found in the docs.';");
             return base.Drop_unique_constraint();
         }
 
+        [ConditionalFact(Skip = "There are no schemas in SingleStore, that a sequence can be moved between.")]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
         public override async Task Move_sequence()
         {
@@ -593,19 +674,45 @@ be found in the docs.';");
                     var sequence = Assert.Single(model.Sequences);
                     // Assert.Equal("TestSequenceSchema", sequence.Schema);
                     // Assert.Equal("TestSequence", sequence.Name);
-                    Assert.Equal("TestSequenceSchema_TestSequenceMove", sequence.Name);
+                    Assert.Equal("TestSequenceMove", sequence.Name);
                 });
+
+            AssertSql("");
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
+        public override async Task Add_required_primitive_collection_with_custom_default_value_sql_to_existing_table()
+        {
+            // Classic/literal default values like `DEFAULT '[3, 2, 1]'` are not allowed for `json`, `blob` or `text` data types, but
+            // default *expressions* like `DEFAULT ('[3, 2, 1]')` are.
+            await base.Add_required_primitive_collection_with_custom_default_value_sql_to_existing_table_core("('[3, 2, 1]')");
 
             AssertSql(
 """
-ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('[3, 2, 1]');
 """);
         }
 
-        [ConditionalTheory(Skip = "TODO")]
-        public override Task Move_table()
+        public override async Task Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table()
         {
-            return base.Move_table();
+            // Classic/literal default values like `DEFAULT '[3, 2, 1]'` are not allowed for `json`, `blob` or `text` data types, but
+            // default *expressions* like `DEFAULT ('[3, 2, 1]')` are.
+            await base.Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table_core("('[3, 2, 1]')");
+
+            AssertSql(
+"""
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('[3, 2, 1]');
+""");
+        }
+
+        public override async Task Move_table()
+        {
+            await base.Move_table();
+
+            AssertSql(
+"""
+ALTER TABLE `TestTable` RENAME `TestTable`;
+""");
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
@@ -649,15 +756,37 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
-        public override Task Add_column_with_computedSql(bool? stored)
+        public override async Task Add_column_with_computedSql(bool? stored)
         {
-            return base.Add_column_with_computedSql(null);
+            await base.Add_column_with_computedSql(stored);
+
+            var computedColumnTypeSql = stored == true ? " STORED" : "";
+            var nullableGeneratedColumnSql = AppConfig.ServerVersion.Supports.NullableGeneratedColumns ? " NULL" : string.Empty;
+
+            AssertSql(
+                $"""
+                 ALTER TABLE `People` ADD `Sum` longtext CHARACTER SET utf8mb4 AS (`X` + `Y`){computedColumnTypeSql}{nullableGeneratedColumnSql};
+                 """);
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
-        public override Task Create_table_with_computed_column(bool? stored)
+        public override async Task Create_table_with_computed_column(bool? stored)
         {
-            return base.Create_table_with_computed_column(null);
+            await base.Create_table_with_computed_column(stored);
+
+            var computedColumnTypeSql = stored == true ? " STORED" : "";
+            var nullableGeneratedColumnSql = AppConfig.ServerVersion.Supports.NullableGeneratedColumns ? " NULL" : string.Empty;
+
+            AssertSql(
+$"""
+ CREATE TABLE `People` (
+     `Id` int NOT NULL AUTO_INCREMENT,
+     `Sum` longtext CHARACTER SET utf8mb4 AS (`X` + `Y`){computedColumnTypeSql}{nullableGeneratedColumnSql},
+     `X` int NOT NULL,
+     `Y` int NOT NULL,
+     CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
+ ) CHARACTER SET=utf8mb4;
+ """);
         }
 
         [ConditionalFact(Skip = "ALTER TABLE doesn't support changing computed columns.'")]
@@ -1104,17 +1233,24 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                             e.Property<string>("Name");
                             e.Property<string>("Brand")
                                 .HasCharSet(NonDefaultCharSet);
+
+                            e.ComplexProperty<Dictionary<string, object>>("ComplexProperty")
+                                .Property<string>("Brand")
+                                .HasCharSet(NonDefaultCharSet);
                         }),
                 result =>
                 {
                     var table = Assert.Single(result.Tables);
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
+                    var complexBrandColumn = Assert.Single(table.Columns.Where(c => c.Name == "ComplexProperty_Brand"));
 
                     Assert.Null(nameColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.Equal(NonDefaultCollation2, nameColumn.Collation);
                     Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4? null : NonDefaultCharSet, brandColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.NotEqual(DefaultCollation, brandColumn.Collation);
+                    Assert.Equal(NonDefaultCharSet, complexBrandColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.NotEqual(DefaultCollation, complexBrandColumn.Collation);
                 });
         }
 
@@ -1158,7 +1294,8 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
 
         [ConditionalFact]
         public override Task Add_column_with_collation()
-            => Test(
+        {
+            Test(
                 builder => builder.Entity("People").Property<int>("Id"),
                 builder => { },
                 builder => builder.Entity("People").Property<string>("Name")
@@ -1173,6 +1310,14 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                         Assert.Equal(NonDefaultCollation2, nameColumn.Collation);
                     }
                 });
+
+            AssertSql(
+                """
+                 ALTER TABLE `People` ADD `Name` longtext CHARACTER SET utf8mb4 COLLATE {NonDefaultCollation2} NULL;
+                 """);
+
+            return Task.CompletedTask;
+        }
 
         [ConditionalFact]
         public virtual async Task Create_table_longtext_column_with_string_length_and_legacy_charset_definition_in_column_type()
@@ -1402,16 +1547,6 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                 },
                 withConventions: false);
 
-        public override async Task Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table()
-        {
-            await Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table_core("'[3, 2, 1]'");
-
-            AssertSql(
-                """
-                ALTER TABLE `Customers` ADD `Numbers` varchar(127) CHARACTER SET utf8mb4 NOT NULL DEFAULT '[3, 2, 1]';
-                """);
-        }
-
         protected override Task Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table_core(string defaultValueSql)
             => Test(
                 builder => builder.Entity(
@@ -1447,82 +1582,546 @@ ALTER TABLE `TestSequenceMove` RENAME `TestSequenceSchema_TestSequenceMove`;
                         Assert.Single(customersTable.PrimaryKey!.Columns));
                 });
 
-        public override Task Add_required_primitve_collection_with_custom_converter_and_custom_default_value_to_existing_table()
-            => Test(
-                builder => builder.Entity(
-                    "Customer", e =>
-                    {
-                        e.Property<int>("Id").ValueGeneratedOnAdd();
-                        e.HasKey("Id");
-                        e.Property<string>("Name");
-                        e.ToTable("Customers");
-                    }),
-                builder => builder.Entity(
-                    "Customer", e =>
-                    {
-                        e.Property<int>("Id").ValueGeneratedOnAdd();
-                        e.HasKey("Id");
-                        e.Property<string>("Name");
-                        e.Property<List<int>>("Numbers")
-                            .HasMaxLength(127) // <-- MySQL requires a `varchar(n)` instead of a `longtext` type for default value support
-                            .HasConversion(new ValueConverter<List<int>, string>(
-                                convertToProviderExpression: x => x != null && x.Count > 0 ? "some numbers" : "nothing",
-                                convertFromProviderExpression: x => x == "nothing" ? new List<int> { } : new List<int> { 7, 8, 9 }))
-                            .HasDefaultValue(new List<int> { 42 })
-                            .IsRequired();
-                        e.ToTable("Customers");
-                    }),
-                model =>
-                {
-                    var customersTable = Assert.Single(model.Tables.Where(t => t.Name == "Customers"));
+        public override async Task Create_table()
+        {
+            await base.Create_table();
+            AssertSql(
+                """
+                CREATE TABLE `People` (
+                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `Name` longtext CHARACTER SET utf8mb4 NULL,
+                    CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
+                ) CHARACTER SET=utf8mb4;
+                """);
+        }
 
-                    Assert.Collection(
-                        customersTable.Columns,
-                        c => Assert.Equal("Id", c.Name),
-                        c => Assert.Equal("Name", c.Name),
-                        c => Assert.Equal("Numbers", c.Name));
-                    Assert.Same(
-                        customersTable.Columns.Single(c => c.Name == "Id"),
-                        Assert.Single(customersTable.PrimaryKey!.Columns));
-                });
+        public override async Task Create_table_no_key()
+        {
+            await base.Create_table_no_key();
 
-        public override Task Add_required_primitve_collection_with_custom_default_value_to_existing_table()
-            => Test(
-                builder => builder.Entity(
-                    "Customer", e =>
-                    {
-                        e.Property<int>("Id").ValueGeneratedOnAdd();
-                        e.HasKey("Id");
-                        e.Property<string>("Name");
-                        e.ToTable("Customers");
-                    }),
-                builder => builder.Entity(
-                    "Customer", e =>
-                    {
-                        e.Property<int>("Id").ValueGeneratedOnAdd();
-                        e.HasKey("Id");
-                        e.Property<string>("Name");
-                        e.Property<List<int>>("Numbers")
-                            .HasMaxLength(127) // <-- MySQL requires a `varchar(n)` instead of a `longtext` type for default value support
-                            .IsRequired().HasDefaultValue(new List<int> { 1, 2, 3 });
-                        e.ToTable("Customers");
-                    }),
-                model =>
-                {
-                    var customersTable = Assert.Single(model.Tables.Where(t => t.Name == "Customers"));
+            AssertSql(
+                """
+                CREATE TABLE `Anonymous` (
+                    `SomeColumn` int NOT NULL
+                ) CHARACTER SET=utf8mb4;
+                """);
+        }
 
-                    Assert.Collection(
-                        customersTable.Columns,
-                        c => Assert.Equal("Id", c.Name),
-                        c => Assert.Equal("Name", c.Name),
-                        c => Assert.Equal("Numbers", c.Name));
-                    Assert.Same(
-                        customersTable.Columns.Single(c => c.Name == "Id"),
-                        Assert.Single(customersTable.PrimaryKey!.Columns));
-                });
+        public override async Task Create_table_with_comments()
+        {
+            await base.Create_table_with_comments();
+
+            AssertSql(
+                """
+                CREATE TABLE `People` (
+                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `Name` longtext CHARACTER SET utf8mb4 NULL COMMENT 'Column comment',
+                    CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
+                ) CHARACTER SET=utf8mb4 COMMENT='Table comment';
+                """);
+        }
+
+        public override async Task Drop_table()
+        {
+            await base.Drop_table();
+
+            AssertSql(
+                """
+                DROP TABLE `People`;
+                """);
+        }
+
+        public override async Task Add_column_with_defaultValueSql_unspecified()
+        {
+            await base.Add_column_with_defaultValueSql_unspecified();
+
+            AssertSql();
+        }
+
+        public override async Task Add_column_with_defaultValue_unspecified()
+        {
+            await base.Add_column_with_defaultValue_unspecified();
+
+            AssertSql();
+        }
+
+        public override async Task Add_column_with_computedSql_unspecified()
+        {
+            await base.Add_column_with_computedSql_unspecified();
+
+            AssertSql();
+        }
+
+        public override async Task Add_column_with_required()
+        {
+            await base.Add_column_with_required();
+
+            AssertSql(
+"""
+ALTER TABLE `People` ADD `Name` longtext CHARACTER SET utf8mb4 NOT NULL;
+""");
+        }
+
+        public override async Task Add_column_with_ansi()
+        {
+            await base.Add_column_with_ansi();
+
+            AssertSql(
+"""
+ALTER TABLE `People` ADD `Name` longtext CHARACTER SET utf8mb4 NULL;
+""");
+        }
+
+        public override async Task Add_column_with_max_length()
+        {
+            await base.Add_column_with_max_length();
+
+            AssertSql(
+"""
+ALTER TABLE `People` ADD `Name` varchar(30) CHARACTER SET utf8mb4 NULL;
+""");
+        }
+
+        public override async Task Add_column_with_unbounded_max_length()
+        {
+            await base.Add_column_with_unbounded_max_length();
+
+            AssertSql(
+"""
+ALTER TABLE `People` ADD `Name` longtext CHARACTER SET utf8mb4 NULL;
+""");
+        }
+
+        public override async Task Add_column_with_max_length_on_derived()
+        {
+            await base.Add_column_with_max_length_on_derived();
+
+            AssertSql();
+        }
+
+        public override async Task Add_column_with_fixed_length()
+        {
+            await base.Add_column_with_fixed_length();
+
+            AssertSql(
+"""
+ALTER TABLE `People` ADD `Name` char(100) CHARACTER SET utf8mb4 NULL;
+""");
+        }
+
+        public override async Task Add_column_with_comment()
+        {
+            await base.Add_column_with_comment();
+
+            AssertSql(
+"""
+ALTER TABLE `People` ADD `FullName` longtext CHARACTER SET utf8mb4 NULL COMMENT 'My comment';
+""");
+        }
+
+        public override async Task Add_column_shared()
+        {
+            await base.Add_column_shared();
+
+            AssertSql();
+        }
+
+        public override async Task Alter_column_change_computed_recreates_indexes()
+        {
+            await base.Alter_column_change_computed_recreates_indexes();
+
+            AssertSql(
+"""
+ALTER TABLE `People` MODIFY COLUMN `Sum` int AS (`X` - `Y`);
+""");
+        }
+
+        public override async Task Alter_column_add_comment()
+        {
+            await base.Alter_column_add_comment();
+
+            AssertSql(
+"""
+ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL COMMENT 'Some comment' AUTO_INCREMENT;
+""");
+        }
+
+        public override async Task Alter_column_change_comment()
+        {
+            await base.Alter_column_change_comment();
+
+            AssertSql(
+"""
+ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL COMMENT 'Some comment2' AUTO_INCREMENT;
+""");
+        }
+
+        public override async Task Alter_column_remove_comment()
+        {
+            await base.Alter_column_remove_comment();
+
+            AssertSql(
+"""
+ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL AUTO_INCREMENT;
+""");
+        }
+
+        public override async Task Alter_column_reset_collation()
+        {
+            await base.Alter_column_reset_collation();
+
+            AssertSql(
+"""
+ALTER TABLE `People` MODIFY COLUMN `Name` longtext CHARACTER SET utf8mb4 NULL;
+""");
+        }
+
+        public override async Task Drop_column()
+        {
+            await base.Drop_column();
+
+            AssertSql(
+"""
+ALTER TABLE `People` DROP COLUMN `SomeColumn`;
+""");
+        }
+
+        public override async Task Drop_column_computed_and_non_computed_with_dependency()
+        {
+            await base.Drop_column_computed_and_non_computed_with_dependency();
+
+            AssertSql(
+"""
+ALTER TABLE `People` DROP COLUMN `Y`;
+""",
+                //
+                """
+ALTER TABLE `People` DROP COLUMN `X`;
+""");
+        }
+
+        public override async Task Rename_column()
+        {
+            await base.Rename_column();
+
+            AssertSql(
+"""
+ALTER TABLE `People` RENAME COLUMN `SomeColumn` TO `SomeOtherColumn`;
+""");
+        }
+
+        public override async Task Create_index()
+        {
+            await base.Create_index();
+
+            AssertSql(
+"""
+ALTER TABLE `People` MODIFY COLUMN `FirstName` varchar(255) CHARACTER SET utf8mb4 NULL;
+""",
+                //
+                """
+CREATE INDEX `IX_People_FirstName` ON `People` (`FirstName`);
+""");
+        }
+
+        public override async Task Drop_index()
+        {
+            await base.Drop_index();
+
+            AssertSql(
+"""
+ALTER TABLE `People` DROP INDEX `IX_People_SomeField`;
+""");
+        }
+
+        public override async Task Add_primary_key_int()
+        {
+            await base.Add_primary_key_int();
+
+            AssertSql(
+"""
+ALTER TABLE `People` MODIFY COLUMN `SomeField` int NOT NULL AUTO_INCREMENT,
+ADD CONSTRAINT `PK_People` PRIMARY KEY (`SomeField`);
+""");
+        }
+
+        public override async Task InsertDataOperation()
+        {
+            await base.InsertDataOperation();
+
+            AssertSql(
+"""
+INSERT INTO `Person` (`Id`, `Name`)
+VALUES (1, 'Daenerys Targaryen'),
+(2, 'John Snow'),
+(3, 'Arya Stark'),
+(4, 'Harry Strickland'),
+(5, NULL);
+""");
+        }
+
+        public override async Task DeleteDataOperation_simple_key()
+        {
+            await base.DeleteDataOperation_simple_key();
+
+            AssertSql(
+                AppConfig.ServerVersion.Supports.Returning
+                    ? """
+DELETE FROM `Person`
+WHERE `Id` = 2
+RETURNING 1;
+"""
+                    : """
+DELETE FROM `Person`
+WHERE `Id` = 2;
+SELECT ROW_COUNT();
+""");
+        }
+
+        public override async Task DeleteDataOperation_composite_key()
+        {
+            await base.DeleteDataOperation_composite_key();
+
+            AssertSql(
+                AppConfig.ServerVersion.Supports.Returning
+                    ? """
+DELETE FROM `Person`
+WHERE `AnotherId` = 12 AND `Id` = 2
+RETURNING 1;
+"""
+                    : """
+DELETE FROM `Person`
+WHERE `AnotherId` = 12 AND `Id` = 2;
+SELECT ROW_COUNT();
+""");
+        }
+
+        public override async Task UpdateDataOperation_simple_key()
+        {
+            await base.UpdateDataOperation_simple_key();
+
+            AssertSql(
+"""
+UPDATE `Person` SET `Name` = 'Another John Snow'
+WHERE `Id` = 2;
+SELECT ROW_COUNT();
+""");
+        }
+
+        public override async Task UpdateDataOperation_composite_key()
+        {
+            await base.UpdateDataOperation_composite_key();
+
+            AssertSql(
+"""
+UPDATE `Person` SET `Name` = 'Another John Snow'
+WHERE `AnotherId` = 11 AND `Id` = 2;
+SELECT ROW_COUNT();
+""");
+        }
+
+        public override async Task UpdateDataOperation_multiple_columns()
+        {
+            await base.UpdateDataOperation_multiple_columns();
+
+            AssertSql(
+"""
+UPDATE `Person` SET `Age` = 21, `Name` = 'Another John Snow'
+WHERE `Id` = 2;
+SELECT ROW_COUNT();
+""");
+        }
+
+        public override async Task SqlOperation()
+        {
+            await base.SqlOperation();
+
+            AssertSql(
+"""
+-- I <3 DDL
+""");
+        }
+
+        public override async Task Create_table_with_complex_type_with_required_properties_on_derived_entity_in_TPH()
+        {
+            await base.Create_table_with_complex_type_with_required_properties_on_derived_entity_in_TPH();
+
+            AssertSql(
+"""
+CREATE TABLE `Contacts` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Discriminator` varchar(8) CHARACTER SET utf8mb4 NOT NULL,
+    `Name` longtext CHARACTER SET utf8mb4 NULL,
+    `Number` int NULL,
+    `MyComplex_Prop` longtext NULL,
+    `MyComplex_MyNestedComplex_Bar` datetime(6) NULL,
+    `MyComplex_MyNestedComplex_Foo` int NULL,
+    CONSTRAINT `PK_Contacts` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+""");
+        }
+
+        public override async Task Add_required_primitive_collection_to_existing_table()
+        {
+            await base.Add_required_primitive_collection_to_existing_table();
+
+            AssertSql(
+"""
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL;
+""");
+        }
+
+        public override async Task Add_required_primitive_collection_with_custom_default_value_to_existing_table()
+        {
+            await base.Add_required_primitive_collection_with_custom_default_value_to_existing_table();
+
+            AssertSql(
+"""
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('[1,2,3]');
+""");
+        }
+
+        public override async Task Add_required_primitive_collection_with_custom_converter_to_existing_table()
+        {
+            await base.Add_required_primitive_collection_with_custom_converter_to_existing_table();
+
+            AssertSql();
+        }
+
+        public override async Task Add_required_primitive_collection_with_custom_converter_and_custom_default_value_to_existing_table()
+        {
+            await base.Add_required_primitive_collection_with_custom_converter_and_custom_default_value_to_existing_table();
+
+            AssertSql(
+"""
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('some numbers');
+""");
+        }
+
+        public override async Task Add_optional_primitive_collection_to_existing_table()
+        {
+            await base.Add_optional_primitive_collection_to_existing_table();
+
+            AssertSql(
+"""
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NULL;
+""");
+        }
+
+        public override async Task Create_table_with_required_primitive_collection()
+        {
+            await base.Create_table_with_required_primitive_collection();
+
+            AssertSql(
+"""
+CREATE TABLE `Customers` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Name` longtext CHARACTER SET utf8mb4 NULL,
+    `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL,
+    CONSTRAINT `PK_Customers` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+""");
+        }
+
+        public override async Task Create_table_with_optional_primitive_collection()
+        {
+            await base.Create_table_with_optional_primitive_collection();
+
+            AssertSql(
+"""
+CREATE TABLE `Customers` (
+    `Id` int NOT NULL AUTO_INCREMENT,
+    `Name` longtext CHARACTER SET utf8mb4 NULL,
+    `Numbers` longtext CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `PK_Customers` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+""");
+        }
+
+        public override async Task Add_required_primitve_collection_to_existing_table()
+        {
+            await base.Add_required_primitve_collection_to_existing_table();
+
+            AssertSql(
+"""
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL;
+""");
+        }
+
+        public override async Task Add_required_primitve_collection_with_custom_default_value_to_existing_table()
+        {
+            await base.Add_required_primitve_collection_with_custom_default_value_to_existing_table();
+
+            AssertSql(
+"""
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('[1,2,3]');
+""");
+        }
+
+        public override async Task Add_required_primitve_collection_with_custom_converter_to_existing_table()
+        {
+            await base.Add_required_primitve_collection_with_custom_converter_to_existing_table();
+
+            AssertSql();
+        }
+
+        public override async Task Add_required_primitve_collection_with_custom_converter_and_custom_default_value_to_existing_table()
+        {
+            await base.Add_required_primitve_collection_with_custom_converter_and_custom_default_value_to_existing_table();
+
+            AssertSql(
+"""
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('some numbers');
+""");
+        }
+
+        #region ToJson
+
+        public override Task Create_table_with_json_column()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Create_table_with_json_column());
+
+        public override Task Create_table_with_json_column_explicit_json_column_names()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Create_table_with_json_column_explicit_json_column_names());
+
+        public override Task Rename_table_with_json_column()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Rename_table_with_json_column());
+
+        public override Task Add_json_columns_to_existing_table()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Add_json_columns_to_existing_table());
+
+        public override Task Convert_json_entities_to_regular_owned()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_json_entities_to_regular_owned());
+
+        public override Task Convert_regular_owned_entities_to_json()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_regular_owned_entities_to_json());
+
+        public override Task Convert_string_column_to_a_json_column_containing_reference()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_string_column_to_a_json_column_containing_reference());
+
+        public override Task Convert_string_column_to_a_json_column_containing_required_reference()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_string_column_to_a_json_column_containing_required_reference());
+
+        public override Task Convert_string_column_to_a_json_column_containing_collection()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_string_column_to_a_json_column_containing_collection());
+
+        public override Task Drop_json_columns_from_existing_table()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Drop_json_columns_from_existing_table());
+
+        public override Task Rename_json_column()
+            => Assert.ThrowsAsync<NullReferenceException>(() => base.Rename_json_column());
+
+        #endregion ToJson
+
+        [ConditionalFact]
+        public virtual void Check_all_tests_overridden()
+            => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
         // The constraint name for a primary key is always PRIMARY in MySQL.
         protected override bool AssertConstraintNames
+            => false;
+
+        // SingleStore does not support the concept of schemas.
+        protected override bool AssertSchemaNames
             => false;
 
         protected virtual string DefaultCollation => ((SingleStoreTestStore)Fixture.TestStore).DatabaseCollation;

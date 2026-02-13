@@ -2,6 +2,7 @@ using System;
 using System.Globalization;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Threading.Tasks;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
@@ -27,9 +28,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalFact(Skip = "Further investigation is needed to determine why it is failing with SingleStore")]
-        public override void Optional_datetime_reading_null_from_database()
+        public override async Task Optional_datetime_reading_null_from_database()
         {
-            base.Optional_datetime_reading_null_from_database();
+            await base.Optional_datetime_reading_null_from_database();
         }
 
         // TODO: Needed to customize:
@@ -38,43 +39,43 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         #region https://github.com/dotnet/efcore/issues/26068
 
         [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
-        public override void Can_insert_and_read_back_with_binary_key()
+        public override async Task Can_insert_and_read_back_with_binary_key()
         {
-            base.Can_insert_and_read_back_with_binary_key();
+            await base.Can_insert_and_read_back_with_binary_key();
         }
 
         [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
-        public override void Can_insert_and_read_back_with_null_binary_foreign_key()
+        public override async Task Can_insert_and_read_back_with_null_binary_foreign_key()
         {
-            base.Can_insert_and_read_back_with_null_binary_foreign_key();
+            await base.Can_insert_and_read_back_with_null_binary_foreign_key();
         }
 
         [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
-        public override void Can_insert_and_read_back_with_null_string_foreign_key()
+        public override async Task Can_insert_and_read_back_with_null_string_foreign_key()
         {
-            base.Can_insert_and_read_back_with_null_string_foreign_key();
+            await base.Can_insert_and_read_back_with_null_string_foreign_key();
         }
 
         [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
-        public override void Can_insert_and_read_back_with_string_key()
+        public override async Task Can_insert_and_read_back_with_string_key()
         {
-            base.Can_insert_and_read_back_with_string_key();
+            await base.Can_insert_and_read_back_with_string_key();
         }
 
         [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
-        public override void Can_read_back_mapped_enum_from_collection_first_or_default()
+        public override async Task Can_read_back_mapped_enum_from_collection_first_or_default()
         {
-            base.Can_read_back_mapped_enum_from_collection_first_or_default();
+            await base.Can_read_back_mapped_enum_from_collection_first_or_default();
         }
 
         [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
-        public override void Can_insert_and_read_back_with_case_insensitive_string_key()
+        public override async Task Can_insert_and_read_back_with_case_insensitive_string_key()
         {
-            base.Can_insert_and_read_back_with_case_insensitive_string_key();
+            await base.Can_insert_and_read_back_with_case_insensitive_string_key();
         }
 
         [ConditionalFact]
-        public override void Can_insert_and_read_back_all_non_nullable_data_types()
+        public override async Task Can_insert_and_read_back_all_non_nullable_data_types()
         {
             using (var context = CreateContext())
             {
@@ -109,12 +110,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                         EnumS8 = EnumS8.SomeValue
                     });
 
-                Assert.Equal(1, context.SaveChanges());
+                Assert.Equal(1, await context.SaveChangesAsync());
             }
 
             using (var context = CreateContext())
             {
-                var dt = context.Set<BuiltInDataTypes>().Where(e => e.Id == 1).ToList().Single();
+                var dt = (await context.Set<BuiltInDataTypes>().Where(e => e.Id == 1).ToListAsync()).Single();
 
                 var entityType = context.Model.FindEntityType(typeof(BuiltInDataTypes));
                 AssertEqualIfMapped(entityType, (short)-1234, () => dt.TestInt16);
@@ -148,7 +149,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalFact]
-        public override void Can_insert_and_read_back_non_nullable_backed_data_types()
+        public override async Task Can_insert_and_read_back_non_nullable_backed_data_types()
         {
             using (var context = CreateContext())
             {
@@ -183,12 +184,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                         EnumS8 = EnumS8.SomeValue
                     });
 
-                Assert.Equal(1, context.SaveChanges());
+                Assert.Equal(1, await context.SaveChangesAsync());
             }
 
             using (var context = CreateContext())
             {
-                var dt = context.Set<NonNullableBackedDataTypes>().Where(ndt => ndt.Id == 101).ToList().Single();
+                var dt = (await context.Set<NonNullableBackedDataTypes>().Where(ndt => ndt.Id == 101).ToListAsync()).Single();
 
                 var entityType = context.Model.FindEntityType(typeof(NonNullableBackedDataTypes));
                 AssertEqualIfMapped(entityType, (short)-1234, () => dt.Int16);
@@ -222,7 +223,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalFact]
-        public override void Can_insert_and_read_back_nullable_backed_data_types()
+        public override async Task Can_insert_and_read_back_nullable_backed_data_types()
         {
             using (var context = CreateContext())
             {
@@ -257,12 +258,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                         EnumS8 = EnumS8.SomeValue
                     });
 
-                Assert.Equal(1, context.SaveChanges());
+                Assert.Equal(1, await context.SaveChangesAsync());
             }
 
             using (var context = CreateContext())
             {
-                var dt = context.Set<NullableBackedDataTypes>().Where(ndt => ndt.Id == 101).ToList().Single();
+                var dt = (await context.Set<NullableBackedDataTypes>().Where(ndt => ndt.Id == 101).ToListAsync()).Single();
 
                 var entityType = context.Model.FindEntityType(typeof(NullableBackedDataTypes));
                 AssertEqualIfMapped(entityType, (short)-1234, () => dt.Int16);
@@ -295,7 +296,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalFact]
-        public override void Can_insert_and_read_back_object_backed_data_types()
+        public override async Task Can_insert_and_read_back_object_backed_data_types()
         {
             using (var context = CreateContext())
             {
@@ -332,12 +333,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                         EnumS8 = EnumS8.SomeValue
                     });
 
-                Assert.Equal(1, context.SaveChanges());
+                Assert.Equal(1, await context.SaveChangesAsync());
             }
 
             using (var context = CreateContext())
             {
-                var dt = context.Set<ObjectBackedDataTypes>().Where(ndt => ndt.Id == 101).ToList().Single();
+                var dt = (await context.Set<ObjectBackedDataTypes>().Where(ndt => ndt.Id == 101).ToListAsync()).Single();
 
                 var entityType = context.Model.FindEntityType(typeof(ObjectBackedDataTypes));
                 AssertEqualIfMapped(entityType, "TestString", () => dt.String);

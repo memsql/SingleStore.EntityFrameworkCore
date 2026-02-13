@@ -1,28 +1,21 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using Microsoft.Extensions.DependencyInjection;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Storage.Internal;
 using EntityFrameworkCore.SingleStore.Tests;
+using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests;
 
-public class MaterializationInterceptionSingleStoreTest :
-    MaterializationInterceptionTestBase<MaterializationInterceptionSingleStoreTest.SingleStoreLibraryContext>,
-    IClassFixture<MaterializationInterceptionSingleStoreTest.MaterializationInterceptionSingleStoreFixture>
+public class MaterializationInterceptionSingleStoreTest : MaterializationInterceptionTestBase<MaterializationInterceptionSingleStoreTest.SingleStoreLibraryContext>
 {
-    public MaterializationInterceptionSingleStoreTest(MaterializationInterceptionSingleStoreFixture fixture)
-        : base(fixture)
-    {
-    }
-
     [ConditionalTheory]
-    public override async Task Intercept_query_materialization_with_owned_types_projecting_collection(bool async)
+    public override async Task Intercept_query_materialization_with_owned_types_projecting_collection(bool async, bool usePooling)
     {
         // We're skipping this test when we're running tests on Managed Service due to the specifics of
         // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
@@ -31,7 +24,7 @@ public class MaterializationInterceptionSingleStoreTest :
             return;
         }
 
-        await base.Intercept_query_materialization_with_owned_types_projecting_collection(async);
+        await base.Intercept_query_materialization_with_owned_types_projecting_collection(async, usePooling);
     }
 
     public class SingleStoreLibraryContext : LibraryContext
@@ -64,27 +57,6 @@ public class MaterializationInterceptionSingleStoreTest :
         }
     }
 
-    public override LibraryContext CreateContext(IEnumerable<ISingletonInterceptor> interceptors, bool inject)
-        => new SingleStoreLibraryContext(Fixture.CreateOptions(interceptors, inject));
-
-    public class MaterializationInterceptionSingleStoreFixture : SingletonInterceptorsFixtureBase
-    {
-        protected override string StoreName
-            => "MaterializationInterception";
-
-        protected override ITestStoreFactory TestStoreFactory
-            => SingleStoreTestStoreFactory.Instance;
-
-        protected override IServiceCollection InjectInterceptors(
-            IServiceCollection serviceCollection,
-            IEnumerable<ISingletonInterceptor> injectedInterceptors)
-            => base.InjectInterceptors(serviceCollection.AddEntityFrameworkSingleStore(), injectedInterceptors);
-
-        public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
-        {
-            new SingleStoreDbContextOptionsBuilder(base.AddOptions(builder))
-                .ExecutionStrategy(d => new SingleStoreExecutionStrategy(d));
-            return builder;
-        }
-    }
+    protected override ITestStoreFactory TestStoreFactory
+        => SingleStoreTestStoreFactory.Instance;
 }

@@ -23,16 +23,16 @@ internal class ExistingConnectionSingleStoreTest
             .AddEntityFrameworkSingleStore()
             .BuildServiceProvider();
 
-        using (var store = (SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+        await using (var store = (SingleStoreTestStore)await SingleStoreNorthwindTestStoreFactory.Instance
                    .GetOrCreate(null)
-                   .Initialize(null, (Func<DbContext>)null))
+                   .InitializeAsync(null, (Func<DbContext>)null))
         {
             store.CloseConnection();
 
             var openCount = 0;
             var closeCount = 0;
 
-            using (var connection = new SingleStoreConnection(store.ConnectionString))
+            await using (var connection = new SingleStoreConnection(store.ConnectionString))
             {
                 if (openConnection)
                 {
@@ -56,7 +56,7 @@ internal class ExistingConnectionSingleStoreTest
                     .UseInternalServiceProvider(serviceProvider)
                     .Options;
 
-                using (var context = new NorthwindContext(options))
+                await using (var context = new NorthwindContext(options))
                 {
                     Assert.Equal(91, await context.Customers.CountAsync());
                 }
@@ -84,9 +84,9 @@ internal class ExistingConnectionSingleStoreTest
             .AddEntityFrameworkSingleStore()
             .BuildServiceProvider();
 
-        await using (var store = (SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+        await using (var store = (SingleStoreTestStore)await SingleStoreNorthwindTestStoreFactory.Instance
                          .GetOrCreate(null)
-                         .Initialize(null, (Func<DbContext>)null))
+                         .InitializeAsync(null, (Func<DbContext>)null))
         {
             store.CloseConnection();
 
@@ -99,7 +99,7 @@ internal class ExistingConnectionSingleStoreTest
                     .UseInternalServiceProvider(serviceProvider)
                     .Options;
 
-                using var context = new NorthwindContext(options);
+                await using var context = new NorthwindContext(options);
 
                 Assert.Equal(91, await context.Customers.CountAsync());
             }
@@ -109,9 +109,9 @@ internal class ExistingConnectionSingleStoreTest
     [Fact]
     private static async Task Opened_connection_missing_AllowUserVariables_true_in_original_connection_string_throws()
     {
-        await using (var store = (SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+        await using (var store = (SingleStoreTestStore)await SingleStoreNorthwindTestStoreFactory.Instance
                          .GetOrCreate(null)
-                         .Initialize(null, (Func<DbContext>)null))
+                         .InitializeAsync(null, (Func<DbContext>)null))
         {
             store.CloseConnection();
 
@@ -145,9 +145,9 @@ internal class ExistingConnectionSingleStoreTest
             .AddEntityFrameworkSingleStore()
             .BuildServiceProvider();
 
-        await using (var store = (SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+        await using (var store = (SingleStoreTestStore)await SingleStoreNorthwindTestStoreFactory.Instance
                          .GetOrCreate(null)
-                         .Initialize(null, (Func<DbContext>)null))
+                         .InitializeAsync(null, (Func<DbContext>)null))
         {
             store.CloseConnection();
 
@@ -160,7 +160,7 @@ internal class ExistingConnectionSingleStoreTest
                     .UseInternalServiceProvider(serviceProvider)
                     .Options;
 
-                using var context = new NorthwindContext(options);
+                await using var context = new NorthwindContext(options);
 
                 Assert.Equal(91, await context.Customers.CountAsync());
             }
@@ -170,9 +170,9 @@ internal class ExistingConnectionSingleStoreTest
     [Fact]
     private static async Task Opened_connection_missing_UseAffectedRows_false_in_original_connection_string_throws()
     {
-        await using (var store = (SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+        await using (var store = (SingleStoreTestStore)await SingleStoreNorthwindTestStoreFactory.Instance
                          .GetOrCreate(null)
-                         .Initialize(null, (Func<DbContext>)null))
+                         .InitializeAsync(null, (Func<DbContext>)null))
         {
             store.CloseConnection();
 

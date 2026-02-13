@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore;
@@ -110,29 +111,31 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             return model;
         }
 
-        public override void TimestampAttribute_throws_if_value_in_database_changed()
+        public override Task TimestampAttribute_throws_if_value_in_database_changed()
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
             // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
             if (AppConfig.ManagedService)
             {
-                return;
+                return Task.CompletedTask;
             }
-            base.TimestampAttribute_throws_if_value_in_database_changed();
+
+            return base.TimestampAttribute_throws_if_value_in_database_changed();
         }
 
-        public override void Table_can_configure_TPT_with_Owned()
+        public override Task Table_can_configure_TPT_with_Owned()
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
             // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
             if (AppConfig.ManagedService)
             {
-                return;
+                return Task.CompletedTask;
             }
-            base.Table_can_configure_TPT_with_Owned();
+
+            return base.Table_can_configure_TPT_with_Owned();
         }
 
-        public override void ConcurrencyCheckAttribute_throws_if_value_in_database_changed()
+        public override async Task ConcurrencyCheckAttribute_throws_if_value_in_database_changed()
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
             // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
@@ -140,7 +143,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             {
                 return;
             }
-            base.ConcurrencyCheckAttribute_throws_if_value_in_database_changed();
+
+            await base.ConcurrencyCheckAttribute_throws_if_value_in_database_changed();
 
             AssertSql(
                 """
@@ -182,9 +186,9 @@ SELECT ROW_COUNT();
 """);
         }
 
-        public override void DatabaseGeneratedAttribute_autogenerates_values_when_set_to_identity()
+        public override async Task DatabaseGeneratedAttribute_autogenerates_values_when_set_to_identity()
         {
-            base.DatabaseGeneratedAttribute_autogenerates_values_when_set_to_identity();
+            await base.DatabaseGeneratedAttribute_autogenerates_values_when_set_to_identity();
 
             if (AppConfig.ServerVersion.Supports.Returning)
             {
@@ -310,15 +314,15 @@ SELECT ROW_COUNT();
         }
 
         [ConditionalFact(Skip = "SingleStore truncates the data if VARCHAR column is too short to store this data.")]
-        public override void MaxLengthAttribute_throws_while_inserting_value_longer_than_max_length()
+        public override async Task MaxLengthAttribute_throws_while_inserting_value_longer_than_max_length()
         {
-            base.MaxLengthAttribute_throws_while_inserting_value_longer_than_max_length();
+            await base.MaxLengthAttribute_throws_while_inserting_value_longer_than_max_length();
         }
 
         [ConditionalFact(Skip = "SingleStore truncates the data if VARCHAR column is too short to store this data.")]
-        public override void StringLengthAttribute_throws_while_inserting_value_longer_than_max_length()
+        public override async Task StringLengthAttribute_throws_while_inserting_value_longer_than_max_length()
         {
-            base.StringLengthAttribute_throws_while_inserting_value_longer_than_max_length();
+            await base.StringLengthAttribute_throws_while_inserting_value_longer_than_max_length();
         }
 
         protected static IMutableEntityType GetEntityType<TEntity>(ModelBuilder modelBuilder)

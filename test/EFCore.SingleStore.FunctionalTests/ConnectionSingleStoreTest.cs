@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -82,11 +84,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [Fact]
-        public void UseSingleStore_IncludesConnectorAttributes_InConnectionString()
+        public async Task UseSingleStore_IncludesConnectorAttributes_InConnectionString()
         {
-            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+            await using var _ = await ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
                     .GetOrCreate("ConnectionAttributesTest"))
-                .Initialize(null, (Func<DbContext>)null);
+                .InitializeAsync(null, (Func<DbContext>)null);
 
             var cs = SingleStoreTestStore.CreateConnectionString("ConnectionAttributesTest");
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
@@ -109,65 +111,65 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [Fact]
-        public void Can_create_admin_connection_with_data_source()
+        public async Task Can_create_admin_connection_with_data_source()
         {
-            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+            await using var _ = await ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
                     .GetOrCreate("ConnectionTest"))
-                .Initialize(null, (Func<DbContext>)null);
+                .InitializeAsync(null, (Func<DbContext>)null);
 
-            using var dataSource = new SingleStoreDataSourceBuilder(SingleStoreTestStore.CreateConnectionString("ConnectionTest")).Build();
+            await using var dataSource = new SingleStoreDataSourceBuilder(SingleStoreTestStore.CreateConnectionString("ConnectionTest")).Build();
 
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
             optionsBuilder.UseSingleStore(dataSource, b => b.ApplyConfiguration());
-            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+            await using var context = new GeneralOptionsContext(optionsBuilder.Options);
 
             var relationalConnection = context.GetService<ISingleStoreRelationalConnection>();
-            using var masterConnection = relationalConnection.CreateMasterConnection();
+            await using var masterConnection = relationalConnection.CreateMasterConnection();
 
             Assert.Equal(string.Empty, new SingleStoreConnectionStringBuilder(masterConnection.ConnectionString).Database);
 
-            masterConnection.Open();
+            await masterConnection.OpenAsync(default);
         }
 
         [Fact]
-        public void Can_create_admin_connection_with_connection_string()
+        public async Task Can_create_admin_connection_with_connection_string()
         {
-            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+            await using var _ = await ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
                     .GetOrCreate("ConnectionTest"))
-                .Initialize(null, (Func<DbContext>)null);
+                .InitializeAsync(null, (Func<DbContext>)null);
 
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
             optionsBuilder.UseSingleStore(SingleStoreTestStore.CreateConnectionString("ConnectionTest"),
                 b => b.ApplyConfiguration());
-            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+            await using var context = new GeneralOptionsContext(optionsBuilder.Options);
 
             var relationalConnection = context.GetService<ISingleStoreRelationalConnection>();
-            using var masterConnection = relationalConnection.CreateMasterConnection();
+            await using var masterConnection = relationalConnection.CreateMasterConnection();
 
             Assert.Equal(string.Empty, new SingleStoreConnectionStringBuilder(masterConnection.ConnectionString).Database);
 
-            masterConnection.Open();
+            await masterConnection.OpenAsync(default);
         }
 
         [Fact]
-        public void Can_create_admin_connection_with_connection()
+        public async Task Can_create_admin_connection_with_connection()
         {
-            using var _ = ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
+            await using var _ = await ((SingleStoreTestStore)SingleStoreNorthwindTestStoreFactory.Instance
                     .GetOrCreate("ConnectionTestWithConnection"))
-                .Initialize(null, (Func<DbContext>)null);
+                .InitializeAsync(null, (Func<DbContext>)null);
 
-            using var connection = new SingleStoreConnection(SingleStoreTestStore.CreateConnectionString("ConnectionTestWithConnection"));
+            await using var connection = new SingleStoreConnection(SingleStoreTestStore.CreateConnectionString("ConnectionTestWithConnection"));
 
             var optionsBuilder = new DbContextOptionsBuilder<GeneralOptionsContext>();
             optionsBuilder.UseSingleStore(connection, b => b.ApplyConfiguration());
-            using var context = new GeneralOptionsContext(optionsBuilder.Options);
+            await using var context = new GeneralOptionsContext(optionsBuilder.Options);
 
             var relationalConnection = context.GetService<ISingleStoreRelationalConnection>();
-            using var masterConnection = relationalConnection.CreateMasterConnection();
+            await using var masterConnection = relationalConnection.CreateMasterConnection();
 
             Assert.Equal(string.Empty, new SingleStoreConnectionStringBuilder(masterConnection.ConnectionString).Database);
 
-            masterConnection.Open();
+            await masterConnection.OpenAsync(default);
         }
 
 
