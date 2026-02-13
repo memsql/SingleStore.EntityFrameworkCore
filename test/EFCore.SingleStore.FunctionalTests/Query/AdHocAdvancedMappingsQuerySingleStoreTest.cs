@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
@@ -9,6 +10,30 @@ public class AdHocAdvancedMappingsQuerySingleStoreTest : AdHocAdvancedMappingsQu
 {
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
+
+    [SkippableTheory]
+    public override async Task Query_generates_correct_datetime2_parameter_definition(int? fractionalSeconds, string postfix)
+    {
+        Skip.If(fractionalSeconds > 6, "MySQL has a max. DateTime precision of 6.");
+
+        await base.Query_generates_correct_datetime2_parameter_definition(fractionalSeconds, postfix);
+    }
+
+    [SkippableTheory]
+    public override async Task Query_generates_correct_datetimeoffset_parameter_definition(int? fractionalSeconds, string postfix)
+    {
+        Skip.If(fractionalSeconds > 6, "MySQL has a max. DateTimeOffset precision of 6.");
+
+        await base.Query_generates_correct_datetimeoffset_parameter_definition(fractionalSeconds, postfix);
+    }
+
+    [SkippableTheory]
+    public override async Task Query_generates_correct_timespan_parameter_definition(int? fractionalSeconds, string postfix)
+    {
+        Skip.If(fractionalSeconds > 6, "MySQL has a max. TimeSpan precision of 6.");
+
+        await base.Query_generates_correct_timespan_parameter_definition(fractionalSeconds, postfix);
+    }
 
     public override async Task Two_similar_complex_properties_projected_with_split_query1()
     {
