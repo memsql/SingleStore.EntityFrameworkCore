@@ -11,8 +11,5 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         {
             Fixture.TestSqlLoggerFactory.Clear();
         }
-
-        protected override bool CanExecuteQueryString
-            => true;
     }
 }

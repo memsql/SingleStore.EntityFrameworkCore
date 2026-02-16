@@ -1,8 +1,11 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Internal;
 using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 
@@ -379,10 +382,6 @@ LIMIT 2
     }
 
     [ConditionalFact]
-    public override Task Array_of_array_is_not_supported()
-        => base.Array_of_array_is_not_supported();
-
-    [ConditionalFact]
     public override Task Multidimensional_array_is_not_supported()
         => base.Multidimensional_array_is_not_supported();
 
@@ -474,29 +473,122 @@ LIMIT 2
 
     public override async Task Column_collection_inside_json_owned_entity()
     {
-        await base.Column_collection_inside_json_owned_entity();
-
-        AssertSql(
-            """
-SELECT TOP(2) [t].[Id], [t].[Owned]
-FROM [TestOwner] AS [t]
-WHERE (
-    SELECT COUNT(*)
-    FROM OPENJSON(JSON_VALUE([t].[Owned], '$.Strings')) AS [s]) = 2
-""",
-            //
-            """
-SELECT TOP(2) [t].[Id], [t].[Owned]
-FROM [TestOwner] AS [t]
-WHERE JSON_VALUE(JSON_VALUE([t].[Owned], '$.Strings'), '$[1]') = N'bar'
-""");
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => base.Column_collection_inside_json_owned_entity());
+        Assert.Equal(SingleStoreStrings.Ef7CoreJsonMappingNotSupported, exception.Message);
     }
 
     #endregion Type mapping inference
 
+    public override async Task Parameter_collection_Count_with_column_predicate_with_default_constants()
+    {
+        await base.Parameter_collection_Count_with_column_predicate_with_default_constants();
+
+        AssertSql(
+$"""
+SELECT `t`.`Id`
+FROM `TestEntity` AS `t`
+WHERE (
+    SELECT COUNT(*)
+    FROM (SELECT 2 AS `Value` UNION ALL VALUES {(AppConfig.ServerVersion.Supports.ValuesWithRows ? "ROW" : string.Empty)}(999)) AS `i`
+    WHERE `i`.`Value` > `t`.`Id`) = 1
+""");
+    }
+
+    public override async Task Parameter_collection_of_ints_Contains_int_with_default_constants()
+    {
+        await base.Parameter_collection_of_ints_Contains_int_with_default_constants();
+
+        AssertSql(
+"""
+SELECT `t`.`Id`
+FROM `TestEntity` AS `t`
+WHERE `t`.`Id` IN (2, 999)
+""");
+    }
+
+    public override async Task Parameter_collection_Count_with_column_predicate_with_default_constants_EF_Parameter()
+    {
+        await base.Parameter_collection_Count_with_column_predicate_with_default_constants_EF_Parameter();
+
+        AssertSql();
+    }
+
+    public override async Task Parameter_collection_of_ints_Contains_int_with_default_constants_EF_Parameter()
+    {
+        await base.Parameter_collection_of_ints_Contains_int_with_default_constants_EF_Parameter();
+
+        AssertSql();
+    }
+
+    public override async Task Parameter_collection_Count_with_column_predicate_with_default_parameters()
+    {
+        await base.Parameter_collection_Count_with_column_predicate_with_default_parameters();
+
+        AssertSql();
+    }
+
+    public override async Task Parameter_collection_of_ints_Contains_int_with_default_parameters()
+    {
+        await base.Parameter_collection_of_ints_Contains_int_with_default_parameters();
+
+        AssertSql();
+    }
+
+    public override async Task Parameter_collection_Count_with_column_predicate_with_default_parameters_EF_Constant()
+    {
+        await base.Parameter_collection_Count_with_column_predicate_with_default_parameters_EF_Constant();
+
+        AssertSql(
+$"""
+SELECT `t`.`Id`
+FROM `TestEntity` AS `t`
+WHERE (
+    SELECT COUNT(*)
+    FROM (SELECT 2 AS `Value` UNION ALL VALUES {(AppConfig.ServerVersion.Supports.ValuesWithRows ? "ROW" : string.Empty)}(999)) AS `i`
+    WHERE `i`.`Value` > `t`.`Id`) = 1
+""");
+    }
+
+    public override async Task Parameter_collection_of_ints_Contains_int_with_default_parameters_EF_Constant()
+    {
+        await base.Parameter_collection_of_ints_Contains_int_with_default_parameters_EF_Constant();
+
+        AssertSql(
+"""
+SELECT `t`.`Id`
+FROM `TestEntity` AS `t`
+WHERE `t`.`Id` IN (2, 999)
+""");
+    }
+
+    public override async Task Project_collection_from_entity_type_with_owned()
+    {
+        await base.Project_collection_from_entity_type_with_owned();
+
+        AssertSql(
+"""
+SELECT `t`.`Ints`
+FROM `TestEntityWithOwned` AS `t`
+""");
+    }
+
     [ConditionalFact]
     public virtual void Check_all_tests_overridden()
-        => TestHelpers.AssertAllMethodsOverridden(GetType());
+        => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
+
+    protected override DbContextOptionsBuilder SetTranslateParameterizedCollectionsToConstants(DbContextOptionsBuilder optionsBuilder)
+    {
+        new SingleStoreDbContextOptionsBuilder(optionsBuilder).TranslateParameterizedCollectionsToConstants();
+
+        return optionsBuilder;
+    }
+
+    protected override DbContextOptionsBuilder SetTranslateParameterizedCollectionsToParameters(DbContextOptionsBuilder optionsBuilder)
+    {
+        new SingleStoreDbContextOptionsBuilder(optionsBuilder).TranslateParameterizedCollectionsToParameters();
+
+        return optionsBuilder;
+    }
 
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;

@@ -22,7 +22,42 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 AssertSql(
                     @"SELECT COUNT(*)
 FROM `Orders` AS `o`
-WHERE TIMESTAMPDIFF(YEAR, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
+WHERE TIMESTAMPDIFF(YEAR, `o`.`OrderDate`, CURRENT_TIMESTAMP(6)) = 0");
+            }
+        }
+
+
+        [ConditionalFact]
+        public virtual void DateDiff_Quarter()
+        {
+            using (var context = CreateContext())
+            {
+                var count = context.Orders
+                    .Count(c => EF.Functions.DateDiffQuarter(c.OrderDate, DateTime.Now) == 0);
+
+                Assert.Equal(0, count);
+
+                AssertSql(
+                    @"SELECT COUNT(*)
+FROM `Orders` AS `o`
+WHERE TIMESTAMPDIFF(QUARTER, `o`.`OrderDate`, CURRENT_TIMESTAMP(6)) = 0");
+            }
+        }
+
+        [ConditionalFact]
+        public virtual void DateDiff_Week()
+        {
+            using (var context = CreateContext())
+            {
+                var count = context.Orders
+                    .Count(c => EF.Functions.DateDiffWeek(c.OrderDate, DateTime.Now) == 0);
+
+                Assert.Equal(0, count);
+
+                AssertSql(
+                    @"SELECT COUNT(*)
+FROM `Orders` AS `o`
+WHERE TIMESTAMPDIFF(WEEK, `o`.`OrderDate`, CURRENT_TIMESTAMP(6)) = 0");
             }
         }
 
@@ -39,7 +74,7 @@ WHERE TIMESTAMPDIFF(YEAR, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
                 AssertSql(
                     @"SELECT COUNT(*)
 FROM `Orders` AS `o`
-WHERE TIMESTAMPDIFF(MONTH, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
+WHERE TIMESTAMPDIFF(MONTH, `o`.`OrderDate`, CURRENT_TIMESTAMP(6)) = 0");
             }
         }
 
@@ -56,7 +91,7 @@ WHERE TIMESTAMPDIFF(MONTH, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
                 AssertSql(
                     @"SELECT COUNT(*)
 FROM `Orders` AS `o`
-WHERE TIMESTAMPDIFF(DAY, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
+WHERE TIMESTAMPDIFF(DAY, `o`.`OrderDate`, CURRENT_TIMESTAMP(6)) = 0");
             }
         }
 
@@ -73,7 +108,7 @@ WHERE TIMESTAMPDIFF(DAY, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
                 AssertSql(
                     @"SELECT COUNT(*)
 FROM `Orders` AS `o`
-WHERE TIMESTAMPDIFF(HOUR, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
+WHERE TIMESTAMPDIFF(HOUR, `o`.`OrderDate`, CURRENT_TIMESTAMP(6)) = 0");
             }
         }
 
@@ -90,7 +125,7 @@ WHERE TIMESTAMPDIFF(HOUR, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
                 AssertSql(
                     @"SELECT COUNT(*)
 FROM `Orders` AS `o`
-WHERE TIMESTAMPDIFF(MINUTE, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
+WHERE TIMESTAMPDIFF(MINUTE, `o`.`OrderDate`, CURRENT_TIMESTAMP(6)) = 0");
             }
         }
 
@@ -107,7 +142,24 @@ WHERE TIMESTAMPDIFF(MINUTE, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
                 AssertSql(
                     @"SELECT COUNT(*)
 FROM `Orders` AS `o`
-WHERE TIMESTAMPDIFF(SECOND, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
+WHERE TIMESTAMPDIFF(SECOND, `o`.`OrderDate`, CURRENT_TIMESTAMP(6)) = 0");
+            }
+        }
+
+        [ConditionalFact]
+        public virtual void DateDiff_Millisecond()
+        {
+            using (var context = CreateContext())
+            {
+                var count = context.Orders
+                    .Count(o => EF.Functions.DateDiffMillisecond(DateTime.Now, DateTime.Now.AddSeconds(1)) == 0);
+
+                Assert.Equal(0, count);
+
+                AssertSql(
+                    @"SELECT COUNT(*)
+FROM `Orders` AS `o`
+WHERE (TIMESTAMPDIFF(MICROSECOND, CURRENT_TIMESTAMP(6), DATE_ADD(CURRENT_TIMESTAMP(6), INTERVAL CAST(1.0 AS signed) second))) DIV (1000) = 0");
             }
         }
 
@@ -124,7 +176,41 @@ WHERE TIMESTAMPDIFF(SECOND, `o`.`OrderDate`, CURRENT_TIMESTAMP()) = 0");
                 AssertSql(
                     @"SELECT COUNT(*)
 FROM `Orders` AS `o`
-WHERE TIMESTAMPDIFF(MICROSECOND, CURRENT_TIMESTAMP(), DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL CAST(1.0 AS signed) second)) = 0");
+WHERE TIMESTAMPDIFF(MICROSECOND, CURRENT_TIMESTAMP(6), DATE_ADD(CURRENT_TIMESTAMP(6), INTERVAL CAST(1.0 AS signed) second)) = 0");
+            }
+        }
+
+        [ConditionalFact]
+        public virtual void DateDiff_Tick()
+        {
+            using (var context = CreateContext())
+            {
+                var count = context.Orders
+                    .Count(o => EF.Functions.DateDiffTick(DateTime.Now, DateTime.Now.AddSeconds(1)) == 0);
+
+                Assert.Equal(0, count);
+
+                AssertSql(
+                    @"SELECT COUNT(*)
+FROM `Orders` AS `o`
+WHERE (TIMESTAMPDIFF(MICROSECOND, CURRENT_TIMESTAMP(6), DATE_ADD(CURRENT_TIMESTAMP(6), INTERVAL CAST(1.0 AS signed) second)) * 10) = 0");
+            }
+        }
+
+        [ConditionalFact]
+        public virtual void DateDiff_Nanosecond()
+        {
+            using (var context = CreateContext())
+            {
+                var count = context.Orders
+                    .Count(o => EF.Functions.DateDiffNanosecond(DateTime.Now, DateTime.Now.AddSeconds(1)) == 0);
+
+                Assert.Equal(0, count);
+
+                AssertSql(
+                    @"SELECT COUNT(*)
+FROM `Orders` AS `o`
+WHERE (TIMESTAMPDIFF(MICROSECOND, CURRENT_TIMESTAMP(6), DATE_ADD(CURRENT_TIMESTAMP(6), INTERVAL CAST(1.0 AS signed) second)) * 1000) = 0");
             }
         }
 
@@ -304,6 +390,102 @@ SELECT `c`.`CustomerID`, RADIANS(@__degrees_1) AS `OfficeRoofAngleRadians`
 FROM `Customers` AS `c`
 WHERE `c`.`CustomerID` = 'VINET'
 LIMIT 1");
+        }
+
+        [ConditionalFact]
+        public virtual void Contains_with_escape_char()
+        {
+            using var context = CreateContext();
+            var count = context.Customers.Count(c => c.CompanyName.Replace("/", @"\").Contains(@"\"));
+
+            Assert.Equal(1, count);
+
+            AssertSql(
+"""
+SELECT COUNT(*)
+FROM `Customers` AS `c`
+WHERE REPLACE(`c`.`CompanyName`, '/', '\\') LIKE '%\\\\%'
+""");
+        }
+
+        [ConditionalFact]
+        public virtual void Contains_with_wild_char()
+        {
+            using var context = CreateContext();
+            var count = context.Customers.Count(c => c.CompanyName.Replace("/", "%").Contains("%"));
+
+            Assert.Equal(1, count);
+
+            AssertSql(
+"""
+SELECT COUNT(*)
+FROM `Customers` AS `c`
+WHERE REPLACE(`c`.`CompanyName`, '/', '%') LIKE '%\\%%'
+""");
+        }
+
+        [ConditionalFact]
+        public virtual void StartsWith_with_escape_char()
+        {
+            using var context = CreateContext();
+            var count = context.Customers.Count(c => c.CompanyName.Replace("A", @"\").StartsWith(@"\"));
+
+            Assert.Equal(4, count);
+
+            AssertSql(
+"""
+SELECT COUNT(*)
+FROM `Customers` AS `c`
+WHERE REPLACE(`c`.`CompanyName`, 'A', '\\') LIKE '\\\\%'
+""");
+        }
+
+        [ConditionalFact]
+        public virtual void StartsWith_with_wild_char()
+        {
+            using var context = CreateContext();
+            var count = context.Customers.Count(c => c.CompanyName.Replace("A", @"%").StartsWith(@"%"));
+
+            Assert.Equal(4, count);
+
+            AssertSql(
+"""
+SELECT COUNT(*)
+FROM `Customers` AS `c`
+WHERE REPLACE(`c`.`CompanyName`, 'A', '%') LIKE '\\%%'
+""");
+        }
+
+        [ConditionalFact]
+        public virtual void EndsWith_with_escape_char()
+        {
+            using var context = CreateContext();
+            var count = context.Customers.Count(c => c.CompanyName.Replace("a", @"\").EndsWith(@"\"));
+
+            Assert.Equal(7, count);
+
+            AssertSql(
+"""
+SELECT COUNT(*)
+FROM `Customers` AS `c`
+WHERE REPLACE(`c`.`CompanyName`, 'a', '\\') LIKE '%\\\\'
+""");
+        }
+
+        [ConditionalFact]
+        public virtual void EndsWith_with_wild_char()
+        {
+            using var context = CreateContext();
+            var count = context.Customers.Count(c => c.CompanyName.Replace("a", @"%").EndsWith(@"%"));
+
+            Assert.Equal(7, count);
+
+            AssertSql(
+"""
+SELECT COUNT(*)
+FROM `Customers` AS `c`
+WHERE REPLACE(`c`.`CompanyName`, 'a', '%') LIKE '%\\%'
+""");
         }
     }
 }

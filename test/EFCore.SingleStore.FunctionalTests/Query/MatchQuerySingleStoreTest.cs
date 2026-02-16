@@ -374,7 +374,7 @@ WHERE MATCH (`h`.`Name`, `h`.`Garden`) AGAINST ('Herb* -Second') > 0.0");
 
         protected virtual DbContext CreateContext() => Fixture.CreateContext();
 
-        public abstract class MatchQuerySingleStoreFixtureBase : SharedStoreFixtureBase<PoolableDbContext>, IQueryFixtureBase
+        public abstract class MatchQuerySingleStoreFixtureBase : SharedStoreFixtureBase<PoolableDbContext>, IQueryFixtureBase, ITestSqlLoggerFactory
         {
             protected override string StoreName { get; } = "MatchQueryTest";
             public TestSqlLoggerFactory TestSqlLoggerFactory => (TestSqlLoggerFactory)ListLoggerFactory;
