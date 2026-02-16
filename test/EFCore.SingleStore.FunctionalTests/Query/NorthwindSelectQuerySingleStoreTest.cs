@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Xunit;
@@ -22,9 +26,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             ClearLog();
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
-
-        protected override bool CanExecuteQueryString
-            => true;
 
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
         public override Task Client_projection_with_string_initialization_with_scalar_subquery(bool async)
@@ -132,8 +133,10 @@ FROM `Orders` AS `o`");
             await base.Select_datetime_month_component(async);
 
             AssertSql(
-                @"SELECT EXTRACT(month FROM `o`.`OrderDate`)
-FROM `Orders` AS `o`");
+"""
+SELECT EXTRACT(month FROM `o`.`OrderDate`)
+FROM `Orders` AS `o`
+""");
         }
 
         [ConditionalTheory]
@@ -261,7 +264,14 @@ ORDER BY `t`.`OrderDate`, `t`.`CustomerID`
                     () => base.Correlated_collection_after_distinct_with_complex_projection_not_containing_original_identifier(async)))
                 .Message;
 
-            Assert.Equal(RelationalStrings.InsufficientInformationToIdentifyElementOfCollectionJoin, message);
+            if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
+            {
+                Assert.Equal(RelationalStrings.InsufficientInformationToIdentifyElementOfCollectionJoin, message);
+            }
+            else
+            {
+                Assert.Contains("Primitive collections support has not been enabled.", message);
+            }
 
             AssertSql();
         }

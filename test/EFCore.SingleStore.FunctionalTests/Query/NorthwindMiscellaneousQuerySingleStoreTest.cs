@@ -30,87 +30,100 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        protected override bool CanExecuteQueryString
-            => true;
-
         public override async Task Select_bitwise_or(bool async)
         {
             await base.Select_bitwise_or(async);
 
             AssertSql(
-                @"SELECT `c`.`CustomerID`, (`c`.`CustomerID` = 'ALFKI') | (`c`.`CustomerID` = 'ANATR') AS `Value`
-FROM `Customers` AS `c`
-ORDER BY `c`.`CustomerID`");
+                """
+                SELECT `c`.`CustomerID`, `c`.`CustomerID` IN ('ALFKI', 'ANATR') AS `Value`
+                FROM `Customers` AS `c`
+                ORDER BY `c`.`CustomerID`
+                """);
         }
 
         public override async Task Select_bitwise_or_multiple(bool async)
         {
             await base.Select_bitwise_or_multiple(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, ((`c`.`CustomerID` = 'ALFKI') | (`c`.`CustomerID` = 'ANATR')) | (`c`.`CustomerID` = 'ANTON') AS `Value`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, `c`.`CustomerID` IN ('ALFKI', 'ANATR', 'ANTON') AS `Value`
 FROM `Customers` AS `c`
-ORDER BY `c`.`CustomerID`");
+ORDER BY `c`.`CustomerID`
+""");
         }
 
         public override async Task Select_bitwise_and(bool async)
         {
             await base.Select_bitwise_and(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, (`c`.`CustomerID` = 'ALFKI') & (`c`.`CustomerID` = 'ANATR') AS `Value`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, FALSE AS `Value`
 FROM `Customers` AS `c`
-ORDER BY `c`.`CustomerID`");
+ORDER BY `c`.`CustomerID`
+""");
         }
 
         public override async Task Select_bitwise_and_or(bool async)
         {
             await base.Select_bitwise_and_or(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, ((`c`.`CustomerID` = 'ALFKI') & (`c`.`CustomerID` = 'ANATR')) | (`c`.`CustomerID` = 'ANTON') AS `Value`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, `c`.`CustomerID` = 'ANTON' AS `Value`
 FROM `Customers` AS `c`
-ORDER BY `c`.`CustomerID`");
+ORDER BY `c`.`CustomerID`
+""");
         }
 
         public override async Task Where_bitwise_or_with_logical_or(bool async)
         {
             await base.Where_bitwise_or_with_logical_or(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE ((`c`.`CustomerID` = 'ALFKI') | (`c`.`CustomerID` = 'ANATR')) OR (`c`.`CustomerID` = 'ANTON')");
+WHERE `c`.`CustomerID` IN ('ALFKI', 'ANATR', 'ANTON')
+""");
         }
 
         public override async Task Where_bitwise_and_with_logical_and(bool async)
         {
             await base.Where_bitwise_and_with_logical_and(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE ((`c`.`CustomerID` = 'ALFKI') & (`c`.`CustomerID` = 'ANATR')) AND (`c`.`CustomerID` = 'ANTON')");
+WHERE FALSE
+""");
         }
 
         public override async Task Where_bitwise_or_with_logical_and(bool async)
         {
             await base.Where_bitwise_or_with_logical_and(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE ((`c`.`CustomerID` = 'ALFKI') | (`c`.`CustomerID` = 'ANATR')) AND (`c`.`Country` = 'Germany')");
+WHERE `c`.`CustomerID` IN ('ALFKI', 'ANATR') AND (`c`.`Country` = 'Germany')
+""");
         }
 
         public override async Task Where_bitwise_and_with_logical_or(bool async)
         {
             await base.Where_bitwise_and_with_logical_or(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE ((`c`.`CustomerID` = 'ALFKI') & (`c`.`CustomerID` = 'ANATR')) OR (`c`.`CustomerID` = 'ANTON')");
+WHERE `c`.`CustomerID` = 'ANTON'
+""");
         }
 
         public override async Task Where_bitwise_binary_not(bool async)
@@ -130,9 +143,11 @@ WHERE CAST(~`o`.`OrderID` AS signed) = @__negatedId_0");
             await base.Where_bitwise_binary_and(async);
 
             AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+"""
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`OrderID` & 10248) = 10248");
+WHERE CAST(`o`.`OrderID` & 10248 AS signed) = 10248
+""");
         }
 
         public override async Task Where_bitwise_binary_or(bool async)
@@ -140,29 +155,35 @@ WHERE (`o`.`OrderID` & 10248) = 10248");
             await base.Where_bitwise_binary_or(async);
 
             AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+"""
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`OrderID` | 10248) = 10248");
+WHERE CAST(`o`.`OrderID` | 10248 AS signed) = 10248
+""");
         }
 
         public override async Task Select_bitwise_or_with_logical_or(bool async)
         {
             await base.Select_bitwise_or_with_logical_or(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, ((`c`.`CustomerID` = 'ALFKI') | (`c`.`CustomerID` = 'ANATR')) OR (`c`.`CustomerID` = 'ANTON') AS `Value`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, `c`.`CustomerID` IN ('ALFKI', 'ANATR', 'ANTON') AS `Value`
 FROM `Customers` AS `c`
-ORDER BY `c`.`CustomerID`");
+ORDER BY `c`.`CustomerID`
+""");
         }
 
         public override async Task Select_bitwise_and_with_logical_and(bool async)
         {
             await base.Select_bitwise_and_with_logical_and(async);
 
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, ((`c`.`CustomerID` = 'ALFKI') & (`c`.`CustomerID` = 'ANATR')) AND (`c`.`CustomerID` = 'ANTON') AS `Value`
+        AssertSql(
+"""
+SELECT `c`.`CustomerID`, FALSE AS `Value`
 FROM `Customers` AS `c`
-ORDER BY `c`.`CustomerID`");
+ORDER BY `c`.`CustomerID`
+""");
         }
 
         [ConditionalTheory]
@@ -170,19 +191,21 @@ ORDER BY `c`.`CustomerID`");
         {
             await base.Take_Skip(async);
 
-            AssertSql(
-                @"@__p_0='10'
+        AssertSql(
+"""
+@__p_0='10'
 @__p_1='5'
 
-SELECT `t`.`CustomerID`, `t`.`Address`, `t`.`City`, `t`.`CompanyName`, `t`.`ContactName`, `t`.`ContactTitle`, `t`.`Country`, `t`.`Fax`, `t`.`Phone`, `t`.`PostalCode`, `t`.`Region`
+SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
 FROM (
     SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
     FROM `Customers` AS `c`
     ORDER BY `c`.`ContactName`
     LIMIT @__p_0
-) AS `t`
-ORDER BY `t`.`ContactName`
-LIMIT 18446744073709551610 OFFSET @__p_1");
+) AS `c0`
+ORDER BY `c0`.`ContactName`
+LIMIT 18446744073709551610 OFFSET @__p_1
+""");
         }
 
         [ConditionalTheory]
@@ -506,18 +529,20 @@ WHERE `o`.`OrderDate` IS NOT NULL AND (EXTRACT(year FROM `o`.`OrderDate`) < @__n
                 });
 
             AssertSql(
-                @"@__p_0='5'
+                """
+                @__p_0='5'
 
-SELECT `t`.`OrderID`, `o0`.`ProductID`, `o0`.`OrderID`
-FROM (
-    SELECT `o`.`OrderID`
-    FROM `Orders` AS `o`
-    WHERE `o`.`OrderID` < 10300
-    ORDER BY `o`.`OrderID`
-    LIMIT 18446744073709551610 OFFSET @__p_0
-) AS `t`
-LEFT JOIN `Order Details` AS `o0` ON `t`.`OrderID` = `o0`.`OrderID`
-ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
+                SELECT `o1`.`OrderID`, `o0`.`ProductID`, `o0`.`OrderID`
+                FROM (
+                    SELECT `o`.`OrderID`
+                    FROM `Orders` AS `o`
+                    WHERE `o`.`OrderID` < 10300
+                    ORDER BY `o`.`OrderID`
+                    LIMIT 18446744073709551610 OFFSET @__p_0
+                ) AS `o1`
+                LEFT JOIN `Order Details` AS `o0` ON `o1`.`OrderID` = `o0`.`OrderID`
+                ORDER BY `o1`.`OrderID`, `o0`.`ProductID`
+                """);
         }
 
         /// <summary>
@@ -543,19 +568,21 @@ ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
                 });
 
             AssertSql(
-                @"@__p_1='10'
-@__p_0='5'
+                """
+                @__p_1='10'
+                @__p_0='5'
 
-SELECT `t`.`OrderID`, `o0`.`ProductID`, `o0`.`OrderID`
-FROM (
-    SELECT `o`.`OrderID`
-    FROM `Orders` AS `o`
-    WHERE `o`.`OrderID` < 10300
-    ORDER BY `o`.`OrderID`
-    LIMIT @__p_1 OFFSET @__p_0
-) AS `t`
-LEFT JOIN `Order Details` AS `o0` ON `t`.`OrderID` = `o0`.`OrderID`
-ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
+                SELECT `o1`.`OrderID`, `o0`.`ProductID`, `o0`.`OrderID`
+                FROM (
+                    SELECT `o`.`OrderID`
+                    FROM `Orders` AS `o`
+                    WHERE `o`.`OrderID` < 10300
+                    ORDER BY `o`.`OrderID`
+                    LIMIT @__p_1 OFFSET @__p_0
+                ) AS `o1`
+                LEFT JOIN `Order Details` AS `o0` ON `o1`.`OrderID` = `o0`.`OrderID`
+                ORDER BY `o1`.`OrderID`, `o0`.`ProductID`
+                """);
         }
 
         /// <summary>
@@ -580,18 +607,20 @@ ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
                 });
 
             AssertSql(
-                @"@__p_0='10'
+                """
+                @__p_0='10'
 
-SELECT `t`.`OrderID`, `o0`.`ProductID`, `o0`.`OrderID`
-FROM (
-    SELECT `o`.`OrderID`
-    FROM `Orders` AS `o`
-    WHERE `o`.`OrderID` < 10300
-    ORDER BY `o`.`OrderID`
-    LIMIT @__p_0
-) AS `t`
-LEFT JOIN `Order Details` AS `o0` ON `t`.`OrderID` = `o0`.`OrderID`
-ORDER BY `t`.`OrderID`, `o0`.`ProductID`");
+                SELECT `o1`.`OrderID`, `o0`.`ProductID`, `o0`.`OrderID`
+                FROM (
+                    SELECT `o`.`OrderID`
+                    FROM `Orders` AS `o`
+                    WHERE `o`.`OrderID` < 10300
+                    ORDER BY `o`.`OrderID`
+                    LIMIT @__p_0
+                ) AS `o1`
+                LEFT JOIN `Order Details` AS `o0` ON `o1`.`OrderID` = `o0`.`OrderID`
+                ORDER BY `o1`.`OrderID`, `o0`.`ProductID`
+                """);
         }
 
         public override Task Complex_nested_query_doesnt_try_binding_to_grandparent_when_parent_returns_complex_result(bool async)
@@ -695,6 +724,7 @@ FROM `Customers` AS `c`");
             var actual = async
                 ? (await actualQuery.ToListAsync()).OrderBy(e => e.A.Id).ToList()
                 : actualQuery.ToList().OrderBy(e => e.A.Id).ToList();
+
             var expected = Fixture.GetExpectedData().Set<Order>()
                 .Where(o => o.OrderID < 10300)
                 .Select(o => new { A = new OrderCountDTO(o.CustomerID), o.CustomerID })
@@ -712,16 +742,16 @@ FROM `Customers` AS `c`");
             }
 
             AssertSql(
-"""
-SELECT `t`.`CustomerID`, `o0`.`OrderID`, `o0`.`CustomerID`, `o0`.`EmployeeID`, `o0`.`OrderDate`
-FROM (
-    SELECT DISTINCT `o`.`CustomerID`
-    FROM `Orders` AS `o`
-    WHERE `o`.`OrderID` < 10300
-) AS `t`
-LEFT JOIN `Orders` AS `o0` ON `t`.`CustomerID` = `o0`.`CustomerID`
-ORDER BY `t`.`CustomerID`, `o0`.`OrderID`
-""");
+                """
+                SELECT `o0`.`CustomerID`, `o1`.`OrderID`, `o1`.`CustomerID`, `o1`.`EmployeeID`, `o1`.`OrderDate`
+                FROM (
+                    SELECT DISTINCT `o`.`CustomerID`
+                    FROM `Orders` AS `o`
+                    WHERE `o`.`OrderID` < 10300
+                ) AS `o0`
+                LEFT JOIN `Orders` AS `o1` ON `o0`.`CustomerID` = `o1`.`CustomerID`
+                ORDER BY `o0`.`CustomerID`, `o1`.`OrderID`
+                """);
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.OuterReferenceInMultiLevelSubquery))]

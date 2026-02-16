@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using SingleStoreConnector;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -18,7 +19,7 @@ public class NorthwindSqlQuerySingleStoreTest : NorthwindSqlQueryTestBase<Northw
 
     [ConditionalFact]
     public virtual void Check_all_tests_overridden()
-        => TestHelpers.AssertAllMethodsOverridden(GetType());
+        => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
     public override async Task SqlQueryRaw_over_int(bool async)
     {
@@ -39,10 +40,10 @@ public class NorthwindSqlQuerySingleStoreTest : NorthwindSqlQueryTestBase<Northw
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
 WHERE `o`.`OrderID` IN (
-    SELECT `t`.`Value`
+    SELECT `s`.`Value`
     FROM (
         SELECT `ProductID` AS `Value` FROM `Products`
-    ) AS `t`
+    ) AS `s`
 )
 """);
     }
@@ -53,11 +54,11 @@ WHERE `o`.`OrderID` IN (
 
         AssertSql(
             """
-            SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, CAST(`t`.`Value` AS signed) AS `p`
+            SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`, CAST(`s`.`Value` AS signed) AS `p`
             FROM `Orders` AS `o`
             INNER JOIN (
                 SELECT `ProductID` AS `Value` FROM `Products`
-            ) AS `t` ON `o`.`OrderID` = CAST(`t`.`Value` AS signed)
+            ) AS `s` ON `o`.`OrderID` = CAST(`s`.`Value` AS signed)
             """);
     }
 

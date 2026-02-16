@@ -22,9 +22,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        protected override bool CanExecuteQueryString
-            => true;
-
         public override async Task Client_eval_Union_FirstOrDefault(bool async)
         {
             // Client evaluation in projection. Issue #16243.
@@ -127,14 +124,16 @@ WHERE `c0`.`ContactName` LIKE '%Thomas%'");
             await base.Except_simple_followed_by_projecting_constant(async);
 
             AssertSql(
-                @"SELECT 1
-FROM (
-    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-    FROM `Customers` AS `c`
-    EXCEPT
-    SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
-    FROM `Customers` AS `c0`
-) AS `t`");
+                """
+                SELECT 1
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+                    FROM `Customers` AS `c`
+                    EXCEPT
+                    SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
+                    FROM `Customers` AS `c0`
+                ) AS `e`
+                """);
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.ExceptIntercept))]
@@ -202,16 +201,16 @@ WHERE `o0`.`CustomerID` = 'ALFKI'");
             await base.Union_Select_scalar(async);
 
             AssertSql(
-"""
-SELECT 1
-FROM (
-    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-    FROM `Customers` AS `c`
-    UNION
-    SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
-    FROM `Customers` AS `c0`
-) AS `t`
-""");
+                """
+                SELECT 1
+                FROM (
+                    SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+                    FROM `Customers` AS `c`
+                    UNION
+                    SELECT `c0`.`CustomerID`, `c0`.`Address`, `c0`.`City`, `c0`.`CompanyName`, `c0`.`ContactName`, `c0`.`ContactTitle`, `c0`.`Country`, `c0`.`Fax`, `c0`.`Phone`, `c0`.`PostalCode`, `c0`.`Region`
+                    FROM `Customers` AS `c0`
+                ) AS `u`
+                """);
         }
 
         private void AssertSql(params string[] expected)
