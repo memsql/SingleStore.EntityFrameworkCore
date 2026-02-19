@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
@@ -156,10 +157,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             {
             }
 
-            public static void Seed(SpatialGeographyContext context, GeometryFactory factory)
+            public static async Task SeedAsync(SpatialGeographyContext context, GeometryFactory factory)
             {
                 context.AddRange(SpatialGeographyData.CreateCities(factory));
-                context.SaveChanges();
+                await context.SaveChangesAsync();
             }
 
             public class City
@@ -201,7 +202,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             }
         }
 
-        public class SpatialGeographyQuerySingleStoreFixture : SharedStoreFixtureBase<SpatialGeographyContext>, IQueryFixtureBase
+        public class SpatialGeographyQuerySingleStoreFixture : SharedStoreFixtureBase<SpatialGeographyContext>, IQueryFixtureBase, ITestSqlLoggerFactory
         {
             private GeometryFactory _geometryFactory;
 
@@ -246,8 +247,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                 return context;
             }
 
-            protected override void Seed(SpatialGeographyContext context)
-                => SpatialGeographyContext.Seed(context, GeometryFactory);
+            protected override Task SeedAsync(SpatialGeographyContext context)
+                => SpatialGeographyContext.SeedAsync(context, GeometryFactory);
 
             public Func<DbContext> GetContextCreator()
                 => CreateContext;

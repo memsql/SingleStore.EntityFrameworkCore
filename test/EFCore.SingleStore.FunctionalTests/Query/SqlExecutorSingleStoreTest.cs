@@ -2,16 +2,16 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
-using Microsoft.EntityFrameworkCore.TestUtilities;
+using Microsoft.EntityFrameworkCore.TestModels.ConcurrencyModel;
 using SingleStoreConnector;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
-    public class SqlExecutorSingleStoreTest : SqlExecutorTestBase<NorthwindQuerySingleStoreFixture<NoopModelCustomizer>>
+    public class SqlExecutorSingleStoreTest : SqlExecutorTestBase<NorthwindQuerySingleStoreFixture<SqlExecutorModelCustomizer>>
     {
-        public SqlExecutorSingleStoreTest(NorthwindQuerySingleStoreFixture<NoopModelCustomizer> fixture, ITestOutputHelper testOutputHelper)
+        public SqlExecutorSingleStoreTest(NorthwindQuerySingleStoreFixture<SqlExecutorModelCustomizer> fixture, ITestOutputHelper testOutputHelper)
             : base(fixture)
         {
             Fixture.TestSqlLoggerFactory.Clear();
@@ -220,6 +220,25 @@ CALL `CustOrderHist`(@p0)
                     $@"SELECT COUNT(*) FROM `Customers` WHERE `City` = {city} AND `ContactTitle` = {contactTitle}");
 
             Assert.Equal(DefaultSqlResult, actual);
+        }
+
+        public override async Task Query_with_parameters_custom_converter(bool async)
+        {
+            // We have to reimplement the base method, because it uses double-quote delimiters, while MySQL uses ticks.
+            // await base.Query_with_parameters_custom_converter(async);
+
+            var city = new City { Name = "London" };
+            var contactTitle = "Sales Representative";
+
+            using var context = CreateContext();
+
+            var actual = async
+                ? await context.Database.ExecuteSqlAsync(
+                    $@"SELECT COUNT(*) FROM `Customers` WHERE `City` = {city} AND `ContactTitle` = {contactTitle}")
+                : context.Database.ExecuteSql(
+                    $@"SELECT COUNT(*) FROM `Customers` WHERE `City` = {city} AND `ContactTitle` = {contactTitle}");
+
+            Assert.Equal(-1, actual);
         }
 
         protected override DbParameter CreateDbParameter(string name, object value)

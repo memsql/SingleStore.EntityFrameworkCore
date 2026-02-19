@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -21,9 +22,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             ClearLog();
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
-
-        protected override bool CanExecuteQueryString
-            => true;
 
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: scalar subselect references field belonging to outer select that is more than one level up")]
         public override Task Where_contains_on_navigation(bool async)
@@ -53,7 +51,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE CURRENT_TIMESTAMP() <> @__myDatetime_0");
+WHERE CURRENT_TIMESTAMP(6) <> @__myDatetime_0");
         }
 
         [ConditionalTheory]
@@ -66,7 +64,7 @@ WHERE CURRENT_TIMESTAMP() <> @__myDatetime_0");
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE UTC_TIMESTAMP() <> @__myDatetime_0");
+WHERE UTC_TIMESTAMP(6) <> @__myDatetime_0");
         }
 
         [ConditionalTheory]
@@ -77,7 +75,7 @@ WHERE UTC_TIMESTAMP() <> @__myDatetime_0");
             AssertSql(
                 @"SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
 FROM `Employees` AS `e`
-WHERE CONVERT(CURRENT_TIMESTAMP(), date) = CURDATE()");
+WHERE CONVERT(CURRENT_TIMESTAMP(6), date) = CURDATE()");
         }
 
         [ConditionalTheory]
@@ -399,7 +397,7 @@ WHERE CONCAT(@__i_0, @__j_1, `c`.`CustomerID`) = `c`.`CompanyName`");
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID),
+                ss => ss.Set<Customer>().Where(c => string.Concat(new[] {i, j, k, c.CustomerID}) == c.CompanyName).Select(c => c.CustomerID),
                 assertEmpty: true);
 
             AssertSql(
@@ -425,7 +423,7 @@ WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = `c`.`CompanyName`
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, m, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID),
+                ss => ss.Set<Customer>().Where(c => string.Concat(new[] {i, j, k, m, c.CustomerID}) == c.CompanyName).Select(c => c.CustomerID),
                 assertEmpty: true);
 
             AssertSql(
@@ -494,7 +492,7 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             await AssertQuery(
                 async,
-                ss => ss.Set<Customer>().Where(c => string.Concat(i, j, k, m, c.CustomerID) == c.CompanyName).Select(c => c.CustomerID),
+                ss => ss.Set<Customer>().Where(c => string.Concat(new[]{i, j, k, m, c.CustomerID}) == c.CompanyName).Select(c => c.CustomerID),
                 assertEmpty: true);
 
             AssertSql(
@@ -664,10 +662,14 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
         public override async Task Where_bitwise_xor(bool async)
         {
-            // Cannot eval 'where (([c].CustomerID == \"ALFKI\") ^ True)'. Issue #16645.
-            await AssertTranslationFailed(() => base.Where_bitwise_xor(async));
+            await base.Where_bitwise_xor(async);
 
-            AssertSql();
+            AssertSql(
+                """
+                SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+                FROM `Customers` AS `c`
+                WHERE (`c`.`CustomerID` = 'ALFKI') ^ TRUE
+                """);
         }
 
         public override async Task Where_compare_constructed_equal(bool async)
