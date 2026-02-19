@@ -24,9 +24,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        protected override bool CanExecuteQueryString
-            => true;
-
         public override Task DateTimeOffset_Contains_Less_than_Greater_than(bool async)
         {
             var dto = SingleStoreTestHelpers.GetExpectedValue(new DateTimeOffset(599898024001234567, new TimeSpan(1, 30, 0)));
@@ -533,6 +530,13 @@ ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
         public override async Task Nav_expansion_with_member_pushdown_inside_Contains_argument(bool async)
         {
             await base.Nav_expansion_with_member_pushdown_inside_Contains_argument(async);
+        }
+
+        // TODO: Implement once TimeSpan is translated as ticks instead of TIME.
+        public override async Task Non_string_concat_uses_appropriate_type_mapping(bool async)
+        {
+            var exception = await Assert.ThrowsAsync<InvalidCastException>(() => base.Non_string_concat_uses_appropriate_type_mapping(async));
+            Assert.Equal("Unable to cast object of type 'System.Decimal' to type 'System.TimeSpan'.", exception.Message);
         }
 
         private string AssertSql(string expected)
