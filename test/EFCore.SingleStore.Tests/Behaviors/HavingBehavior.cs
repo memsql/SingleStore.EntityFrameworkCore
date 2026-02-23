@@ -15,7 +15,7 @@ public class HavingBehavior : RawSqlTestWithFixture<HavingBehavior.HavingBehavio
     }
 
     [Fact]
-    public void Having_without_aggregate_with_function_throws()
+    public void Having_without_aggregate_with_function_is_allowed_by_default()
     {
         using var command = Connection.CreateCommand();
         command.CommandText = """
@@ -26,8 +26,12 @@ HAVING EXTRACT(year FROM `i`.`BestServedBefore`) < 2030
 ORDER BY COUNT(*) DESC
 """;
 
-        var exception = Assert.Throws<SingleStoreException>(() => { using var dataReader = command.ExecuteReader(); });
-        Assert.Contains("Unknown column", exception.Message);
+        using var reader = command.ExecuteReader();
+
+        Assert.True(reader.Read());
+        Assert.Equal(2025, Convert.ToInt32(reader["Year"]));
+        Assert.Equal(2L, Convert.ToInt64(reader["Count"]));
+        Assert.False(reader.Read());
     }
 
     [Fact]
@@ -45,13 +49,13 @@ ORDER BY COUNT(*) DESC
         using var dataReader = command.ExecuteReader();
 
         Assert.True(dataReader.Read());
-        Assert.Equal((int)dataReader["Year"], 2025);
-        Assert.Equal((long)dataReader["Count"], 2);
+        Assert.Equal(2025, Convert.ToInt32(dataReader["Year"]));
+        Assert.Equal(2L, Convert.ToInt64(dataReader["Count"]));
         Assert.False(dataReader.Read());
     }
 
     [Fact]
-    public void Having_without_aggregate_with_column_throws()
+    public void Having_without_aggregate_with_column_is_allowed_by_default()
     {
         using var command = Connection.CreateCommand();
         command.CommandText = """
@@ -62,8 +66,12 @@ HAVING `i`.`BestServedBefore` < '2030-01-01'
 ORDER BY COUNT(*) DESC
 """;
 
-        var exception = Assert.Throws<SingleStoreException>(() => { using var dataReader = command.ExecuteReader(); });
-        Assert.Contains("Unknown column", exception.Message);
+        using var reader = command.ExecuteReader();
+
+        Assert.True(reader.Read());
+        Assert.Equal(2025, Convert.ToInt32(reader["Year"]));
+        Assert.Equal(2L, Convert.ToInt64(reader["Count"]));
+        Assert.False(reader.Read());
     }
 
     [Fact]
@@ -81,8 +89,8 @@ ORDER BY COUNT(*) DESC
         using var dataReader = command.ExecuteReader();
 
         Assert.True(dataReader.Read());
-        Assert.Equal((int)dataReader["Year"], 2025);
-        Assert.Equal((long)dataReader["Count"], 2);
+        Assert.Equal(2025, Convert.ToInt32(dataReader["Year"]));
+        Assert.Equal(2L, Convert.ToInt64(dataReader["Count"]));
         Assert.False(dataReader.Read());
     }
 
@@ -101,11 +109,11 @@ ORDER BY COUNT(*) DESC
         using var dataReader = command.ExecuteReader();
 
         Assert.True(dataReader.Read());
-        Assert.Equal((int)dataReader["Year"], 2025);
-        Assert.Equal((long)dataReader["Count"], 2);
+        Assert.Equal(2025, Convert.ToInt32(dataReader["Year"]));
+        Assert.Equal(2L, Convert.ToInt64(dataReader["Count"]));
         Assert.True(dataReader.Read());
-        Assert.Equal((int)dataReader["Year"], 2036);
-        Assert.Equal((long)dataReader["Count"], 1);
+        Assert.Equal(2036, Convert.ToInt32(dataReader["Year"]));
+        Assert.Equal(1L, Convert.ToInt64(dataReader["Count"]));
         Assert.False(dataReader.Read());
     }
 
