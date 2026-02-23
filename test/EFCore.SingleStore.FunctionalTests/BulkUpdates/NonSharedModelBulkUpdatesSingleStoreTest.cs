@@ -128,10 +128,10 @@ SET `o`.`OwnedReference_Number` = CHAR_LENGTH(`o`.`Title`),
                 mb.Entity<Post>(b =>
                     b.Property(p => p.Id).HasColumnType("bigint"));
             },
-            seed: context =>
+            seed: async context =>
             {
                 context.Set<Blog>().Add(new Blog { Title = "SomeBlog" });
-                context.SaveChanges();
+                await context.SaveChangesAsync();
             });
 
         await AssertUpdate(
@@ -170,10 +170,10 @@ SET `b`.`CreationTimestamp` = '2020-01-01 00:00:00'
                 mb.Entity<Post>(b =>
                     b.Property(p => p.Id).HasColumnType("bigint"));
             },
-            seed: context =>
+            seed: async context =>
             {
                 context.Set<Blog>().Add(new Blog { Title = "SomeBlog" });
-                context.SaveChanges();
+                await context.SaveChangesAsync();
             });
 
         await AssertUpdate(

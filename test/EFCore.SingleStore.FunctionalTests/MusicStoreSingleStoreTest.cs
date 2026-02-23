@@ -109,7 +109,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             await base.Browse_ReturnsViewWithGenre();
         }
 
-        public override void Music_store_project_to_mapped_entity()
+        public override async Task Music_store_project_to_mapped_entity()
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
             // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
@@ -117,7 +117,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             {
                 return;
             }
-            base.Music_store_project_to_mapped_entity();
+            await base.Music_store_project_to_mapped_entity();
         }
 
         public override async Task RemoveFromCart_removes_items_from_cart()

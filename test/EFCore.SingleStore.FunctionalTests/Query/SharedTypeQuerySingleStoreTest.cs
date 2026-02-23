@@ -21,7 +21,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override async Task Can_use_shared_type_entity_type_in_query_filter(bool async)
         {
             var contextFactory = await InitializeAsync<MyContext24601>(
-                seed: c => c.Seed(), onModelCreating: modelBuilder =>
+                seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
             {
                 modelBuilder.SharedTypeEntity<Dictionary<string, object>>("STET",
                     b =>
@@ -52,7 +52,7 @@ WHERE EXISTS (
         public override async Task Can_use_shared_type_entity_type_in_query_filter_with_from_sql(bool async)
         {
             var contextFactory = await InitializeAsync<MyContextRelational24601>(
-                seed: c => c.Seed(), onModelCreating: modelBuilder =>
+                seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
             {
                 modelBuilder.SharedTypeEntity<Dictionary<string, object>>("STET",
                     b =>
@@ -64,7 +64,7 @@ WHERE EXISTS (
                     });
             });
 
-            using var context = contextFactory.CreateContext();
+            await using var context = contextFactory.CreateContext();
             var query = context.Set<ViewQuery24601>();
             var result = async
                 ? await query.ToListAsync()
@@ -84,10 +84,10 @@ WHERE EXISTS (
         }
 
         [ConditionalFact]
-        public override void Ad_hoc_query_for_shared_type_entity_type_works()
+        public override async Task Ad_hoc_query_for_shared_type_entity_type_works()
         {
-            var contextFactory = Initialize<MyContextRelational24601>(
-                seed: c => c.Seed(), onModelCreating: modelBuilder =>
+            var contextFactory = await InitializeAsync<MyContextRelational24601>(
+                seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
                 {
                     modelBuilder.SharedTypeEntity<Dictionary<string, object>>("STET",
                         b =>
@@ -99,19 +99,19 @@ WHERE EXISTS (
                         });
                 });
 
-            using var context = contextFactory.CreateContext();
+            await using var context = contextFactory.CreateContext();
 
             var result = context.Database.SqlQueryRaw<ViewQuery24601>(
-                ((RelationalTestStore)TestStore).NormalizeDelimitersInRawString(@"SELECT * FROM [ViewQuery24601]"));
+                ((RelationalTestStore)TestStore).NormalizeDelimitersInRawString(@"SELECT * FROM `ViewQuery24601`"));
 
             Assert.Empty(result);
         }
 
         [ConditionalFact]
-        public override void Ad_hoc_query_for_default_shared_type_entity_type_throws()
+        public override async Task Ad_hoc_query_for_default_shared_type_entity_type_throws()
         {
-            var contextFactory = Initialize<MyContextRelational24601>(
-                seed: c => c.Seed(), onModelCreating: modelBuilder =>
+            var contextFactory = await InitializeAsync<MyContextRelational24601>(
+                seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
                 {
                     modelBuilder.SharedTypeEntity<Dictionary<string, object>>("STET",
                         b =>
@@ -123,7 +123,7 @@ WHERE EXISTS (
                         });
                 });
 
-            using var context = contextFactory.CreateContext();
+            await using var context = contextFactory.CreateContext();
 
             Assert.Equal(
                 CoreStrings.ClashingSharedType("Dictionary<string, object>"),

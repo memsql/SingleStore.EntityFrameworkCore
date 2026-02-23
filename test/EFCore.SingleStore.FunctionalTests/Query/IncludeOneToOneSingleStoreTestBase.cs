@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Xunit;
@@ -164,7 +165,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
                             .HasForeignKey<Address2>("PersonId"));
             }
 
-            protected override void Seed(PoolableDbContext context)
+            protected override async Task SeedAsync(PoolableDbContext context)
             {
                 var address1 = new Address { Street = "3 Dragons Way", City = "Meereen" };
                 var address2 = new Address { Street = "42 Castle Black", City = "The Wall" };
@@ -204,7 +205,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
                 context.Set<Address2>().AddRange(address21, address22, address23);
 
-                context.SaveChanges();
+                await context.SaveChangesAsync();
             }
         }
 

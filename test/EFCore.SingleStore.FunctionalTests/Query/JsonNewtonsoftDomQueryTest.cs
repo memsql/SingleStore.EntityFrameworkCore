@@ -569,7 +569,7 @@ LIMIT 2");
 
             public JsonDomQueryContext(DbContextOptions options) : base(options) {}
 
-            public static async Task Seed(JsonDomQueryContext context)
+            public static async Task SeedAsync(JsonDomQueryContext context)
             {
                 var (customer1, customer2, customer3) = (createCustomer1(), createCustomer2(), createCustomer3());
 

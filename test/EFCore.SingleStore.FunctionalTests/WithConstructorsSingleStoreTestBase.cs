@@ -34,11 +34,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalFact]
-        public virtual void Query_and_update_using_constructors_with_property_parameters()
+        public virtual async Task Query_and_update_using_constructors_with_property_parameters()
         {
-            TestHelpers.ExecuteWithStrategyInTransaction(
+            await TestHelpers.ExecuteWithStrategyInTransactionAsync(
                 CreateContext, UseTransaction,
-                context =>
+                async context =>
                 {
                     var blog = context.Set<Blog>().Include(e => e.Posts).Single();
 
@@ -61,9 +61,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                     var newBlog = context.Add(new Blog("Cats", 100)).Entity;
                     newBlog.AddPost(new Post("Baxter is a cat.", "With dog friends."));
 
-                    context.SaveChanges();
+                    await context.SaveChangesAsync();
                 },
-                context =>
+                async context =>
                 {
                     var blogs = context.Set<Blog>().Include(e => e.Posts).OrderBy(e => e.Title).ToList();
 
@@ -91,6 +91,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
                     Assert.StartsWith("Olive", posts[2].Title);
                     Assert.StartsWith("Yes", posts[2].Content);
+
+                    await Task.CompletedTask;
                 });
         }
 
@@ -1672,7 +1674,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             modelBuilder.Entity<LazyFieldPost>();
         }
 
-        protected override void Seed(WithConstructorsContext context)
+        protected override Task SeedAsync(WithConstructorsContext context)
         {
             var blog = new Blog("Puppies");
 
@@ -1773,7 +1775,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
             context.Add(lazyPcsBlog);
 
-            context.SaveChanges();
+            return context.SaveChangesAsync();
         }
     }
     }

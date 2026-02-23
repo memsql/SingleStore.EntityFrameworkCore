@@ -21,9 +21,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         }
 
         [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
-        public override void Setting_foreign_key_to_a_different_type_throws()
+        public override Task Setting_foreign_key_to_a_different_type_throws()
         {
-            base.Setting_foreign_key_to_a_different_type_throws();
+            return base.Setting_foreign_key_to_a_different_type_throws();
         }
 
         [ConditionalTheory]
@@ -196,16 +196,16 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         }
 
         [ConditionalFact]
-        public override void Can_insert_update_delete()
+        public override Task Can_insert_update_delete()
         {
             // Skipping this test when running on Managed Service due to the specifics of
             // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
             if (AppConfig.ManagedService)
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            base.Can_insert_update_delete();
+            return base.Can_insert_update_delete();
         }
 
         [ConditionalTheory]
@@ -378,16 +378,16 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         }
 
         [ConditionalFact]
-        public override void Member_access_on_intermediate_type_works()
+        public override Task Member_access_on_intermediate_type_works()
         {
             // Skipping this test when running on Managed Service due to the specifics of
             // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
             if (AppConfig.ManagedService)
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            base.Member_access_on_intermediate_type_works();
+            return base.Member_access_on_intermediate_type_works();
         }
 
         [ConditionalTheory]
