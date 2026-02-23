@@ -1,14 +1,20 @@
 using System;
 using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Threading.Tasks;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions.Infrastructure;
+using EntityFrameworkCore.SingleStore.Diagnostics.Internal;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Tests;
+using Xunit;
 
 //ReSharper disable once CheckNamespace
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
@@ -26,6 +32,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 
         public override DbContextOptionsBuilder UseProviderOptions(DbContextOptionsBuilder optionsBuilder)
             => optionsBuilder.UseSingleStore("Database=DummyDatabase");
+
+        public override LoggingDefinitions LoggingDefinitions { get; } = new SingleStoreLoggingDefinitions();
 
         public IServiceProvider CreateContextServices(ServerVersion serverVersion)
             => ((IInfrastructure<IServiceProvider>)new DbContext(CreateOptions(serverVersion))).Instance;
@@ -120,9 +128,61 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 
         public static bool HasPrimitiveCollectionsSupport<TContext>(SharedStoreFixtureBase<TContext> fixture)
             where TContext : DbContext
+            => HasPrimitiveCollectionsSupport(fixture.CreateOptions());
+
+        public static bool HasPrimitiveCollectionsSupport(DbContextOptions options)
+            => AppConfig.ServerVersion.Supports.JsonTable &&
+               options.GetExtension<SingleStoreOptionsExtension>().PrimitiveCollectionsSupport;
+
+        /// <summary>
+        /// Same implementation as EF Core base class, except that it can generate code for Task returning test without a `bool async`
+        /// parameter.
+        /// </summary>
+        public static void AssertAllMethodsOverridden(Type testClass, bool withAssertSqlCall = true)
         {
-            return AppConfig.ServerVersion.Supports.JsonTable &&
-                   fixture.CreateOptions().GetExtension<SingleStoreOptionsExtension>().PrimitiveCollectionsSupport;
+            var methods = testClass
+                .GetRuntimeMethods()
+                .Where(m => m.DeclaringType != testClass
+                            && (Attribute.IsDefined(m, typeof(ConditionalFactAttribute))
+                                || Attribute.IsDefined(m, typeof(ConditionalTheoryAttribute))))
+                .ToList();
+
+            var methodCalls = new StringBuilder();
+
+            foreach (var method in methods)
+            {
+                if (method.ReturnType == typeof(Task))
+                {
+                    var parameters = method.GetParameters();
+                    var generateAsyncParameter = parameters.Length == 1 &&
+                                                 parameters[0].ParameterType == typeof(bool);
+                    methodCalls.Append(
+                        @$"public override async Task {method.Name}({(generateAsyncParameter ? "bool async" : null)})
+{{
+    await base.{method.Name}({(generateAsyncParameter ? "async" : null)});{(withAssertSqlCall ?
+        """
+            AssertSql();
+        """ : null)}
+}}
+");
+                }
+                else
+                {
+                    methodCalls.Append(
+                        @$"public override void {method.Name}()
+{{
+    base.{method.Name}();{(withAssertSqlCall ?
+        """
+            AssertSql();
+        """ : null)}
+}}
+");
+                }
+            }
+
+            Assert.False(
+                methods.Count > 0,
+                "\r\n-- Missing test overrides --\r\n\r\n" + methodCalls);
         }
     }
 }

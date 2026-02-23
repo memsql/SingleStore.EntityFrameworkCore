@@ -100,6 +100,7 @@ WHERE (
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Skip_navigation_count_with_predicate(bool async)
     {
         await base.Skip_navigation_count_with_predicate(async);
@@ -138,6 +139,7 @@ WHERE (
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Skip_navigation_long_count_with_predicate(bool async)
     {
         await base.Skip_navigation_long_count_with_predicate(async);
@@ -439,6 +441,7 @@ ORDER BY `e`.`Key1`, `e`.`Key2`, `e`.`Key3`, `s`.`RootSkipSharedId`, `s`.`Compos
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Join_with_skip_navigation(bool async)
     {
         await base.Join_with_skip_navigation(async);
@@ -457,6 +460,7 @@ INNER JOIN `EntityTwos` AS `e0` ON `e`.`Id` = (
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Left_join_with_skip_navigation(bool async)
     {
         await base.Left_join_with_skip_navigation(async);
@@ -2194,6 +2198,7 @@ WHERE (
 """);
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
     public override async Task Skip_navigation_count_with_predicate_unidirectional(bool async)
     {
         await base.Skip_navigation_count_with_predicate_unidirectional(async);
@@ -2278,6 +2283,7 @@ ORDER BY `u`.`Key1`, `u`.`Key2`, `u`.`Key3`, `s`.`RootSkipSharedId`, `s`.`Unidir
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Join_with_skip_navigation_unidirectional(bool async)
     {
         await base.Join_with_skip_navigation_unidirectional(async);
@@ -2296,6 +2302,7 @@ INNER JOIN `UnidirectionalEntityTwos` AS `u0` ON `u`.`Id` = (
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]
     public override async Task Left_join_with_skip_navigation_unidirectional(bool async)
     {
         await base.Left_join_with_skip_navigation_unidirectional(async);

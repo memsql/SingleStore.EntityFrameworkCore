@@ -22,6 +22,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 
         public const int DefaultCommandTimeout = 600;
 
+        private readonly string _connectionString;
         private readonly string _scriptPath;
         private readonly bool _useConnectionString;
         private readonly bool _noBackslashEscapes;
@@ -35,20 +36,20 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
         public static SingleStoreTestStore GetOrCreate(string name, string scriptPath, bool noBackslashEscapes = false, string databaseCollation = null, SingleStoreGuidFormat guidFormat = SingleStoreGuidFormat.Default)
             => new SingleStoreTestStore(name, scriptPath: scriptPath, noBackslashEscapes: noBackslashEscapes, databaseCollation: databaseCollation, guidFormat: guidFormat);
 
-        public static SingleStoreTestStore GetOrCreateInitialized(string name)
-            => new SingleStoreTestStore(name, shared: true).InitializeSingleStore(null, (Func<DbContext>)null, null);
+        public static Task<SingleStoreTestStore> GetOrCreateInitializedAsync(string name)
+            => new SingleStoreTestStore(name, shared: true).InitializeSingleStoreAsync(null, (Func<DbContext>)null, null);
 
         public static SingleStoreTestStore Create(string name, bool useConnectionString = false, bool noBackslashEscapes = false, string databaseCollation = null, SingleStoreGuidFormat guidFormat = SingleStoreGuidFormat.Default)
             => new SingleStoreTestStore(name, useConnectionString: useConnectionString, shared: false, noBackslashEscapes: noBackslashEscapes, databaseCollation: databaseCollation, guidFormat: guidFormat);
 
-        public static SingleStoreTestStore CreateInitialized(string name)
-            => new SingleStoreTestStore(name, shared: false).InitializeSingleStore(null, null, null);
+        public static Task<SingleStoreTestStore> CreateInitializedAsync(string name)
+            => new SingleStoreTestStore(name, shared: false).InitializeSingleStoreAsync(null, null, null);
 
-        public static SingleStoreTestStore RecreateInitialized(string name)
-            => new SingleStoreTestStore(name, shared: false).InitializeSingleStore(null, null, null, c =>
+        public static Task<SingleStoreTestStore> RecreateInitializedAsync(string name)
+            => new SingleStoreTestStore(name, shared: false).InitializeSingleStoreAsync(null, null, null, async c =>
             {
-                c.Database.EnsureDeleted();
-                c.Database.EnsureCreated();
+                await c.Database.EnsureDeletedAsync();
+                await c.Database.EnsureCreatedAsync();
             });
 
         public Lazy<ServerVersion> ServerVersion { get; }
@@ -65,12 +66,16 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             bool shared = true,
             bool noBackslashEscapes = false,
             SingleStoreGuidFormat guidFormat = SingleStoreGuidFormat.Default)
-            : base(name, shared)
+            : base(name, shared, new SingleStoreConnection(CreateConnectionString(name, noBackslashEscapes, guidFormat)))
         {
             _useConnectionString = useConnectionString;
             _noBackslashEscapes = noBackslashEscapes;
-            ConnectionString = CreateConnectionString(name, _noBackslashEscapes, guidFormat);
-            Connection = new SingleStoreConnection(ConnectionString);
+
+            if (useConnectionString)
+            {
+                _connectionString = CreateConnectionString(name, _noBackslashEscapes, guidFormat);
+            }
+
             ServerVersion = new Lazy<ServerVersion>(() => Microsoft.EntityFrameworkCore.ServerVersion.AutoDetect((SingleStoreConnection)Connection));
             DatabaseCharSet = databaseCharSet ?? ServerVersion.Value.DefaultCharSet;
             DatabaseCollation = databaseCollation ?? ServerVersion.Value.DefaultUtf8CiCollation;
@@ -99,12 +104,15 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 
         public override DbContextOptionsBuilder AddProviderOptions(DbContextOptionsBuilder builder)
             => _useConnectionString
-                ? builder.UseSingleStore(ConnectionString, x => AddOptions(x, _noBackslashEscapes))
+                ? builder.UseSingleStore(_connectionString, x => AddOptions(x, _noBackslashEscapes))
                 : builder.UseSingleStore(Connection, x => AddOptions(x, _noBackslashEscapes));
 
         public static SingleStoreDbContextOptionsBuilder AddOptions(SingleStoreDbContextOptionsBuilder builder)
         {
             return builder
+                // Our UseSingleStore() methods explicitly set TranslateParameterizedCollectionsToConstants() as the default, which is not the
+                // default that the EF Core tests expect.
+                .TranslateParameterizedCollectionsToParameters()
                 .UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery)
                 .CommandTimeout(GetCommandTimeout())
                 .ExecutionStrategy(d => new TestSingleStoreRetryingExecutionStrategy(d));
@@ -123,12 +131,15 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             }
         }
 
-        public SingleStoreTestStore InitializeSingleStore(IServiceProvider serviceProvider, Func<DbContext> createContext, Action<DbContext> seed, Action<DbContext> clean = null)
-            => (SingleStoreTestStore)Initialize(serviceProvider, createContext, seed, clean);
+        public async Task<SingleStoreTestStore> InitializeSingleStoreAsync(IServiceProvider serviceProvider, Func<DbContext> createContext, Func<DbContext, Task> seed, Func<DbContext, Task> clean = null)
+            => (SingleStoreTestStore)await InitializeAsync(serviceProvider, createContext, seed, clean);
 
-        protected override void Initialize(Func<DbContext> createContext, Action<DbContext> seed, Action<DbContext> clean)
+        protected override async Task InitializeAsync(
+            Func<DbContext> createContext,
+            Func<DbContext, Task> seed,
+            Func<DbContext, Task> clean)
         {
-            if (CreateDatabase(clean))
+            if (await CreateDatabaseAsync(clean))
             {
                 if (_scriptPath != null)
                 {
@@ -136,41 +147,49 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
                 }
                 else
                 {
-                    using (var context = createContext())
+                    await using (var context = createContext())
                     {
-                        context.Database.EnsureCreatedResiliently();
-                        seed?.Invoke(context);
+                        await context.Database.EnsureCreatedResilientlyAsync();
+
+                        if (seed != null)
+                        {
+                            await seed(context);
+                        }
                     }
                 }
             }
         }
 
-        private bool CreateDatabase(Action<DbContext> clean)
+        private async Task<bool> CreateDatabaseAsync(Func<DbContext, Task> clean)
         {
-            using var master = new SingleStoreConnection(CreateAdminConnectionString());
-            master.Open();
+            await using var master = new SingleStoreConnection(CreateAdminConnectionString());
+            await master.OpenAsync();
 
-            if (DatabaseExists(Name))
+            if (await DatabaseExistsAsync(Name))
             {
                 /*if (_scriptPath != null && !TestEnvironment.IsCI)
                 {
                     return false;
                 }*/
 
-                using (var context = new DbContext(
+                await using (var context = new DbContext(
                            AddProviderOptions(
                                    new DbContextOptionsBuilder()
                                        .EnableServiceProviderCaching(false))
                                .Options))
                 {
-                    clean?.Invoke(context);
-                    Clean(context);
+                    if (clean != null)
+                    {
+                        await clean(context);
+                    }
+
+                    await CleanAsync(context);
                 }
 
-                ExecuteNonQuery(master, $"DROP DATABASE IF EXISTS `{Name}`;");
+                await ExecuteNonQueryAsync(master, $"DROP DATABASE IF EXISTS `{Name}`;");
             }
 
-            ExecuteNonQuery(
+            await ExecuteNonQueryAsync(
                 master,
                 GetCreateDatabaseStatement(Name, DatabaseCharSet, DatabaseCollation));
             return true;
@@ -206,10 +225,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
         private static string GetCreateDatabaseStatement(string name, string charset = null, string collation = null)
             => $@"CREATE DATABASE `{name}`{(string.IsNullOrEmpty(charset) ? null : $" CHARACTER SET {charset}")}{(string.IsNullOrEmpty(collation) ? null : $" COLLATE {collation}")};";
 
-        private static bool DatabaseExists(string name)
+        private static async Task<bool> DatabaseExistsAsync(string name)
         {
-            using (var master = new SingleStoreConnection(CreateAdminConnectionString()))
-                return ExecuteScalar<long>(master, $@"SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`SCHEMATA` WHERE `SCHEMA_NAME` = '{name}';") > 0;
+            await using var master = new SingleStoreConnection(CreateAdminConnectionString());
+            return await ExecuteScalarAsync<long>(master, $@"SELECT COUNT(*) FROM `INFORMATION_SCHEMA`.`SCHEMATA` WHERE `SCHEMA_NAME` = '{name}';") > 0;
         }
 
         private static string CreateAdminConnectionString()
@@ -234,16 +253,30 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
                     return 0;
                 }, string.Empty);
 
-        public override void Clean(DbContext context)
-            => context.Database.EnsureClean();
+        public override Task CleanAsync(DbContext context)
+        {
+            context.Database.EnsureClean();
+            return Task.CompletedTask;
+        }
 
         private static T ExecuteScalar<T>(DbConnection connection, string sql, params object[] parameters)
             => Execute(connection, command => (T)command.ExecuteScalar(), sql, false, parameters);
+
+        private static Task<T> ExecuteScalarAsync<T>(DbConnection connection, string sql, params object[] parameters)
+            => ExecuteAsync(connection, async command => (T)(await command.ExecuteScalarAsync()), sql, false, parameters);
 
         private static T Execute<T>(
             DbConnection connection, Func<DbCommand, T> execute, string sql,
             bool useTransaction = false, object[] parameters = null)
             => ExecuteCommand(connection, execute, sql, useTransaction, parameters);
+
+        private static Task<T> ExecuteAsync<T>(
+            DbConnection connection,
+            Func<DbCommand, Task<T>> execute,
+            string sql,
+            bool useTransaction = false,
+            object[] parameters = null)
+            => ExecuteCommandAsync(connection, execute, sql, useTransaction, parameters);
 
         private static T ExecuteCommand<T>(
             DbConnection connection, Func<DbCommand, T> execute, string sql, bool useTransaction, object[] parameters)
@@ -282,11 +315,61 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             }
         }
 
+        private static async Task<T> ExecuteCommandAsync<T>(
+            DbConnection connection,
+            Func<DbCommand, Task<T>> execute,
+            string sql,
+            bool useTransaction,
+            object[] parameters)
+        {
+            if (connection.State != ConnectionState.Closed)
+            {
+                await connection.CloseAsync();
+            }
+
+            await connection.OpenAsync();
+
+            try
+            {
+                await using (var transaction = useTransaction
+                                 ? await connection.BeginTransactionAsync()
+                                 : null)
+                {
+                    T result;
+                    await using (var command = CreateCommand(connection, sql, parameters))
+                    {
+                        command.Transaction = transaction;
+                        result = await execute(command);
+                    }
+
+                    if (transaction != null)
+                    {
+                        await transaction.CommitAsync();
+                    }
+
+                    return result;
+                }
+            }
+            finally
+            {
+                if (connection.State != ConnectionState.Closed)
+                {
+                    await connection.CloseAsync();
+                }
+            }
+        }
+
         public int ExecuteNonQuery(string sql, params object[] parameters)
             => ExecuteNonQuery(Connection, sql, parameters);
 
+        public Task<int> ExecuteNonQueryAsync(string sql, params object[] parameters)
+            => ExecuteNonQueryAsync(Connection, sql, parameters);
+
         private static int ExecuteNonQuery(DbConnection connection, string sql, object[] parameters = null)
             => Execute(connection, command => command.ExecuteNonQuery(), sql, false, parameters);
+
+        private static Task<int> ExecuteNonQueryAsync(DbConnection connection, string sql, object[] parameters = null)
+            => ExecuteAsync(connection, command => command.ExecuteNonQueryAsync(), sql, false, parameters);
 
         public override void OpenConnection()
         {
