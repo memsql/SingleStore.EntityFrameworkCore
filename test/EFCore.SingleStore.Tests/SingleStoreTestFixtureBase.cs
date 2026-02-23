@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using Xunit;
 
 namespace EntityFrameworkCore.SingleStore
 {
@@ -24,32 +26,41 @@ namespace EntityFrameworkCore.SingleStore
     }
 
     public class SingleStoreTestFixtureBase<TContext>
-        : SingleStoreTestFixtureBase
+        : SingleStoreTestFixtureBase, IAsyncLifetime
     where TContext : ContextBase, new()
     {
+        private readonly bool _initializeEmpty;
         private const string FixtureSuffix = "Fixture";
 
         public SingleStoreTestFixtureBase(bool initializeEmpty = false)
         {
+            _initializeEmpty = initializeEmpty;
+        }
+
+        public async Task InitializeAsync()
+        {
             // We branch here, because CreateDefaultDbContext depends on TestStore.Name by default, which would not be available yet in
             // the SingleStoreTestStore.RecreateInitialized(StoreName) call.
-            if (initializeEmpty)
+            if (_initializeEmpty)
             {
-                TestStore = SingleStoreTestStore.RecreateInitialized(StoreName);
+                TestStore = await SingleStoreTestStore.RecreateInitializedAsync(StoreName);
             }
             else
             {
                 TestStore = SingleStoreTestStore.Create(StoreName);
 
-                TestStore.InitializeSingleStore(null, CreateDefaultDbContext, null, c =>
+                await TestStore.InitializeSingleStoreAsync(null, CreateDefaultDbContext, null, async c =>
                 {
-                    c.Database.EnsureDeleted();
-                    c.Database.EnsureCreated();
+                    await c.Database.EnsureDeletedAsync();
+                    await c.Database.EnsureCreatedAsync();
                 });
             }
 
             SetupDatabase();
         }
+
+        public Task DisposeAsync()
+            => Task.CompletedTask;
 
         protected override void Dispose(bool disposing)
         {
@@ -68,7 +79,7 @@ namespace EntityFrameworkCore.SingleStore
             }
         }
 
-        protected virtual SingleStoreTestStore TestStore { get; }
+        protected virtual SingleStoreTestStore TestStore { get; private set; }
         protected virtual string SetupDatabaseScript { get; }
         protected virtual List<string> SqlCommands { get; } = new List<string>();
         protected virtual string Sql => string.Join("\n\n", SqlCommands);

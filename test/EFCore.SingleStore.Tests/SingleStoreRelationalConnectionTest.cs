@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Reflection;
@@ -10,8 +11,10 @@ using Microsoft.EntityFrameworkCore.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.Diagnostics.Internal;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
@@ -31,6 +34,19 @@ public class SingleStoreRelationalConnectionTest
         using var connection = CreateConnection();
 
         Assert.IsType<SingleStoreConnection>(connection.DbConnection);
+    }
+
+    [Fact]
+    public void Accepts_named_connection_string()
+    {
+        using var connection = CreateConnection(
+            new DbContextOptionsBuilder()
+                .UseSingleStore(@"name=NamedConnectionString")
+                .UseApplicationServiceProvider(
+                    new ServiceCollection()
+                        .AddSingleton<IConfiguration, FakeConfiguration>()
+                        .BuildServiceProvider())
+                .Options);
     }
 
     /*[Fact]
@@ -276,7 +292,7 @@ public class SingleStoreRelationalConnectionTest
     private static SingleStoreRelationalConnection CreateConnection(DbContextOptions options = null, DbDataSource dataSource = null)
     {
         options ??= new DbContextOptionsBuilder()
-            .UseSingleStore(@"Server=localhost;User ID=some_user;Password=some_password;Database=SingleStoreConnectionTest")
+            .UseSingleStore(ConnectionString)
             .Options;
 
         foreach (var extension in options.Extensions)
@@ -320,20 +336,7 @@ public class SingleStoreRelationalConnectionTest
             singletonOptions);
     }
 
-    private const string ConnectionString = "Fake Connection String";
-
-    private static IDbContextOptions CreateOptions(
-        RelationalOptionsExtension optionsExtension = null)
-    {
-        var optionsBuilder = new DbContextOptionsBuilder();
-
-        ((IDbContextOptionsBuilderInfrastructure)optionsBuilder)
-            .AddOrUpdateExtension(
-                optionsExtension
-                ?? new FakeRelationalOptionsExtension().WithConnectionString(ConnectionString));
-
-        return optionsBuilder.Options;
-    }
+    private const string ConnectionString = @"Server=localhost;User ID=some_user;Password=some_password;Database=SingleStoreConnectionTest";
 
     private class FakeDbContext : DbContext
     {
@@ -344,6 +347,24 @@ public class SingleStoreRelationalConnectionTest
         public FakeDbContext(DbContextOptions<FakeDbContext> options)
             : base(options)
         {
+        }
+    }
+
+    private class FakeConfiguration : IConfiguration
+    {
+        public IConfigurationSection GetSection(string key)
+            => throw new NotImplementedException();
+
+        public IEnumerable<IConfigurationSection> GetChildren()
+            => throw new NotImplementedException();
+
+        public IChangeToken GetReloadToken()
+            => throw new NotImplementedException();
+
+        public string this[string key]
+        {
+            get => ConnectionString;
+            set => throw new NotImplementedException();
         }
     }
 }

@@ -5,15 +5,11 @@ using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestModels.UpdatesModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using Microsoft.EntityFrameworkCore.Update;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
-using EntityFrameworkCore.SingleStore.ValueGeneration.Internal;
 using Xunit;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Storage;
-
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
@@ -40,42 +36,42 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalFact]
-        public override void Can_add_and_remove_self_refs()
+        public override Task Can_add_and_remove_self_refs()
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
 		    // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
             if (AppConfig.ManagedService)
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            base.Can_add_and_remove_self_refs();
+            return base.Can_add_and_remove_self_refs();
         }
 
         [ConditionalFact]
-        public override void Can_use_shared_columns_with_conversion()
+        public override Task Can_use_shared_columns_with_conversion()
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
 		    // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
             if (AppConfig.ManagedService)
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            base.Can_use_shared_columns_with_conversion();
+            return base.Can_use_shared_columns_with_conversion();
         }
 
         [ConditionalFact]
-        public override void Can_change_enums_with_conversion()
+        public override Task Can_change_enums_with_conversion()
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
             // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
             if (AppConfig.ManagedService)
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            base.Can_change_enums_with_conversion();
+            return base.Can_change_enums_with_conversion();
         }
 
         [ConditionalTheory]
@@ -105,16 +101,16 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         }
 
         [ConditionalFact]
-        public override void Save_replaced_principal()
+        public override Task Save_replaced_principal()
         {
             // We're skipping this test when we're running tests on Managed Service due to the specifics of
             // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
             if (AppConfig.ManagedService)
             {
-                return;
+                return Task.CompletedTask;
             }
 
-            base.Save_replaced_principal();
+            return base.Save_replaced_principal();
         }
 
         [ConditionalTheory]
@@ -147,9 +143,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Returning))]
-        public override void Save_with_shared_foreign_key()
+        public override Task Save_with_shared_foreign_key()
         {
-            base.Save_with_shared_foreign_key();
+            return base.Save_with_shared_foreign_key();
         }
 
         public class UpdatesSingleStoreFixture : UpdatesRelationalFixture
