@@ -3,10 +3,13 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
+using System.Data.Common;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Storage.Internal;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -15,14 +18,16 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage;
-using EntityFrameworkCore.SingleStore.Infrastructure;
-using EntityFrameworkCore.SingleStore.Storage.Internal;
+using SingleStoreConnector;
 
 namespace EntityFrameworkCore.SingleStore.Migrations.Internal
 {
     public class SingleStoreHistoryRepository : HistoryRepository
     {
         private const string MigrationsScript = nameof(MigrationsScript);
+
+        // Similar to the old GET_LOCK timeout (72h), but now used as command timeout while waiting on row lock.
+        private const int LockTimeoutSeconds = 60 * 60 * 24 * 3;
 
         private readonly SingleStoreSqlGenerationHelper _sqlGenerationHelper;
 
@@ -32,65 +37,142 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
             _sqlGenerationHelper = (SingleStoreSqlGenerationHelper)dependencies.SqlGenerationHelper;
         }
 
+        // We now use a dedicated connection + transaction to hold a row lock,
+        // therefore the lock must be released explicitly by disposing the lock object.
         public override LockReleaseBehavior LockReleaseBehavior
-            => LockReleaseBehavior.Connection;
+            => LockReleaseBehavior.Explicit;
 
         public override IMigrationsDatabaseLock AcquireDatabaseLock()
         {
             Dependencies.MigrationsLogger.AcquiringMigrationLock();
 
-            Dependencies.RawSqlCommandBuilder
-                .Build(GetAcquireLockCommandSql())
-                .ExecuteNonQuery(CreateRelationalCommandParameters());
+            var lockConnection = CreateLockConnection();
+            try
+            {
+                EnsureLockTable(lockConnection);
 
-            return CreateMigrationDatabaseLock();
+                var transaction = lockConnection.BeginTransaction();
+
+                AcquireRowLock(lockConnection, transaction);
+
+                return new SingleStoreMigrationDatabaseLock(this, lockConnection, transaction);
+            }
+            catch
+            {
+                lockConnection.Dispose();
+                throw;
+            }
         }
 
         public override async Task<IMigrationsDatabaseLock> AcquireDatabaseLockAsync(CancellationToken cancellationToken = default)
         {
-            await Dependencies.RawSqlCommandBuilder
-                .Build(GetAcquireLockCommandSql())
-                .ExecuteNonQueryAsync(CreateRelationalCommandParameters(), cancellationToken)
-                .ConfigureAwait(false);
+            Dependencies.MigrationsLogger.AcquiringMigrationLock();
 
-            return CreateMigrationDatabaseLock();
+            var lockConnection = CreateLockConnection();
+            try
+            {
+                await EnsureLockTableAsync(lockConnection, cancellationToken).ConfigureAwait(false);
+
+                var transaction = await lockConnection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
+
+                await AcquireRowLockAsync(lockConnection, transaction, cancellationToken).ConfigureAwait(false);
+
+                return new SingleStoreMigrationDatabaseLock(this, lockConnection, transaction, cancellationToken);
+            }
+            catch
+            {
+                await lockConnection.DisposeAsync().ConfigureAwait(false);
+                throw;
+            }
         }
 
         /// <summary>
-        ///     Returns the name of the database-wide for migrations. Currently, this is actully a database *server*-wide lock, so the lock
-        ///     should contain the database name to make it more database specific.
+        ///     Returns the name of the database-wide lock for migrations.
         /// </summary>
         protected virtual string GetDatabaseLockName(string databaseName)
             => $"__{databaseName}_EFMigrationsLock";
 
-        // We cannot use LOCK TABLES/UNLOCK TABLES, because we would need to know *all* the table we want to access by name beforehand,
-        // since after the LOCK TABLES statement has run, only the tables specified can be access and access to any other table results in
-        // an error.
-        // We use GET_LOCK()/RELEASE_LOCK() for now. We would like to not specify a timeout, because we cannot know how long the migration
-        // operations are supposed to take. However, while MySQL interprets negative timeout values as infinite, MariaDB does not. We
-        // therefore specify a very large timeout in seconds instead (currently 72 hours). If RELEASE_LOCK() is never called, the lock is automatically released
-        // when the session ends or is killed. This function pair is not bound to a database, but is a database server wide global mutex. We
-        // therefore explicitly use the database name as part of the lock name.
-        // If it turns out, that users want a replication-save method later, we could implement a locking table mechanism as Sqlite does.
-        private string GetAcquireLockCommandSql()
-            => $"SELECT GET_LOCK('{GetDatabaseLockName(Dependencies.Connection.DbConnection.Database)}', {60 * 60 * 24 * 3})";
+        private string GetLockTableName()
+            => GetDatabaseLockName(Dependencies.Connection.DbConnection.Database);
 
-        private RelationalCommandParameterObject CreateRelationalCommandParameters()
-            => new(
-                Dependencies.Connection,
-                null,
-                null,
-                Dependencies.CurrentContext.Context,
-                Dependencies.CommandLogger, CommandSource.Migrations);
+        private SingleStoreConnection CreateLockConnection()
+        {
+            var cs = Dependencies.Connection.DbConnection.ConnectionString;
+            var connection = new SingleStoreConnection(cs);
+            connection.Open();
 
-        private SingleStoreMigrationDatabaseLock CreateMigrationDatabaseLock()
-            => new(
-                this,
-                CreateReleaseLockCommand(),
-                CreateRelationalCommandParameters());
+            // Make sure the lock connection is using the same database as the main connection.
+            var db = Dependencies.Connection.DbConnection.Database;
+            if (!string.IsNullOrEmpty(db) &&
+                !string.Equals(connection.Database, db, StringComparison.OrdinalIgnoreCase))
+            {
+                connection.ChangeDatabase(db);
+            }
 
-        private IRelationalCommand CreateReleaseLockCommand()
-            => Dependencies.RawSqlCommandBuilder.Build($"SELECT RELEASE_LOCK('{GetDatabaseLockName(Dependencies.Connection.DbConnection.Database)}')");
+            return connection;
+        }
+
+        private void EnsureLockTable(SingleStoreConnection connection)
+        {
+            var table = SqlGenerationHelper.DelimitIdentifier(GetLockTableName());
+
+            using var command = connection.CreateCommand();
+            command.CommandTimeout = LockTimeoutSeconds;
+
+            // ROWSTORE ensures fast, predictable locking behavior.
+            command.CommandText = $"""
+CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
+  `Id` INT NOT NULL PRIMARY KEY
+);
+""";
+            command.ExecuteNonQuery();
+
+            command.CommandText = $"""INSERT IGNORE INTO {table} (`Id`) VALUES (1);""";
+            command.ExecuteNonQuery();
+        }
+
+        private async Task EnsureLockTableAsync(SingleStoreConnection connection, CancellationToken cancellationToken)
+        {
+            var table = SqlGenerationHelper.DelimitIdentifier(GetLockTableName());
+
+            using var command = connection.CreateCommand();
+            command.CommandTimeout = LockTimeoutSeconds;
+
+            command.CommandText = $"""
+CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
+  `Id` INT NOT NULL PRIMARY KEY
+);
+""";
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+
+            command.CommandText = $"""INSERT IGNORE INTO {table} (`Id`) VALUES (1);""";
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
+
+        private void AcquireRowLock(SingleStoreConnection connection, DbTransaction transaction)
+        {
+            var table = SqlGenerationHelper.DelimitIdentifier(GetLockTableName());
+
+            using var command = connection.CreateCommand();
+            command.Transaction = (SingleStoreTransaction)transaction;
+            command.CommandTimeout = LockTimeoutSeconds;
+
+            // A write statement acquires a row lock that is held until the transaction ends.
+            command.CommandText = $"""UPDATE {table} SET `Id` = `Id` WHERE `Id` = 1;""";
+            command.ExecuteNonQuery();
+        }
+
+        private async Task AcquireRowLockAsync(SingleStoreConnection connection, DbTransaction transaction, CancellationToken cancellationToken)
+        {
+            var table = SqlGenerationHelper.DelimitIdentifier(GetLockTableName());
+
+            using var command = connection.CreateCommand();
+            command.Transaction = (SingleStoreTransaction)transaction;
+            command.CommandTimeout = LockTimeoutSeconds;
+
+            command.CommandText = $"""UPDATE {table} SET `Id` = `Id` WHERE `Id` = 1;""";
+            await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
+        }
 
         protected override void ConfigureTable([NotNull] EntityTypeBuilder<HistoryRow> history)
         {
@@ -133,26 +215,10 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
             return script.Insert(script.IndexOf("CREATE TABLE", StringComparison.Ordinal) + 12, " IF NOT EXISTS");
         }
 
-        /// <summary>
-        ///     Overridden by database providers to generate a SQL Script that will `BEGIN` a block
-        ///     of SQL if and only if the migration with the given identifier does not already exist in the history table.
-        /// </summary>
-        /// <param name="migrationId"> The migration identifier. </param>
-        /// <returns> The generated SQL. </returns>
         public override string GetBeginIfNotExistsScript(string migrationId) => GetBeginIfScript(migrationId, true);
 
-        /// <summary>
-        ///     Overridden by database providers to generate a SQL Script that will `BEGIN` a block
-        ///     of SQL if and only if the migration with the given identifier already exists in the history table.
-        /// </summary>
-        /// <param name="migrationId"> The migration identifier. </param>
-        /// <returns> The generated SQL. </returns>
         public override string GetBeginIfExistsScript(string migrationId) => GetBeginIfScript(migrationId, false);
 
-        /// <summary>
-        ///     Overridden by database providers to generate a SQL script to `END` the SQL block.
-        /// </summary>
-        /// <returns> The generated SQL. </returns>
         public virtual string GetBeginIfScript(string migrationId, bool notExists) => $@"DROP PROCEDURE IF EXISTS {MigrationsScript};
 DELIMITER //
 CREATE PROCEDURE {MigrationsScript}()
@@ -160,10 +226,6 @@ BEGIN
     IF{(notExists ? " NOT" : null)} EXISTS(SELECT 1 FROM {SqlGenerationHelper.DelimitIdentifier(TableName, TableSchema)} WHERE {SqlGenerationHelper.DelimitIdentifier(MigrationIdColumnName)} = '{migrationId}') THEN
 ";
 
-        /// <summary>
-        ///     Overridden by database providers to generate a SQL script to `END` the SQL block.
-        /// </summary>
-        /// <returns> The generated SQL. </returns>
         public override string GetEndIfScript() => $@"
     END IF;
 END //
@@ -181,24 +243,18 @@ DROP PROCEDURE {MigrationsScript};
         private string _migrationIdColumnName;
         private string _productVersionColumnName;
 
-        // Customized implementation.
         protected virtual IModel EnsureModel()
         {
             if (_model == null)
             {
                 var conventionSet = Dependencies.ConventionSetBuilder.CreateConventionSet();
 
-                // Use public API to remove the convention, issue #214
                 ConventionSet.Remove(conventionSet.ModelInitializedConventions, typeof(DbSetFindingConvention));
                 ConventionSet.Remove(conventionSet.ModelInitializedConventions, typeof(RelationalDbFunctionAttributeConvention));
 
                 var modelBuilder = new ModelBuilder(conventionSet);
 
-                #region Custom implementation
-
                 ConfigureModel(modelBuilder);
-
-                #endregion
 
                 modelBuilder.Entity<HistoryRow>(
                     x =>
@@ -213,7 +269,6 @@ DROP PROCEDURE {MigrationsScript};
             return _model;
         }
 
-        // Original implementation.
         public override string GetCreateScript()
         {
             var model = EnsureModel();
@@ -224,14 +279,12 @@ DROP PROCEDURE {MigrationsScript};
             return string.Concat(commandList.Select(c => c.CommandText));
         }
 
-        // Original implementation.
         protected override string MigrationIdColumnName
             => _migrationIdColumnName ??= EnsureModel()
                 .FindEntityType(typeof(HistoryRow))!
                 .FindProperty(nameof(HistoryRow.MigrationId))!
                 .GetColumnName();
 
-        // Original implementation.
         protected override string ProductVersionColumnName
             => _productVersionColumnName ??= EnsureModel()
                 .FindEntityType(typeof(HistoryRow))!
@@ -242,18 +295,26 @@ DROP PROCEDURE {MigrationsScript};
 
         private sealed class SingleStoreMigrationDatabaseLock(
             SingleStoreHistoryRepository historyRepository,
-            IRelationalCommand releaseLockCommand,
-            RelationalCommandParameterObject relationalCommandParameters,
+            SingleStoreConnection lockConnection,
+            DbTransaction lockTransaction,
             CancellationToken cancellationToken = default)
             : IMigrationsDatabaseLock
         {
             public IHistoryRepository HistoryRepository => historyRepository;
 
             public void Dispose()
-                => releaseLockCommand.ExecuteScalar(relationalCommandParameters);
+            {
+                try { lockTransaction.Rollback(); } catch { /* ignore */ }
+                lockTransaction.Dispose();
+                lockConnection.Dispose();
+            }
 
             public async ValueTask DisposeAsync()
-                => await releaseLockCommand.ExecuteScalarAsync(relationalCommandParameters, cancellationToken).ConfigureAwait(false);
+            {
+                try { await lockTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false); } catch { /* ignore */ }
+                await lockTransaction.DisposeAsync().ConfigureAwait(false);
+                await lockConnection.DisposeAsync().ConfigureAwait(false);
+            }
         }
     }
 }
