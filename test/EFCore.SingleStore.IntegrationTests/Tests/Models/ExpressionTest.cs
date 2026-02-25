@@ -145,28 +145,28 @@ namespace EntityFrameworkCore.SingleStore.IntegrationTests.Tests.Models
         [Fact]
         public async Task SingleStoreDateTimeNowTranslator()
         {
-            var utcOffset = TimeZoneInfo.Local.GetUtcOffset(DateTime.Now);
-            var utcOffsetStr = (utcOffset.TotalHours >= 0 ? "+" : "") + utcOffset.TotalHours.ToString("00") + ":" + utcOffset.Minutes.ToString("00");
+            var offset = TimeZoneInfo.Local.GetUtcOffset(DateTime.UtcNow);
+            var sign = offset < TimeSpan.Zero ? "-" : "+";
+            var hours = Math.Abs(offset.Hours);
+            var minutes = Math.Abs(offset.Minutes);
+            var utcOffsetStr = $"{sign}{hours:00}:{minutes:00}";
 
-            await _db.Database.OpenConnectionAsync();
-#pragma warning disable EF1002
-            await _db.Database.ExecuteSqlRawAsync($"SET @@session.time_zone = '{utcOffsetStr}'");
-#pragma warning restore EF1002
+            using var tzScope = new AppDbScope(sessionTimeZone: utcOffsetStr);
+            var db = tzScope.AppDb;
 
-            var utcNow = DateTime.UtcNow;
-            var now = DateTime.Now;
-            var result = await _db.DataTypesSimple.Select(m =>
-                new {
-                    m.Id,
-                    Now = now,
-                    UtcNow = utcNow,
-                }).FirstOrDefaultAsync(m => m.Id == _simple.Id && m.UtcNow < DateTime.UtcNow && m.Now < DateTime.Now);
-
-            _db.Database.CloseConnection();
+            var result = await db.DataTypesSimple
+                .Where(m => m.Id == _simple.Id)
+                .Select(m => new
+                {
+                    UtcNow = DateTime.UtcNow,
+                    LocalNow = DateTimeOffset.Now.LocalDateTime
+                })
+                .FirstOrDefaultAsync();
 
             Assert.NotNull(result);
-            Assert.Equal(result.Now, DateTime.Now, precision: TimeSpan.FromSeconds(10));
-            Assert.Equal(result.UtcNow, DateTime.UtcNow, precision: TimeSpan.FromSeconds(10));
+
+            // LocalNow should be UtcNow converted by the configured offset.
+            Assert.Equal(result.UtcNow.Add(offset), result.LocalNow, precision: TimeSpan.FromSeconds(10));
         }
 
         [Fact]

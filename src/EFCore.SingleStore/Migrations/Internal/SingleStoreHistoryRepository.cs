@@ -31,10 +31,16 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
 
         private readonly SingleStoreSqlGenerationHelper _sqlGenerationHelper;
 
+        private readonly string _lockConnectionString;
+
         public SingleStoreHistoryRepository([NotNull] HistoryRepositoryDependencies dependencies)
             : base(dependencies)
         {
             _sqlGenerationHelper = (SingleStoreSqlGenerationHelper)dependencies.SqlGenerationHelper;
+
+            // Capture early to avoid password being stripped after Open() (PersistSecurityInfo default is false).
+            _lockConnectionString = dependencies.Connection.ConnectionString
+                                    ?? dependencies.Connection.DbConnection.ConnectionString;
         }
 
         // We now use a dedicated connection + transaction to hold a row lock,
@@ -97,8 +103,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
 
         private SingleStoreConnection CreateLockConnection()
         {
-            var cs = Dependencies.Connection.DbConnection.ConnectionString;
-            var connection = new SingleStoreConnection(cs);
+            var connection = new SingleStoreConnection(_lockConnectionString);
             connection.Open();
 
             // Make sure the lock connection is using the same database as the main connection.
