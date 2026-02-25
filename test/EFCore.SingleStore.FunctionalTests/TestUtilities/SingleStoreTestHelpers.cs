@@ -119,7 +119,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
         public static string CastAsDouble(string innerSql)
             => AppConfig.ServerVersion.Supports.DoubleCast
                 ? $@"CAST({innerSql} AS double)"
-                : $@"(CAST({innerSql} AS decimal(65,30)) + 0e0)";
+                : $@"({innerSql} :> double)";
 
         public static string SingleStoreBug96947Workaround(string innerSql, string type = "char")
             => AppConfig.ServerVersion.Supports.SingleStoreBug96947Workaround

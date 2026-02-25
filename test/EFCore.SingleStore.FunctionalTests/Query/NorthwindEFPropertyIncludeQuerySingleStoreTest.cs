@@ -1390,27 +1390,27 @@ ORDER BY `o`.`OrderID`, `o`.`ProductID`, `o0`.`OrderID`, `c`.`CustomerID`, `p`.`
         await base.SelectMany_Include_reference_GroupBy_Select(async);
 
         AssertSql(
-"""
-SELECT `t0`.`OrderID`, `t0`.`CustomerID`, `t0`.`EmployeeID`, `t0`.`OrderDate`, `t0`.`CustomerID0`, `t0`.`Address`, `t0`.`City`, `t0`.`CompanyName`, `t0`.`ContactName`, `t0`.`ContactTitle`, `t0`.`Country`, `t0`.`Fax`, `t0`.`Phone`, `t0`.`PostalCode`, `t0`.`Region`
-FROM (
-    SELECT `o0`.`OrderID`
-    FROM `Order Details` AS `o`
-    CROSS JOIN `Orders` AS `o0`
-    WHERE `o`.`OrderID` = 10248
-    GROUP BY `o0`.`OrderID`
-) AS `t`
-LEFT JOIN (
-    SELECT `t1`.`OrderID`, `t1`.`CustomerID`, `t1`.`EmployeeID`, `t1`.`OrderDate`, `t1`.`CustomerID0`, `t1`.`Address`, `t1`.`City`, `t1`.`CompanyName`, `t1`.`ContactName`, `t1`.`ContactTitle`, `t1`.`Country`, `t1`.`Fax`, `t1`.`Phone`, `t1`.`PostalCode`, `t1`.`Region`
-    FROM (
-        SELECT `o2`.`OrderID`, `o2`.`CustomerID`, `o2`.`EmployeeID`, `o2`.`OrderDate`, `c`.`CustomerID` AS `CustomerID0`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, ROW_NUMBER() OVER(PARTITION BY `o2`.`OrderID` ORDER BY `o2`.`OrderID`) AS `row`
-        FROM `Order Details` AS `o1`
-        CROSS JOIN `Orders` AS `o2`
-        LEFT JOIN `Customers` AS `c` ON `o2`.`CustomerID` = `c`.`CustomerID`
-        WHERE `o1`.`OrderID` = 10248
-    ) AS `t1`
-    WHERE `t1`.`row` <= 1
-) AS `t0` ON `t`.`OrderID` = `t0`.`OrderID`
-""");
+            """
+            SELECT `s1`.`OrderID`, `s1`.`CustomerID`, `s1`.`EmployeeID`, `s1`.`OrderDate`, `s1`.`CustomerID0`, `s1`.`Address`, `s1`.`City`, `s1`.`CompanyName`, `s1`.`ContactName`, `s1`.`ContactTitle`, `s1`.`Country`, `s1`.`Fax`, `s1`.`Phone`, `s1`.`PostalCode`, `s1`.`Region`
+            FROM (
+                SELECT `o0`.`OrderID`
+                FROM `Order Details` AS `o`
+                CROSS JOIN `Orders` AS `o0`
+                WHERE `o`.`OrderID` = 10248
+                GROUP BY `o0`.`OrderID`
+            ) AS `s`
+            LEFT JOIN (
+                SELECT `s0`.`OrderID`, `s0`.`CustomerID`, `s0`.`EmployeeID`, `s0`.`OrderDate`, `s0`.`CustomerID0`, `s0`.`Address`, `s0`.`City`, `s0`.`CompanyName`, `s0`.`ContactName`, `s0`.`ContactTitle`, `s0`.`Country`, `s0`.`Fax`, `s0`.`Phone`, `s0`.`PostalCode`, `s0`.`Region`
+                FROM (
+                    SELECT `o2`.`OrderID`, `o2`.`CustomerID`, `o2`.`EmployeeID`, `o2`.`OrderDate`, `c`.`CustomerID` AS `CustomerID0`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`, ROW_NUMBER() OVER(PARTITION BY `o2`.`OrderID` ORDER BY `o2`.`OrderID`) AS `row`
+                    FROM `Order Details` AS `o1`
+                    CROSS JOIN `Orders` AS `o2`
+                    LEFT JOIN `Customers` AS `c` ON `o2`.`CustomerID` = `c`.`CustomerID`
+                    WHERE `o1`.`OrderID` = 10248
+                ) AS `s0`
+                WHERE `s0`.`row` <= 1
+            ) AS `s1` ON `s`.`OrderID` = `s1`.`OrderID`
+            """);
     }
 
     public override async Task Include_collection_SelectMany_GroupBy_Select(bool async)
@@ -1418,28 +1418,28 @@ LEFT JOIN (
         await base.Include_collection_SelectMany_GroupBy_Select(async);
 
         AssertSql(
-"""
-SELECT `t0`.`OrderID`, `t0`.`CustomerID`, `t0`.`EmployeeID`, `t0`.`OrderDate`, `t`.`OrderID`, `t0`.`OrderID0`, `t0`.`ProductID`, `o3`.`OrderID`, `o3`.`ProductID`, `o3`.`Discount`, `o3`.`Quantity`, `o3`.`UnitPrice`
-FROM (
-    SELECT `o`.`OrderID`
-    FROM `Orders` AS `o`
-    CROSS JOIN `Order Details` AS `o0`
-    WHERE `o`.`OrderID` = 10248
-    GROUP BY `o`.`OrderID`
-) AS `t`
-LEFT JOIN (
-    SELECT `t1`.`OrderID`, `t1`.`CustomerID`, `t1`.`EmployeeID`, `t1`.`OrderDate`, `t1`.`OrderID0`, `t1`.`ProductID`
-    FROM (
-        SELECT `o1`.`OrderID`, `o1`.`CustomerID`, `o1`.`EmployeeID`, `o1`.`OrderDate`, `o2`.`OrderID` AS `OrderID0`, `o2`.`ProductID`, ROW_NUMBER() OVER(PARTITION BY `o1`.`OrderID` ORDER BY `o1`.`OrderID`) AS `row`
-        FROM `Orders` AS `o1`
-        CROSS JOIN `Order Details` AS `o2`
-        WHERE `o1`.`OrderID` = 10248
-    ) AS `t1`
-    WHERE `t1`.`row` <= 1
-) AS `t0` ON `t`.`OrderID` = `t0`.`OrderID`
-LEFT JOIN `Order Details` AS `o3` ON `t0`.`OrderID` = `o3`.`OrderID`
-ORDER BY `t`.`OrderID`, `t0`.`OrderID`, `t0`.`OrderID0`, `t0`.`ProductID`, `o3`.`OrderID`
-""");
+            """
+            SELECT `s1`.`OrderID`, `s1`.`CustomerID`, `s1`.`EmployeeID`, `s1`.`OrderDate`, `s`.`OrderID`, `s1`.`OrderID0`, `s1`.`ProductID`, `o3`.`OrderID`, `o3`.`ProductID`, `o3`.`Discount`, `o3`.`Quantity`, `o3`.`UnitPrice`
+            FROM (
+                SELECT `o`.`OrderID`
+                FROM `Orders` AS `o`
+                CROSS JOIN `Order Details` AS `o0`
+                WHERE `o`.`OrderID` = 10248
+                GROUP BY `o`.`OrderID`
+            ) AS `s`
+            LEFT JOIN (
+                SELECT `s0`.`OrderID`, `s0`.`CustomerID`, `s0`.`EmployeeID`, `s0`.`OrderDate`, `s0`.`OrderID0`, `s0`.`ProductID`
+                FROM (
+                    SELECT `o1`.`OrderID`, `o1`.`CustomerID`, `o1`.`EmployeeID`, `o1`.`OrderDate`, `o2`.`OrderID` AS `OrderID0`, `o2`.`ProductID`, ROW_NUMBER() OVER(PARTITION BY `o1`.`OrderID` ORDER BY `o1`.`OrderID`) AS `row`
+                    FROM `Orders` AS `o1`
+                    CROSS JOIN `Order Details` AS `o2`
+                    WHERE `o1`.`OrderID` = 10248
+                ) AS `s0`
+                WHERE `s0`.`row` <= 1
+            ) AS `s1` ON `s`.`OrderID` = `s1`.`OrderID`
+            LEFT JOIN `Order Details` AS `o3` ON `s1`.`OrderID` = `o3`.`OrderID`
+            ORDER BY `s`.`OrderID`, `s1`.`OrderID`, `s1`.`OrderID0`, `s1`.`ProductID`, `o3`.`OrderID`
+            """);
     }
 
     [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]

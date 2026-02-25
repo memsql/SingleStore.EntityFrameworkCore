@@ -723,33 +723,24 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
                 !castMapping.Equals(sqlUnaryExpression.Operand.TypeMapping.StoreType, StringComparison.OrdinalIgnoreCase) &&
                 !sameInnerCastStoreType)
             {
-                var useDecimalToDoubleWorkaround = false;
-
-                if (castMapping.StartsWith("double") &&
-                    !_options.ServerVersion.Supports.DoubleCast)
-                {
-                    useDecimalToDoubleWorkaround = true;
-                    castMapping = "decimal(65,30)";
-                }
-
-                if (useDecimalToDoubleWorkaround)
+                // SingleStore does not support CAST(.. AS double) (CAST/CONVERT target types are limited),
+                // but it does support the cast operator ":>" for DOUBLE/FLOAT.
+                if (castMapping.StartsWith("double", StringComparison.OrdinalIgnoreCase) &&
+                                         !_options.ServerVersion.Supports.DoubleCast)
                 {
                     Sql.Append("(");
+                    Visit(sqlUnaryExpression.Operand);
+                    Sql.Append(" :> ");
+                    Sql.Append("double");
+                    Sql.Append(")");
                 }
-
-                Sql.Append("CAST(");
-                Visit(sqlUnaryExpression.Operand);
-                Sql.Append(" AS ");
-                Sql.Append(castMapping);
-                Sql.Append(")");
-
-                // FLOAT and DOUBLE are supported by CAST() as of MySQL 8.0.17.
-                // For server versions before that, a workaround is applied, that casts to a DECIMAL,
-                // that is then added to 0e0, which results in a DOUBLE.
-                // REF: https://dev.mysql.com/doc/refman/8.0/en/number-literals.html
-                if (useDecimalToDoubleWorkaround)
+                else
                 {
-                    Sql.Append(" + 0e0)");
+                    Sql.Append("CAST(");
+                    Visit(sqlUnaryExpression.Operand);
+                    Sql.Append(" AS ");
+                    Sql.Append(castMapping);
+                    Sql.Append(")");
                 }
             }
             else

@@ -791,6 +791,12 @@ FROM `Customers` AS `c`");
 #endif
         }
 
+        [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
+        public override Task All_on_distinct(bool async)
+        {
+            return base.All_on_distinct(async);
+        }
+
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.WhereSubqueryReferencesOuterQuery))]
         public override async Task Subquery_with_navigation_inside_inline_collection(bool async)
         {

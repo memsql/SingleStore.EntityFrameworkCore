@@ -124,7 +124,7 @@ WHERE `c`.`ContactName` LIKE '%m'
 """);
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(Skip = "SingleStore LIKE operator is case insensitive")]
         public override async Task String_Contains_Literal(bool async)
         {
             await base.String_Contains_Literal(async);
@@ -161,7 +161,7 @@ WHERE `c`.`ContactName` IS NOT NULL AND ((LOCATE(`c`.`ContactName`, `c`.`Company
 """);
         }
 
-        [ConditionalTheory]
+        [ConditionalTheory(Skip = "SingleStore LIKE operator is case insensitive")]
         public override async Task String_Contains_MethodCall(bool async)
         {
             await base.String_Contains_MethodCall(async);
@@ -1491,13 +1491,13 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND CAST(CAST(`o`.`OrderID` % 3 AS decimal(65
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND CAST(CAST(`o`.`OrderID` % 3 AS double) AS signed)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND CAST((`o`.`OrderID` % 3 :> double) AS signed)
 """,
                 //
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND CAST(CAST(`o`.`OrderID` % 3 AS double) AS signed)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND CAST((`o`.`OrderID` % 3 :> double) AS signed)
 """,
                 //
                 """
@@ -1551,13 +1551,13 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS decimal(6
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS unsigned) >= 0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS unsigned) >= 0)
 """,
                 //
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS unsigned) >= 0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS unsigned) >= 0)
 """,
                 //
                 """
@@ -1617,13 +1617,13 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(`o`.`OrderID` % 1 AS decimal(65,30)
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS decimal(65,30)) >= 0.0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS decimal(65,30)) >= 0.0)
 """,
                 //
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS decimal(65,30)) >= 0.0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS decimal(65,30)) >= 0.0)
 """,
                 //
                 """
@@ -1729,13 +1729,13 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS decimal(6
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS signed) >= 0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS signed) >= 0)
 """,
                 //
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS signed) >= 0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS signed) >= 0)
 """,
                 //
                 """
@@ -1795,13 +1795,13 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS decimal(6
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS signed) >= 0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS signed) >= 0)
 """,
                 //
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS signed) >= 0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS signed) >= 0)
 """,
                 //
                 """
@@ -1861,13 +1861,13 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS decimal(6
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS signed) >= 0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS signed) >= 0)
 """,
                 //
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS signed) >= 0)
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS signed) >= 0)
 """,
                 //
                 """
@@ -1927,13 +1927,13 @@ WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS decimal(6
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS char) <> '10')
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS char) <> '10')
 """,
                 //
                 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST(CAST(`o`.`OrderID` % 1 AS double) AS char) <> '10')
+WHERE (`o`.`CustomerID` = 'ALFKI') AND (CAST((`o`.`OrderID` % 1 :> double) AS char) <> '10')
 """,
                 //
                 """
@@ -2570,7 +2570,7 @@ WHERE `c`.`Region` IS NOT NULL AND (`c`.`Region` <> '')
 """
 SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
 FROM `Orders` AS `o`
-WHERE `o`.`OrderDate` IS NOT NULL AND (DATE(`o`.`OrderDate`) = DATE '1996-09-16')
+WHERE `o`.`OrderDate` IS NOT NULL AND (DATE(`o`.`OrderDate`) = '1996-09-16')
 """);
         }
 
