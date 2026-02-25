@@ -207,6 +207,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             AssertSql(
 """
 @__p_0='2'
+
 SELECT `l6`.`Id`, `s`.`Id`, `s`.`Id0`, `s`.`Id1`, `s`.`Result`, `s`.`Id2`, `s`.`Id3`, `s`.`Id4`
 FROM (
     SELECT `l`.`Id`

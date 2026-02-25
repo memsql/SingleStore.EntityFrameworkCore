@@ -485,17 +485,16 @@ GROUP BY `a`.`Id`, `a`.`Alias`, `a`.`FirstName`, `a`.`LastName`
         await base.Group_Join_from_LINQ_101(async);
 
         AssertSql(
-"""
-SELECT `c`.`Id`, `c`.`CompanyName`, `c`.`Region`, `t`.`Id`, `t`.`CustomerId`, `t`.`OrderDate`, `t`.`Total`, `t`.`Id0`
-FROM `CustomerForLinq` AS `c`
-LEFT JOIN LATERAL (
-    SELECT `o`.`Id`, `o`.`CustomerId`, `o`.`OrderDate`, `o`.`Total`, `c0`.`Id` AS `Id0`
-    FROM `OrderForLinq` AS `o`
-    LEFT JOIN `CustomerForLinq` AS `c0` ON `o`.`CustomerId` = `c0`.`Id`
-    WHERE `c`.`Id` = `c0`.`Id`
-) AS `t` ON TRUE
-ORDER BY `c`.`Id`, `t`.`Id`
-""");
+            """
+            SELECT `c`.`Id`, `c`.`CompanyName`, `c`.`Region`, `s`.`Id`, `s`.`CustomerId`, `s`.`OrderDate`, `s`.`Total`, `s`.`Id0`
+            FROM `CustomerForLinq` AS `c`
+            LEFT JOIN (
+                SELECT `o`.`Id`, `o`.`CustomerId`, `o`.`OrderDate`, `o`.`Total`, `c0`.`Id` AS `Id0`
+                FROM `OrderForLinq` AS `o`
+                LEFT JOIN `CustomerForLinq` AS `c0` ON `o`.`CustomerId` = `c0`.`Id`
+            ) AS `s` ON `c`.`Id` = `s`.`Id0`
+            ORDER BY `c`.`Id`, `s`.`Id`
+            """);
     }
 
     [ConditionalTheory(Skip = "Check why this does not throw in CI (MySQL 8.0.x), but does locally in the mysql:latest docker container.")]

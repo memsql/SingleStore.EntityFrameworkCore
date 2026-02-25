@@ -177,6 +177,24 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.Sum_over_subquery(async);
         }
 
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_over_scalar_returning_subquery(bool async)
+        {
+            return base.Sum_over_scalar_returning_subquery(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override async Task Sum_over_uncorrelated_subquery(bool async)
+        {
+            await base.Sum_over_uncorrelated_subquery(async);
+        }
+
+        [ConditionalTheory(Skip = "Feature 'Subselect in aggregate functions' is not supported by SingleStore")]
+        public override Task Sum_over_Any_subquery(bool async)
+        {
+            return base.Sum_over_Any_subquery(async);
+        }
+
         public override async Task Contains_inside_Average_without_GroupBy(bool async)
         {
             var cities = new[] { "London", "Berlin" };

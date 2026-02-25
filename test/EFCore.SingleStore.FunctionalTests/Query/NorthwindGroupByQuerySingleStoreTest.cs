@@ -587,7 +587,7 @@ GROUP BY `o`.`EmployeeID`
 
             AssertSql(
 """
-SELECT AVG(CAST(`o`.`OrderID` AS double))
+SELECT AVG((CAST(`o`.`OrderID` AS double)))
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`
 """);
@@ -659,7 +659,7 @@ GROUP BY `o`.`CustomerID`
 
             AssertSql(
 """
-SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, MAX(`o`.`OrderID`) AS `Max`, AVG(CAST(`o`.`OrderID` AS double)) AS `Avg`
+SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, MAX(`o`.`OrderID`) AS `Max`, AVG((CAST(`o`.`OrderID` AS double))) AS `Avg`
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`
 """);
@@ -683,7 +683,7 @@ GROUP BY `o`.`CustomerID`
 
             AssertSql(
 """
-SELECT AVG(CAST(`o`.`OrderID` AS double))
+SELECT AVG((CAST(`o`.`OrderID` AS double)))
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 """);
@@ -755,7 +755,7 @@ GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 
             AssertSql(
 """
-SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, MAX(`o`.`OrderID`) AS `Max`, AVG(CAST(`o`.`OrderID` AS double)) AS `Avg`
+SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, MAX(`o`.`OrderID`) AS `Max`, AVG((CAST(`o`.`OrderID` AS double))) AS `Avg`
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 """);
@@ -767,7 +767,7 @@ GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 
             AssertSql(
 """
-SELECT `o`.`CustomerID`, `o`.`EmployeeID`, AVG(CAST(`o`.`OrderID` AS double)) AS `Average`
+SELECT `o`.`CustomerID`, `o`.`EmployeeID`, AVG((CAST(`o`.`OrderID` AS double))) AS `Average`
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 """);
@@ -839,7 +839,7 @@ GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 
             AssertSql(
 """
-SELECT `o`.`CustomerID`, `o`.`EmployeeID`, COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, MAX(`o`.`OrderID`) AS `Max`, AVG(CAST(`o`.`OrderID` AS double)) AS `Avg`
+SELECT `o`.`CustomerID`, `o`.`EmployeeID`, COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, MAX(`o`.`OrderID`) AS `Max`, AVG((CAST(`o`.`OrderID` AS double))) AS `Avg`
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 """);
@@ -851,7 +851,7 @@ GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 
             AssertSql(
 """
-SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, `o`.`CustomerID`, `o`.`EmployeeID`, MAX(`o`.`OrderID`) AS `Max`, AVG(CAST(`o`.`OrderID` AS double)) AS `Avg`
+SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, `o`.`CustomerID`, `o`.`EmployeeID`, MAX(`o`.`OrderID`) AS `Max`, AVG((CAST(`o`.`OrderID` AS double))) AS `Avg`
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 """);
@@ -863,7 +863,7 @@ GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 
             AssertSql(
 """
-SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, `o`.`CustomerID`, `o`.`EmployeeID`, MAX(`o`.`OrderID`) AS `Max`, AVG(CAST(`o`.`OrderID` AS double)) AS `Avg`
+SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, `o`.`CustomerID`, `o`.`EmployeeID`, MAX(`o`.`OrderID`) AS `Max`, AVG((CAST(`o`.`OrderID` AS double))) AS `Avg`
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 """);
@@ -899,7 +899,7 @@ GROUP BY `o`.`CustomerID`
 
             AssertSql(
 """
-SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, `o`.`CustomerID` AS `CustomerId`, `o`.`EmployeeID` AS `EmployeeId`, MAX(`o`.`OrderID`) AS `Max`, AVG(CAST(`o`.`OrderID` AS double)) AS `Avg`
+SELECT COALESCE(SUM(`o`.`OrderID`), 0) AS `Sum`, MIN(`o`.`OrderID`) AS `Min`, `o`.`CustomerID` AS `CustomerId`, `o`.`EmployeeID` AS `EmployeeId`, MAX(`o`.`OrderID`) AS `Max`, AVG((CAST(`o`.`OrderID` AS double))) AS `Avg`
 FROM `Orders` AS `o`
 GROUP BY `o`.`CustomerID`, `o`.`EmployeeID`
 """);
@@ -2411,7 +2411,7 @@ GROUP BY `o`.`OrderID`
 
             AssertSql(
 """
-SELECT `o`.`OrderID`, `o`.`CustomerID`, AVG(CAST(`o`.`OrderID` AS double)) AS `Avg`, MAX(`o`.`OrderDate`) AS `Max`
+SELECT `o`.`OrderID`, `o`.`CustomerID`, AVG((CAST(`o`.`OrderID` AS double)) AS `Avg`, MAX(`o`.`OrderDate`)) AS `Max`
 FROM `Orders` AS `o`
 GROUP BY `o`.`OrderID`, `o`.`CustomerID`
 """);

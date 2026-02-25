@@ -580,7 +580,7 @@ WHERE EXTRACT(hour FROM `m`.`Timeline`) = 8
         public override async Task Non_string_concat_uses_appropriate_type_mapping(bool async)
         {
             var exception = await Assert.ThrowsAsync<InvalidCastException>(() => base.Non_string_concat_uses_appropriate_type_mapping(async));
-            Assert.Equal("Unable to cast object of type 'System.Decimal' to type 'System.TimeSpan'.", exception.Message);
+            Assert.Equal("Unable to cast object of type 'System.Byte[]' to type 'System.TimeSpan'.", exception.Message);
         }
     }
 }
