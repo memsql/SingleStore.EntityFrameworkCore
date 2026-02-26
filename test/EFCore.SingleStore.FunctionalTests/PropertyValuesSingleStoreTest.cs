@@ -23,6 +23,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 modelBuilder.Entity<VirtualTeam>()
                     .Property(e => e.Id)
                     .HasColumnType("bigint");
+                modelBuilder.Entity<Contact33307>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
 
                 base.OnModelCreating(modelBuilder, context);
             }

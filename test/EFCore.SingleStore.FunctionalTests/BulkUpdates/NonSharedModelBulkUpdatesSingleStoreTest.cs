@@ -148,6 +148,7 @@ SET `b`.`CreationTimestamp` = '2020-01-01 00:00:00'
 """);
     }
 
+    [ConditionalFact(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Update_non_main_table_in_entity_with_entity_splitting(bool async)
     {
         var contextFactory = await InitializeAsync<DbContext>(
@@ -200,9 +201,6 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
         await base.Update_with_alias_uniquification_in_setter_subquery(async);
     }
 
-    public override Task Delete_with_owned_collection_and_non_natively_translatable_query(bool async)
-        => Assert.ThrowsAsync<SingleStoreException>(() =>base.Delete_with_owned_collection_and_non_natively_translatable_query(async));
-
     public override async Task Update_non_owned_property_on_entity_with_owned_in_join(bool async)
     {
         await base.Update_non_owned_property_on_entity_with_owned_in_join(async);
@@ -215,6 +213,7 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
             """);
     }
 
+    [ConditionalFact(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Replace_ColumnExpression_in_column_setter(bool async)
     {
         await base.Replace_ColumnExpression_in_column_setter(async);
@@ -225,6 +224,25 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
             INNER JOIN `OwnedCollection` AS `o0` ON `o`.`Id` = `o0`.`OwnerId`
             SET `o0`.`Value` = 'SomeValue'
             """);
+    }
+
+    public override async Task Delete_with_owned_collection_and_non_natively_translatable_query(bool async)
+    {
+        await base.Delete_with_owned_collection_and_non_natively_translatable_query(async);
+
+        AssertSql(
+            """
+        @__p_0='1'
+
+        DELETE `o`
+        FROM `Owner` AS `o`
+        WHERE `o`.`Id` IN (
+            SELECT `o0`.`Id`
+            FROM `Owner` AS `o0`
+            ORDER BY `o0`.`Title`
+            LIMIT 18446744073709551610 OFFSET @__p_0
+        )
+        """);
     }
 
     private void AssertSql(params string[] expected)

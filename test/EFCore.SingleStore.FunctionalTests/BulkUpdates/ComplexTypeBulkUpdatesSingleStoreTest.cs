@@ -119,6 +119,7 @@ FROM `Customer` AS `c`
 @__complex_type_newAddress_0_ZipCode='99999' (Nullable = true)
 @__complex_type_newAddress_0_Code='FR' (Size = 4000)
 @__complex_type_newAddress_0_FullName='France' (Size = 4000)
+
 UPDATE `Customer` AS `c`
 SET `c`.`ShippingAddress_AddressLine1` = @__complex_type_newAddress_0_AddressLine1,
     `c`.`ShippingAddress_AddressLine2` = @__complex_type_newAddress_0_AddressLine2,
@@ -147,6 +148,7 @@ FROM `Customer` AS `c`
                 """
 @__complex_type_newCountry_0_Code='FR' (Size = 4000)
 @__complex_type_newCountry_0_FullName='France' (Size = 4000)
+
 UPDATE `Customer` AS `c`
 SET `c`.`ShippingAddress_Country_Code` = @__complex_type_newCountry_0_Code,
     `c`.`ShippingAddress_Country_FullName` = @__complex_type_newCountry_0_FullName
@@ -243,6 +245,7 @@ FROM `Customer` AS `c`
         AssertSql(
 """
 @__p_0='1'
+
 SELECT `c`.`Id`, `c`.`Name`, `c`.`BillingAddress_AddressLine1`, `c`.`BillingAddress_AddressLine2`, `c`.`BillingAddress_Tags`, `c`.`BillingAddress_ZipCode`, `c`.`BillingAddress_Country_Code`, `c`.`BillingAddress_Country_FullName`, `c`.`ShippingAddress_AddressLine1`, `c`.`ShippingAddress_AddressLine2`, `c`.`ShippingAddress_Tags`, `c`.`ShippingAddress_ZipCode`, `c`.`ShippingAddress_Country_Code`, `c`.`ShippingAddress_Country_FullName`
 FROM `Customer` AS `c`
 ORDER BY `c`.`Id`
@@ -251,6 +254,7 @@ LIMIT 18446744073709551610 OFFSET @__p_0
                 //
                 """
 @__p_0='1'
+
 UPDATE `Customer` AS `c0`
 INNER JOIN (
     SELECT `c`.`Id`, `c`.`BillingAddress_AddressLine1`, `c`.`BillingAddress_AddressLine2`, `c`.`BillingAddress_Tags`, `c`.`BillingAddress_ZipCode`, `c`.`ShippingAddress_Country_Code`, `c`.`ShippingAddress_Country_FullName`
@@ -268,6 +272,7 @@ SET `c0`.`ShippingAddress_AddressLine1` = `c1`.`BillingAddress_AddressLine1`,
                 //
                 """
 @__p_0='1'
+
 SELECT `c`.`Id`, `c`.`Name`, `c`.`BillingAddress_AddressLine1`, `c`.`BillingAddress_AddressLine2`, `c`.`BillingAddress_Tags`, `c`.`BillingAddress_ZipCode`, `c`.`BillingAddress_Country_Code`, `c`.`BillingAddress_Country_FullName`, `c`.`ShippingAddress_AddressLine1`, `c`.`ShippingAddress_AddressLine2`, `c`.`ShippingAddress_Tags`, `c`.`ShippingAddress_ZipCode`, `c`.`ShippingAddress_Country_Code`, `c`.`ShippingAddress_Country_FullName`
 FROM `Customer` AS `c`
 ORDER BY `c`.`Id`

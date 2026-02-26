@@ -514,7 +514,7 @@ ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 
             AssertSql(
                 """
-                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
+                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
                 FROM `Missions` AS `m`
                 WHERE EXTRACT(hour FROM `m`.`Timeline`) = 8
                 """);
@@ -536,7 +536,7 @@ ORDER BY `g`.`Nickname`, `g`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
         public override async Task Non_string_concat_uses_appropriate_type_mapping(bool async)
         {
             var exception = await Assert.ThrowsAsync<InvalidCastException>(() => base.Non_string_concat_uses_appropriate_type_mapping(async));
-            Assert.Equal("Unable to cast object of type 'System.Decimal' to type 'System.TimeSpan'.", exception.Message);
+            Assert.Equal("Unable to cast object of type 'System.Byte[]' to type 'System.TimeSpan'.", exception.Message);
         }
 
         private string AssertSql(string expected)

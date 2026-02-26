@@ -4065,7 +4065,7 @@ FROM `Missions` AS `m`
 """
 SELECT COUNT(*)
 FROM `Missions` AS `m`
-WHERE `m`.`Timeline` = TIMESTAMP '1902-01-02 08:30:00.123456'
+WHERE `m`.`Timeline` = '1902-01-02 08:30:00.123456'
 """);
     }
 
@@ -12060,7 +12060,7 @@ WHERE (`m`.`Time` + TIME '03:00:00') = TIME '13:15:50.5'
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE (`m`.`Time` >= TIME '10:00:00') & (`m`.`Time` < TIME '11:00:00')
+WHERE (`m`.`Time` >= '10:00:00') & (`m`.`Time` < '11:00:00')
 """);
     }
 
@@ -14011,7 +14011,7 @@ WHERE DATE(`t`.`IssueDate`) IN (@__prm_0, DATE '0015-03-07')
     public override async Task Non_string_concat_uses_appropriate_type_mapping(bool async)
     {
         var exception = await Assert.ThrowsAsync<InvalidCastException>(() => base.Non_string_concat_uses_appropriate_type_mapping(async));
-        Assert.Equal("Unable to cast object of type 'System.Decimal' to type 'System.TimeSpan'.", exception.Message);
+        Assert.Equal("Unable to cast object of type 'System.Byte[]' to type 'System.TimeSpan'.", exception.Message);
     }
 
     private void AssertSql(params string[] expected)
