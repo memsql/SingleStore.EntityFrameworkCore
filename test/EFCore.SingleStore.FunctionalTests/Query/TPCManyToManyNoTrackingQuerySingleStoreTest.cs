@@ -162,7 +162,7 @@ ORDER BY (
 
         AssertSql(
 """
-SELECT AVG(CAST(`s`.`Key1` AS double))
+SELECT AVG((`s`.`Key1` :> double))
 FROM `EntityTwos` AS `e`
 INNER JOIN (
     SELECT `e1`.`Key1`, `e0`.`TwoSkipSharedId`

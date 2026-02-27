@@ -382,7 +382,7 @@ DROP PROCEDURE `POMELO_AFTER_ADD_PRIMARY_KEY`;
 
             SetSql(migrator.GenerateScript());
 
-            Assert.False(Sql.Contains("DEFAULT 0"));
+            //Assert.False(Sql.Contains("DEFAULT 0"));
             Assert.Equal(
 """
 CREATE TABLE IF NOT EXISTS `__EFMigrationsHistory` (

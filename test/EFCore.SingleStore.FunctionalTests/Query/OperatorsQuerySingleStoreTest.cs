@@ -52,7 +52,14 @@ public class OperatorsQuerySingleStoreTest : OperatorsQueryTestBase
     {
         await base.Complex_predicate_with_bitwise_and_arithmetic_operations();
 
-        AssertSql("");
+        AssertSql("""
+                  SELECT `o`.`Value` AS `Value0`, `o0`.`Value` AS `Value1`, `o1`.`Value` AS `Value2`
+                  FROM `OperatorEntityInt` AS `o`
+                  CROSS JOIN `OperatorEntityInt` AS `o0`
+                  CROSS JOIN `OperatorEntityBool` AS `o1`
+                  WHERE ((CAST(CAST(`o0`.`Value` & (`o`.`Value` + `o`.`Value`) AS signed) & `o`.`Value` AS signed) / 1) > CAST(`o0`.`Value` & 10 AS signed)) AND `o1`.`Value`
+                  ORDER BY `o`.`Id`, `o0`.`Id`, `o1`.`Id`
+                  """);
     }
 
     public override async Task Or_on_two_nested_binaries_and_another_simple_comparison()

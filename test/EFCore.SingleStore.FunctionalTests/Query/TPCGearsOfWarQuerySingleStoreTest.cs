@@ -8484,7 +8484,7 @@ FROM `Missions` AS `m`
 
         AssertSql(
 """
-SELECT AVG(CAST(`u`.`SquadId` AS double))
+SELECT AVG((`u`.`SquadId` :> double))
 FROM (
     SELECT `g`.`SquadId`, `g`.`Rank`
     FROM `Gears` AS `g`
@@ -11940,7 +11940,7 @@ WHERE (DAYOFWEEK(`m`.`Date`) - 1) = 6
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) year) = DATE '1993-11-10'
+WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) year) = '1993-11-10'
 """);
     }
 
@@ -11952,7 +11952,7 @@ WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) year) = DATE '1993-11-10'
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) month) = DATE '1991-02-10'
+WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) month) = '1991-02-10'
 """);
     }
 
@@ -11964,7 +11964,7 @@ WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) month) = DATE '1991-02-10'
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) day) = DATE '1990-11-13'
+WHERE DATE_ADD(`m`.`Date`, INTERVAL CAST(3 AS signed) day) = '1990-11-13'
 """);
     }
 
@@ -12024,7 +12024,7 @@ WHERE (EXTRACT(microsecond FROM `m`.`Time`)) DIV (1000) = 500
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Time`, INTERVAL CAST(3.0 AS signed) hour) = TIME '13:15:50.5'
+WHERE (ADDTIME(`m`.`Time`, "03:00:00")) = '13:15:50.5':>time(6)
 """);
     }
 
@@ -12036,7 +12036,7 @@ WHERE DATE_ADD(`m`.`Time`, INTERVAL CAST(3.0 AS signed) hour) = TIME '13:15:50.5
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE DATE_ADD(`m`.`Time`, INTERVAL CAST(3.0 AS signed) minute) = TIME '10:18:50.5'
+WHERE (ADDTIME(`m`.`Time`, "00:03:00")) = '10:18:50.5':>time(6)
 """);
     }
 
@@ -12048,7 +12048,7 @@ WHERE DATE_ADD(`m`.`Time`, INTERVAL CAST(3.0 AS signed) minute) = TIME '10:18:50
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE (`m`.`Time` + TIME '03:00:00') = TIME '13:15:50.5'
+WHERE (ADDTIME(`m`.`Time`, '03:00:00')) = '13:15:50.5':>time(6)
 """);
     }
 
@@ -12072,7 +12072,7 @@ WHERE (`m`.`Time` >= '10:00:00') & (`m`.`Time` < '11:00:00')
 """
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE (`m`.`Time` - TIME '10:00:00') = TIME '00:15:50.5'
+WHERE (ADDTIME(`m`.`Time`, "-10:00:00")) = '00:15:50.5':>time(6)
 """);
     }
 
@@ -13439,7 +13439,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM `SquadMissions` AS `s0`
     INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
-    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochMilliseconds_0 = (TIMESTAMPDIFF(microsecond, TIMESTAMP '1970-01-01 00:00:00', `m`.`Timeline`)) DIV (1000)))
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochMilliseconds_0 = (TIMESTAMPDIFF(microsecond, '1970-01-01 00:00:00', `m`.`Timeline`)) DIV (1000)))
 ORDER BY `u`.`Nickname`, `u`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 """);
     }
@@ -13466,7 +13466,7 @@ WHERE NOT EXISTS (
     SELECT 1
     FROM `SquadMissions` AS `s0`
     INNER JOIN `Missions` AS `m` ON `s0`.`MissionId` = `m`.`Id`
-    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochSeconds_0 = TIMESTAMPDIFF(second, TIMESTAMP '1970-01-01 00:00:00', `m`.`Timeline`)))
+    WHERE (`s`.`Id` = `s0`.`SquadId`) AND (@__unixEpochSeconds_0 = TIMESTAMPDIFF(second, '1970-01-01 00:00:00', `m`.`Timeline`)))
 ORDER BY `u`.`Nickname`, `u`.`SquadId`, `s`.`Id`, `s1`.`SquadId`
 """);
     }
@@ -13905,7 +13905,7 @@ FROM `LocustHordes` AS `l`
 SELECT `t`.`Id` AS `TagId`, `m`.`Id` AS `MissionId`
 FROM `Tags` AS `t`
 CROSS JOIN `Missions` AS `m`
-WHERE TIME(`t`.`IssueDate`) = `m`.`Time`
+WHERE TIME(`t`.`IssueDate`) = `m`.`Time`:>time(6)
 """);
     }
 
@@ -13926,7 +13926,7 @@ LEFT JOIN (
     SELECT `o`.`Nickname`, `o`.`SquadId`
     FROM `Officers` AS `o`
 ) AS `u` ON (`t`.`GearNickName` = `u`.`Nickname`) AND (`t`.`GearSquadId` = `u`.`SquadId`)
-WHERE (`u`.`Nickname` IS NOT NULL AND (`u`.`SquadId` IS NOT NULL)) AND (TIME(DATE_ADD(`t`.`IssueDate`, INTERVAL CAST(CAST(`u`.`SquadId` AS double) AS signed) hour)) = @__time_0)
+WHERE (`u`.`Nickname` IS NOT NULL AND (`u`.`SquadId` IS NOT NULL)) AND (TIME(DATE_ADD(`t`.`IssueDate`, INTERVAL CAST((`u`.`SquadId` :> double) AS signed) hour)) = @__time_0:>time(6))
 """);
     }
 
@@ -13938,7 +13938,7 @@ WHERE (`u`.`Nickname` IS NOT NULL AND (`u`.`SquadId` IS NOT NULL)) AND (TIME(DAT
 """
 SELECT `t`.`Id`, `t`.`GearNickName`, `t`.`GearSquadId`, `t`.`IssueDate`, `t`.`Note`
 FROM `Tags` AS `t`
-WHERE TIME(DATE_ADD(`t`.`IssueDate`, INTERVAL CAST(CAST(CHAR_LENGTH(`t`.`Note`) AS double) AS signed) hour)) > TIME '09:00:00'
+WHERE TIME(DATE_ADD(`t`.`IssueDate`, INTERVAL CAST((CHAR_LENGTH(`t`.`Note`) :> double) AS signed) hour)) > '09:00:00'
 """);
     }
 
@@ -13964,7 +13964,7 @@ WHERE `m`.`Duration` < `m`.`Time`
 
 SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
 FROM `Missions` AS `m`
-WHERE `m`.`Duration` = @__time_0
+WHERE `m`.`Duration` = @__time_0:>time(6)
 """);
     }
 
@@ -14003,7 +14003,7 @@ WHERE DATE(`t`.`IssueDate`) > `m`.`Date`
 
 SELECT `t`.`Id`, `t`.`GearNickName`, `t`.`GearSquadId`, `t`.`IssueDate`, `t`.`Note`
 FROM `Tags` AS `t`
-WHERE DATE(`t`.`IssueDate`) IN (@__prm_0, DATE '0015-03-07')
+WHERE DATE(`t`.`IssueDate`) IN (@__prm_0, '0015-03-07')
 """);
     }
 

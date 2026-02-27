@@ -110,7 +110,7 @@ CREATE TABLE `Table1` (
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('00000000000001_Migration1', '7.0.0-test');
 
-ALTER TABLE `Table1` RENAME COLUMN `Foo` TO `Bar`;
+ALTER TABLE `Table1` CHANGE `Foo` `Bar`;
 
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('00000000000002_Migration2', '7.0.0-test');
@@ -148,7 +148,7 @@ WHERE `MigrationId` = '00000000000004_Migration4';
 DELETE FROM `__EFMigrationsHistory`
 WHERE `MigrationId` = '00000000000003_Migration3';
 
-ALTER TABLE `Table1` RENAME COLUMN `Bar` TO `Foo`;
+ALTER TABLE `Table1` CHANGE `Bar` `Foo`;
 
 DELETE FROM `__EFMigrationsHistory`
 WHERE `MigrationId` = '00000000000002_Migration2';
@@ -188,7 +188,7 @@ CREATE TABLE `Table1` (
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('00000000000001_Migration1', '7.0.0-test');
 
-ALTER TABLE `Table1` RENAME COLUMN `Foo` TO `Bar`;
+ALTER TABLE `Table1` CHANGE `Foo` `Bar`;
 
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('00000000000002_Migration2', '7.0.0-test');
@@ -223,7 +223,7 @@ WHERE `MigrationId` = '00000000000004_Migration4';
 DELETE FROM `__EFMigrationsHistory`
 WHERE `MigrationId` = '00000000000003_Migration3';
 
-ALTER TABLE `Table1` RENAME COLUMN `Bar` TO `Foo`;
+ALTER TABLE `Table1` CHANGE `Bar` `Foo`;
 
 DELETE FROM `__EFMigrationsHistory`
 WHERE `MigrationId` = '00000000000002_Migration2';
@@ -246,7 +246,7 @@ WHERE `MigrationId` = '00000000000001_Migration1';
             Assert.Equal(
 """
 START TRANSACTION;
-ALTER TABLE `Table1` RENAME COLUMN `Foo` TO `Bar`;
+ALTER TABLE `Table1` CHANGE `Foo` `Bar`;
 
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('00000000000002_Migration2', '7.0.0-test');
@@ -254,7 +254,7 @@ VALUES ('00000000000002_Migration2', '7.0.0-test');
 COMMIT;
 
 START TRANSACTION;
-ALTER TABLE `Table1` RENAME COLUMN `Bar` TO `Foo`;
+ALTER TABLE `Table1` CHANGE `Bar` `Foo`;
 
 DELETE FROM `__EFMigrationsHistory`
 WHERE `MigrationId` = '00000000000002_Migration2';
@@ -274,7 +274,7 @@ COMMIT;
             Assert.Equal(
 """
 START TRANSACTION;
-ALTER TABLE `Table1` RENAME COLUMN `Foo` TO `Bar`;
+ALTER TABLE `Table1` CHANGE `Foo` `Bar`;
 
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('00000000000002_Migration2', '7.0.0-test');
@@ -282,7 +282,7 @@ VALUES ('00000000000002_Migration2', '7.0.0-test');
 COMMIT;
 
 START TRANSACTION;
-ALTER TABLE `Table1` RENAME COLUMN `Bar` TO `Foo`;
+ALTER TABLE `Table1` CHANGE `Bar` `Foo`;
 
 DELETE FROM `__EFMigrationsHistory`
 WHERE `MigrationId` = '00000000000002_Migration2';
@@ -349,7 +349,7 @@ CREATE PROCEDURE MigrationsScript()
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '00000000000002_Migration2') THEN
 
-    ALTER TABLE `Table1` RENAME COLUMN `Foo` TO `Bar`;
+    ALTER TABLE `Table1` CHANGE `Foo` `Bar`;
 
     END IF;
 END //
@@ -433,7 +433,7 @@ CREATE PROCEDURE MigrationsScript()
 BEGIN
     IF NOT EXISTS(SELECT 1 FROM `__EFMigrationsHistory` WHERE `MigrationId` = '00000000000002_Migration2') THEN
 
-    ALTER TABLE `Table1` RENAME COLUMN `Foo` TO `Bar`;
+    ALTER TABLE `Table1` CHANGE `Foo` `Bar`;
 
     END IF;
 END //

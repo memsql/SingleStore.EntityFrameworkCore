@@ -148,7 +148,7 @@ SET `b`.`CreationTimestamp` = '2020-01-01 00:00:00'
 """);
     }
 
-    [ConditionalFact(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Update_non_main_table_in_entity_with_entity_splitting(bool async)
     {
         var contextFactory = await InitializeAsync<DbContext>(
@@ -213,7 +213,7 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
             """);
     }
 
-    [ConditionalFact(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Replace_ColumnExpression_in_column_setter(bool async)
     {
         await base.Replace_ColumnExpression_in_column_setter(async);

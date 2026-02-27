@@ -1588,7 +1588,7 @@ $"""
             AssertSql(
                 """
                 CREATE TABLE `People` (
-                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `Id` int NOT NULL,
                     `Name` longtext CHARACTER SET utf8mb4 NULL,
                     CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
                 ) CHARACTER SET=utf8mb4;
@@ -1614,7 +1614,7 @@ $"""
             AssertSql(
                 """
                 CREATE TABLE `People` (
-                    `Id` int NOT NULL AUTO_INCREMENT,
+                    `Id` int NOT NULL,
                     `Name` longtext CHARACTER SET utf8mb4 NULL COMMENT 'Column comment',
                     CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
                 ) CHARACTER SET=utf8mb4 COMMENT='Table comment';
@@ -1742,7 +1742,7 @@ ALTER TABLE `People` MODIFY COLUMN `Sum` int AS (`X` - `Y`);
 
             AssertSql(
 """
-ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL COMMENT 'Some comment' AUTO_INCREMENT;
+ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL COMMENT 'Some comment';
 """);
         }
 
@@ -1752,7 +1752,7 @@ ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL COMMENT 'Some comment' AUTO
 
             AssertSql(
 """
-ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL COMMENT 'Some comment2' AUTO_INCREMENT;
+ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL COMMENT 'Some comment2';
 """);
         }
 
@@ -1762,7 +1762,7 @@ ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL COMMENT 'Some comment2' AUT
 
             AssertSql(
 """
-ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL;
 """);
         }
 
@@ -1806,7 +1806,7 @@ ALTER TABLE `People` DROP COLUMN `X`;
 
             AssertSql(
 """
-ALTER TABLE `People` RENAME COLUMN `SomeColumn` TO `SomeOtherColumn`;
+ALTER TABLE `People` CHANGE `SomeColumn` `SomeOtherColumn`;
 """);
         }
 
@@ -1949,7 +1949,7 @@ SELECT ROW_COUNT();
             AssertSql(
 """
 CREATE TABLE `Contacts` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` int NOT NULL,
     `Discriminator` varchar(8) CHARACTER SET utf8mb4 NOT NULL,
     `Name` longtext CHARACTER SET utf8mb4 NULL,
     `Number` int NULL,
@@ -2015,7 +2015,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NULL;
             AssertSql(
 """
 CREATE TABLE `Customers` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` int NOT NULL,
     `Name` longtext CHARACTER SET utf8mb4 NULL,
     `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL,
     CONSTRAINT `PK_Customers` PRIMARY KEY (`Id`)
@@ -2030,7 +2030,7 @@ CREATE TABLE `Customers` (
             AssertSql(
 """
 CREATE TABLE `Customers` (
-    `Id` int NOT NULL AUTO_INCREMENT,
+    `Id` int NOT NULL,
     `Name` longtext CHARACTER SET utf8mb4 NULL,
     `Numbers` longtext CHARACTER SET utf8mb4 NULL,
     CONSTRAINT `PK_Customers` PRIMARY KEY (`Id`)
