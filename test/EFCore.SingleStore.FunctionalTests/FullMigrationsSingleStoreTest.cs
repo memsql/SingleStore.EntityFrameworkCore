@@ -450,7 +450,7 @@ BEGIN
 		WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
 			AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
 			AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
-			AND `COLUMN_TYPE` LIKE '%int%'
+			AND `COLUMN_TYPE` LIKE '%bigint%'
 			AND `COLUMN_KEY` = 'PRI';
 	IF HAS_AUTO_INCREMENT_ID THEN
 		SELECT `COLUMN_TYPE`
@@ -459,7 +459,7 @@ BEGIN
 			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
 				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
 				AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
-				AND `COLUMN_TYPE` LIKE '%int%'
+				AND `COLUMN_TYPE` LIKE '%bigint%'
 				AND `COLUMN_KEY` = 'PRI';
 		SELECT `COLUMN_NAME`
 			INTO PRIMARY_KEY_COLUMN_NAME
@@ -467,7 +467,7 @@ BEGIN
 			WHERE `TABLE_SCHEMA` = (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA()))
 				AND `TABLE_NAME` = TABLE_NAME_ARGUMENT
 				AND `COLUMN_NAME` = COLUMN_NAME_ARGUMENT
-				AND `COLUMN_TYPE` LIKE '%int%'
+				AND `COLUMN_TYPE` LIKE '%bigint%'
 				AND `COLUMN_KEY` = 'PRI';
 		SET SQL_EXP = CONCAT('ALTER TABLE `', (SELECT IFNULL(SCHEMA_NAME_ARGUMENT, SCHEMA())), '`.`', TABLE_NAME_ARGUMENT, '` MODIFY COLUMN `', PRIMARY_KEY_COLUMN_NAME, '` ', PRIMARY_KEY_TYPE, ' NOT NULL AUTO_INCREMENT;');
 		SET @SQL_EXP = SQL_EXP;
@@ -479,7 +479,10 @@ END;
 CALL POMELO_BEFORE_DROP_PRIMARY_KEY(NULL, 'IceCreams');
 ALTER TABLE `IceCreams` DROP PRIMARY KEY;
 
-ALTER TABLE `IceCreams` ADD `IceCreamId` int NOT NULL AUTO_INCREMENT;
+ALTER TABLE `IceCreams` ADD `IceCreamId` bigint NOT NULL;
+
+ALTER TABLE `IceCreams` ADD CONSTRAINT `PK_IceCreams` PRIMARY KEY (`IceCreamId`);
+CALL POMELO_AFTER_ADD_PRIMARY_KEY(NULL, 'IceCreams', 'IceCreamId');
 
 INSERT INTO `__EFMigrationsHistory` (`MigrationId`, `ProductVersion`)
 VALUES ('00000000000002_Migration2', '7.0.0-test');
@@ -819,12 +822,11 @@ COMMIT;
                                 name: "PK_IceCreams",
                                 table: "IceCreams");
 
-                            migrationBuilder.AddColumn<int>(
+                            migrationBuilder.AddColumn<long>(
                                     name: "IceCreamId",
                                     table: "IceCreams",
-                                    type: "int",
-                                    nullable: false,
-                                    defaultValue: 0)
+                                    type: "bigint",
+                                    nullable: false)
                                 .Annotation("MySql:ValueGenerationStrategy", SingleStoreValueGenerationStrategy.IdentityColumn);
 
                             migrationBuilder.AddPrimaryKey(
