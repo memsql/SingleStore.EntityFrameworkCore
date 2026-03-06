@@ -72,8 +72,6 @@ dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNe
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftStringQueryTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.ManyToManyHeterogeneousQuerySingleStoreTest.'
-((TOTAL_FAILURES += $? != 0))
 dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.MappingQuerySingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.MatchQuerySingleStoreTest.'
@@ -140,8 +138,6 @@ dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.Shared
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.QueryNoClientEvalSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.SimpleQuerySingleStoreTest.'
-((TOTAL_FAILURES += $? != 0))
 dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.SqlExecutorSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.ToSqlQuerySingleStoreTest.'
@@ -164,6 +160,11 @@ dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTFil
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTInheritanceBulkUpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
+dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.SingleStoreModelBuilderGenericTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindStringComparisonFunctionsQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+
 
 cd ../../
 

@@ -22,8 +22,6 @@ dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.Js
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.JsonNewtonsoftStringQueryTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
-dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.ManyToManyHeterogeneousQuerySingleStoreTest.'
-$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.MappingQuerySingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.MatchQuerySingleStoreTest.'
@@ -90,8 +88,6 @@ dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.Sh
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.QueryNoClientEvalSingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
-dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.SimpleQuerySingleStoreTest.'
-$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.SqlExecutorSingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.ToSqlQuerySingleStoreTest.'
@@ -142,6 +138,19 @@ dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.TP
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.SingleStoreConnectionStringOptionsValidatorTests.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocComplexTypeQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocJsonQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocManyToManyQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocQueryFiltersQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocQuerySplittingQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocMiscellaneousQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+
 
 cd ..\..\
 

@@ -172,7 +172,18 @@ dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.TPHInh
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.SingleStoreConnectionStringOptionsValidatorTests.'
 ((TOTAL_FAILURES += $? != 0))
-
+dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocComplexTypeQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocJsonQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocManyToManyQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocQueryFiltersQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocQuerySplittingQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
+dotnet test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocMiscellaneousQuerySingleStoreTest.'
+((TOTAL_FAILURES += $? != 0))
 
 cd ../../
 

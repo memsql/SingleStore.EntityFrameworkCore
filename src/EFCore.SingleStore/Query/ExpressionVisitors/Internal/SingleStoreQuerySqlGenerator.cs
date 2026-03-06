@@ -820,11 +820,32 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
         {
             Check.NotNull(mySqlCollateExpression, nameof(mySqlCollateExpression));
 
-            Sql.Append("CONVERT(");
+            // SingleStore doesn't support CONVERT(... USING charset) syntax
+            // Instead, use the cast operator `:>` with collation
+            // e.g., 'value' :> VARCHAR(255) COLLATE utf8mb4_bin
 
+            Sql.Append("(");
             Visit(mySqlCollateExpression.ValueExpression);
+            Sql.Append(" :> ");
 
-            Sql.Append($" USING {mySqlCollateExpression.Charset}) COLLATE {mySqlCollateExpression.Collation}");
+            // Determine the appropriate varchar size based on type mapping
+            var typeMapping = mySqlCollateExpression.ValueExpression.TypeMapping ?? mySqlCollateExpression.TypeMapping;
+            var storeType = typeMapping?.StoreType?.ToLower();
+            var varcharType = "VARCHAR(255)"; // Default
+
+            // Extract size from store type if available (e.g., "varchar(50)" -> "VARCHAR(50)")
+            if (!string.IsNullOrEmpty(storeType) &&
+                (storeType.StartsWith("varchar") || storeType.StartsWith("char")))
+            {
+                var sizeStart = storeType.IndexOf('(');
+                if (sizeStart >= 0)
+                {
+                    varcharType = $"VARCHAR{storeType.Substring(sizeStart)}";
+                }
+            }
+
+            Sql.Append(varcharType);
+            Sql.Append($" COLLATE {mySqlCollateExpression.Collation})");
 
             return mySqlCollateExpression;
         }

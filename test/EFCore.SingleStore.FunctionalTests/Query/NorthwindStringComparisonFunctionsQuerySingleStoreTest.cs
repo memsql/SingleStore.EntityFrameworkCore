@@ -45,11 +45,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             // statement
             AssertSql(
                 $@"@__comparison_0='{comparison:D}'
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin
-    ELSE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE utf8mb4_bin
+    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    ELSE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
 
@@ -64,7 +65,7 @@ END");
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -78,7 +79,7 @@ WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -92,7 +93,7 @@ WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -106,7 +107,7 @@ WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -120,7 +121,7 @@ WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE ut
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -134,7 +135,7 @@ WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE ut
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -161,11 +162,12 @@ WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE ut
             // statement
             AssertSql(
                 $@"@__comparison_0='{comparison:D}'
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin
-    ELSE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE utf8mb4_bin
+    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    ELSE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
 
@@ -180,7 +182,7 @@ END");
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -194,7 +196,7 @@ WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -208,7 +210,7 @@ WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -222,7 +224,7 @@ WHERE `c`.`CustomerID` = CONVERT('anton' USING utf8mb4) COLLATE utf8mb4_bin");
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -236,7 +238,7 @@ WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE ut
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -250,7 +252,7 @@ WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE ut
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -277,11 +279,12 @@ WHERE LCASE(`c`.`CustomerID`) = CONVERT(LCASE('anton') USING utf8mb4) COLLATE ut
             // statement
             AssertSql(
                 $@"@__comparison_0='{comparison:D}'
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE CONVERT('%nto%' USING utf8mb4) COLLATE utf8mb4_bin
-    ELSE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nto%') USING utf8mb4) COLLATE utf8mb4_bin
+    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('%nto%' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    ELSE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nto%') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
 
@@ -297,7 +300,7 @@ END");
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('%nto%' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('%nto%' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -312,7 +315,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('%nto%' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('%nto%' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('%nto%' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -327,7 +330,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('%nto%' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('%nto%' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('%nto%' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -341,7 +344,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('%nto%' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nto%') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nto%') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -355,7 +358,7 @@ WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nto%') USING utf8mb4) COLLATE
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nto%') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nto%') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -369,7 +372,7 @@ WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nto%') USING utf8mb4) COLLATE
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nto%') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nto%') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -396,11 +399,12 @@ WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nto%') USING utf8mb4) COLLATE
             // statement
             AssertSql(
                 $@"@__comparison_0='{comparison:D}'
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE CONVERT('anto' USING utf8mb4) COLLATE utf8mb4_bin
-    ELSE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('anto%') USING utf8mb4) COLLATE utf8mb4_bin
+    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('anto' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    ELSE LCASE(`c`.`CustomerID`) LIKE (LCASE('anto%') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
 
@@ -416,7 +420,7 @@ END");
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('anto%' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('anto%' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -431,7 +435,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('anto%' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('anto%' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('anto%' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -446,7 +450,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('anto%' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('anto%' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('anto%' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -460,7 +464,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('anto%' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE CONVERT(LCASE('anto%') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE (LCASE('anto%') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -474,7 +478,7 @@ WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE CONVERT(LCASE('anto%') USING utf8mb4) 
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE CONVERT(LCASE('anto%') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE (LCASE('anto%') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -488,7 +492,7 @@ WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE CONVERT(LCASE('anto%') USING utf8mb4) 
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE CONVERT(LCASE('anto%') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE (LCASE('anto%') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -513,11 +517,12 @@ WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE CONVERT(LCASE('anto%') USING utf8mb4) 
 
             AssertSql(
                 $@"@__comparison_0='{comparison:D}'
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE CONVERT('%nton' USING utf8mb4) COLLATE utf8mb4_bin
-    ELSE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nton') USING utf8mb4) COLLATE utf8mb4_bin
+    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('%nton' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    ELSE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nton') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
 
@@ -533,7 +538,7 @@ END");
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('%nton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('%nton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -548,7 +553,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('%nton' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('%nton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('%nton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -563,7 +568,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('%nton' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE `c`.`CustomerID` LIKE CONVERT('%nton' USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE `c`.`CustomerID` LIKE ('%nton' :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -577,7 +582,7 @@ WHERE `c`.`CustomerID` LIKE CONVERT('%nton' USING utf8mb4) COLLATE utf8mb4_bin")
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -591,7 +596,7 @@ WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nton') USING utf8mb4) COLLATE
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -605,7 +610,7 @@ WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nton') USING utf8mb4) COLLATE
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nton') USING utf8mb4) COLLATE utf8mb4_bin");
+WHERE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nton') :> VARCHAR(255) COLLATE utf8mb4_bin)");
         }
 
         [ConditionalTheory]
@@ -631,11 +636,12 @@ WHERE LCASE(`c`.`CustomerID`) LIKE CONVERT(LCASE('%nton') USING utf8mb4) COLLATE
             // When the comparison parameter is not a constant, we have to use a case
             // statement
             AssertSql($"@__comparison_0='{comparison:D}'" + @"
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN LOCATE(CONVERT('nt' USING utf8mb4) COLLATE utf8mb4_bin, `c`.`CustomerID`) - 1
-    ELSE LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.`CustomerID`)) - 1
+    WHEN @__comparison_0 IN (4, 0, 2) THEN LOCATE(('nt' :> VARCHAR(255) COLLATE utf8mb4_bin), `c`.`CustomerID`) - 1
+    ELSE LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`)) - 1
 END = 1");
         }
 
@@ -650,7 +656,7 @@ END = 1");
             AssertSql(
                 @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.`CustomerID`), 1) - 1) = 1");
+WHERE (LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`), 1) - 1) = 1");
         }
 
         [ConditionalTheory]
@@ -667,9 +673,10 @@ WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.
 
             AssertSql(
      @$"@__startIndex_0='{startIndex}'
+
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.`CustomerID`), @__startIndex_0 + 1) - 1) = 1");
+WHERE (LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`), @__startIndex_0 + 1) - 1) = 1");
         }
 
         [ConditionalTheory]
@@ -683,7 +690,7 @@ WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE(CONVERT('nt' USING utf8mb4) COLLATE utf8mb4_bin, `c`.`CustomerID`) - 1) = 1");
+WHERE (LOCATE(('nt' :> VARCHAR(255) COLLATE utf8mb4_bin), `c`.`CustomerID`) - 1) = 1");
         }
 
         [ConditionalTheory]
@@ -697,7 +704,7 @@ WHERE (LOCATE(CONVERT('nt' USING utf8mb4) COLLATE utf8mb4_bin, `c`.`CustomerID`)
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE(CONVERT('nt' USING utf8mb4) COLLATE utf8mb4_bin, `c`.`CustomerID`) - 1) = 1");
+WHERE (LOCATE(('nt' :> VARCHAR(255) COLLATE utf8mb4_bin), `c`.`CustomerID`) - 1) = 1");
         }
 
         [ConditionalTheory]
@@ -711,7 +718,7 @@ WHERE (LOCATE(CONVERT('nt' USING utf8mb4) COLLATE utf8mb4_bin, `c`.`CustomerID`)
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE(CONVERT('nt' USING utf8mb4) COLLATE utf8mb4_bin, `c`.`CustomerID`) - 1) = 1");
+WHERE (LOCATE(('nt' :> VARCHAR(255) COLLATE utf8mb4_bin), `c`.`CustomerID`) - 1) = 1");
         }
 
         [ConditionalTheory]
@@ -724,7 +731,7 @@ WHERE (LOCATE(CONVERT('nt' USING utf8mb4) COLLATE utf8mb4_bin, `c`.`CustomerID`)
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.`CustomerID`)) - 1) = 1");
+WHERE (LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`)) - 1) = 1");
         }
 
         [ConditionalTheory]
@@ -737,7 +744,7 @@ WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.`CustomerID`)) - 1) = 1");
+WHERE (LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`)) - 1) = 1");
         }
 
         [ConditionalTheory]
@@ -750,7 +757,7 @@ WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.
 
             AssertSql(@"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE(CONVERT(LCASE('nt') USING utf8mb4) COLLATE utf8mb4_bin, LCASE(`c`.`CustomerID`)) - 1) = 1");
+WHERE (LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`)) - 1) = 1");
         }
 
         private void AssertSql(params string[] expected)
