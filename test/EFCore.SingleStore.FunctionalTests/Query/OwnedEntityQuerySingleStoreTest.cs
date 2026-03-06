@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
-using EntityFrameworkCore.SingleStore.Tests;
-using Microsoft.EntityFrameworkCore.TestModels.UpdatesModel;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
@@ -243,7 +239,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             });
 
             using var context = contextFactory.CreateContext();
-            var query = context.RotRutCases.AsNoTracking().Select(e => e.Rot.ApartmentNo);
+            var query = context.RotRutCases.AsNoTracking().OrderBy(e => e.Buyer).Select(e => e.Rot.ApartmentNo);
 
             var result = async
                 ? await query.ToListAsync()

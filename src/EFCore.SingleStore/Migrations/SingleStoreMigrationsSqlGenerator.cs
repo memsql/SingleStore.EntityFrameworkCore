@@ -449,6 +449,50 @@ DEALLOCATE PREPARE __ss_exec;
             Check.NotNull(operation, nameof(operation));
             Check.NotNull(builder, nameof(builder));
 
+            // SingleStore does not support MODIFY COLUMN for computed columns.
+            // Computed columns must be dropped and re-added.
+            // (ALTER TABLE ... MODIFY COLUMN <col> AS (...) PERSISTED <type> is invalid syntax in SingleStore.)
+            if (operation.ComputedColumnSql != null || operation.OldColumn?.ComputedColumnSql != null)
+            {
+                // If the target is no longer computed, we can’t "modify away" the computed definition either.
+                if (operation.ComputedColumnSql == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Altering computed column '{operation.Table}.{operation.Name}' to a non-computed column isn't supported by SingleStore. " +
+                        "Drop and re-add the column explicitly.");
+                }
+
+                // DROP COLUMN
+                builder
+                    .Append("ALTER TABLE ")
+                    .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
+                    .Append(" DROP COLUMN ")
+                    .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name))
+                    .AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+
+                builder.EndCommand();
+
+                // ADD COLUMN (recreate with the new definition)
+                builder
+                    .Append("ALTER TABLE ")
+                    .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
+                    .Append(" ADD ");
+
+                ColumnDefinition(
+                    operation.Schema,
+                    operation.Table,
+                    operation.Name,
+                    operation,
+                    model,
+                    builder);
+
+                builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+                builder.EndCommand();
+
+                return;
+            }
+
+            // Default path (normal columns)
             builder
                 .Append("ALTER TABLE ")
                 .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))

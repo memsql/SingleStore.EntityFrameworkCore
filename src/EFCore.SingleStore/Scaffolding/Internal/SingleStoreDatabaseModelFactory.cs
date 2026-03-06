@@ -368,21 +368,33 @@ ORDER BY
                             var extra = reader.GetValueOrDefault<string>("EXTRA");
                             var comment = reader.GetValueOrDefault<string>("COLUMN_COMMENT");
 
-                            // Generated colums are not supported on every MySQL/MariaDB version.
+                            // Generated columns are not supported on every MySQL/MariaDB version.
                             var generation = reader.HasName("GENERATION_EXPRESSION")
                                 ? reader.GetValueOrDefault<string>("GENERATION_EXPRESSION").NullIfEmpty()
                                 : null;
 
-                            // MariaDB does not support SRID column restrictions.
                             var srid = reader.HasName("SRS_ID")
                                 ? reader.GetValueOrDefault<uint?>("SRS_ID")
                                 : null;
 
-                            var isStored = generation != null
-                                ? (bool?)extra.Contains("stored generated", StringComparison.OrdinalIgnoreCase)
-                                : null;
+                            var isSingleStoreComputed = extra.Contains("computed", StringComparison.OrdinalIgnoreCase);
 
-                            generation = extra.Contains("computed") ? columnType : null;
+                            // SingleStore: generation expression may not be exposed via INFORMATION_SCHEMA,
+                            // but EXTRA='computed' and COLUMN_TYPE contains "... AS <expr> PERSISTED <type>".
+                            if (generation is null && isSingleStoreComputed)
+                            {
+                                generation = columnType;
+                            }
+
+                            // Compute IsStored AFTER generation has been set
+                            bool? isStored = generation is not null
+                                ? (bool?)(
+                                    // MySQL/MariaDB signal
+                                    extra.Contains("stored generated", StringComparison.OrdinalIgnoreCase)
+                                    // SingleStore signal
+                                    || columnType.Contains("PERSISTED", StringComparison.OrdinalIgnoreCase)
+                                    || isSingleStoreComputed)
+                                : null;
 
                             // Cleanup the column type, because it might contain trailing C style comments on MariaDB, like the following,
                             // if an explicit cast is being done in the SELECT of a VIEW:
@@ -391,17 +403,12 @@ ORDER BY
 
                             // Override this column's type, if we detected earlier that this column should actually by added to the model
                             // with a different type than the one returned by INFORMATION_SCHEMA.COLUMNS.
-                            // This ensures, that e.g. the `json` alias for the `longtext` type for MariaDB databases will be added to the
-                            // model as `json` instead of as `longtext`.
                             columnType = columnTypeOverrides.TryGetValue(name, out var columnTypeOverride)
                                 ? columnTypeOverride((dataType: dataType, charset: charset, collation: collation))
                                 : columnType;
 
                             // MySQL enforces the `utf8mb4` charset and `utf8mb4_bin` collation for `json` columns and MariaDB will use them
                             // automatically for `json` columns as well.
-                            // Both will refuse explicit specifications of other charsets/collations, even though `json` is just an alias
-                            // for `longtext` for MariaDB and setting `longtext` to other charsets/collations works fine.
-                            // We therefore do not scaffold thouse charsets/collations in the first place, so that users don't get confused.
                             if (columnType == "json")
                             {
                                 charset = null;
@@ -410,13 +417,44 @@ ORDER BY
 
                             if (generation is not null)
                             {
-                                // SingleStore column type for computed columns looks like 'as (computed expression) PERSISTED' which might cause some issues with the provider
-                                columnType = dataType;
+                                // SingleStore column type for computed columns may contain:
+                                //   "<type> ... AS <expr> PERSISTED"
+                                // so extract robustly (works with/without parentheses and with nested parentheses).
+                                if (isSingleStoreComputed)
+                                {
+                                    var match = Regex.Match(
+                                        generation,
+                                        @"\bAS\b\s*(?<expr>.+?)\s+\bPERSISTED\b",
+                                        RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-                                int parenthesisStart = generation.IndexOf("("),
-                                    parenthesisEnd = generation.IndexOf(")");
+                                    if (match.Success)
+                                    {
+                                        generation = match.Groups["expr"].Value.Trim();
+                                    }
+                                    else
+                                    {
+                                        // Fallback to previous behavior if format is unexpected
+                                        var pStart = generation.IndexOf("(");
+                                        var pEnd = generation.IndexOf(")");
+                                        if (pStart >= 0 && pEnd > pStart)
+                                        {
+                                            generation = generation.Substring(pStart, pEnd - pStart + 1);
+                                        }
+                                    }
 
-                                generation = generation.Substring(parenthesisStart, parenthesisEnd - parenthesisStart + 1);
+                                    // For SingleStore, keep the store type as the base DATA_TYPE
+                                    columnType = dataType;
+                                }
+                                else
+                                {
+                                    // Previous behavior for MySQL/MariaDB generation strings that include parentheses.
+                                    var parenthesisStart = generation.IndexOf("(");
+                                    var parenthesisEnd = generation.IndexOf(")");
+                                    if (parenthesisStart >= 0 && parenthesisEnd > parenthesisStart)
+                                    {
+                                        generation = generation.Substring(parenthesisStart, parenthesisEnd - parenthesisStart + 1);
+                                    }
+                                }
 
                                 // MySQL saves the generation expression with enclosing parenthesis, while MariaDB doesn't.
                                 generation = _options.ServerVersion.Supports.ParenthesisEnclosedGeneratedColumnExpressions
@@ -488,11 +526,9 @@ ORDER BY
                                 ComputedColumnSql = generation,
                                 IsStored = isStored,
                                 ValueGenerated = valueGenerated,
-                                Comment = string.IsNullOrEmpty(comment)
-                                    ? null
-                                    : comment,
+                                Comment = string.IsNullOrEmpty(comment) ? null : comment,
                                 [SingleStoreAnnotationNames.CharSet] = Settings.CharSet &&
-                                                                 charset != (table[SingleStoreAnnotationNames.CharSet] as string ?? defaultCharSet)
+                                                                       charset != (table[SingleStoreAnnotationNames.CharSet] as string ?? defaultCharSet)
                                     ? charset
                                     : null,
                                 Collation = Settings.Collation &&

@@ -1,13 +1,12 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
-using EntityFrameworkCore.SingleStore.Storage.Internal;
 using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests;

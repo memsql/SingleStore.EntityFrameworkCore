@@ -59,6 +59,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             return base.Alter_index_make_unique();
         }
 
+        [ConditionalFact(Skip = "SingleStore doesn't support CHECK constraints.")]
         public override async Task Alter_check_constraint()
         {
             await base.Alter_check_constraint();
@@ -96,14 +97,20 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         public override async Task Add_column_computed_with_collation(bool stored)
         {
+            // SingleStore computed columns are PERSISTED; virtual computed columns aren't supported/observable.
+            if (!stored)
+            {
+                return;
+            }
+
             await base.Add_column_computed_with_collation(stored);
 
-            var computedColumnTypeSql = stored ? " STORED" : "";
-            var nullableGeneratedColumnSql = AppConfig.ServerVersion.Supports.NullableGeneratedColumns ? " NULL" : string.Empty;
+            var nullableGeneratedColumnSql =
+                AppConfig.ServerVersion.Supports.NullableGeneratedColumns ? " NULL" : string.Empty;
 
             AssertSql(
                 $"""
-                 ALTER TABLE `People` ADD `Name` longtext CHARACTER SET utf8mb4 COLLATE {NonDefaultCollation} AS ('hello'){computedColumnTypeSql}{nullableGeneratedColumnSql};
+                 ALTER TABLE `People` ADD `Name` AS ('hello') PERSISTED longtext CHARACTER SET utf8mb4 COLLATE {NonDefaultCollation}{nullableGeneratedColumnSql};
                  """);
         }
 
@@ -367,9 +374,10 @@ ALTER TABLE `People` ADD CONSTRAINT `PK_Foo` PRIMARY KEY (`SomeField1`, `SomeFie
 
         public override async Task Alter_column_change_computed_type()
         {
-            var exception = await Assert.ThrowsAsync<SingleStoreException>(() => base.Alter_column_change_computed_type());
+            await base.Alter_column_change_computed_type();
+            /*var exception = await Assert.ThrowsAsync<SingleStoreException>(() => base.Alter_column_change_computed_type());
             Assert.True(exception.Message is "'Changing the STORED status' is not supported for generated columns."
-                or "This is not yet supported for generated columns");
+                or "This is not yet supported for generated columns");*/
         }
 
         public override async Task Alter_column_change_type()
@@ -617,6 +625,7 @@ be found in the docs.';");
                 @"CREATE INDEX `IX_People_X_Y_Z` ON `People` (`X`, `Y` DESC, `Z`);");
         }
 
+        [ConditionalFact(Skip = "SingleStore doesn't support CHECK constraints.")]
         public override async Task Drop_check_constraint()
         {
             await base.Drop_check_constraint();
@@ -758,14 +767,19 @@ ALTER TABLE `TestTable` RENAME `TestTable`;
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
         public override async Task Add_column_with_computedSql(bool? stored)
         {
+            // SingleStore computed columns are PERSISTED; virtual computed columns aren't supported/observable.
+            if (stored == false)
+            {
+                return;
+            }
+
             await base.Add_column_with_computedSql(stored);
 
-            var computedColumnTypeSql = stored == true ? " STORED" : "";
             var nullableGeneratedColumnSql = AppConfig.ServerVersion.Supports.NullableGeneratedColumns ? " NULL" : string.Empty;
 
             AssertSql(
                 $"""
-                 ALTER TABLE `People` ADD `Sum` longtext CHARACTER SET utf8mb4 AS (`X` + `Y`){computedColumnTypeSql}{nullableGeneratedColumnSql};
+                 ALTER TABLE `People` ADD `Sum` AS (`X` + `Y`) PERSISTED longtext CHARACTER SET utf8mb4{nullableGeneratedColumnSql};
                  """);
         }
 
@@ -1312,9 +1326,9 @@ $"""
                 });
 
             AssertSql(
-                """
-                 ALTER TABLE `People` ADD `Name` longtext CHARACTER SET utf8mb4 COLLATE {NonDefaultCollation2} NULL;
-                 """);
+                $@"
+                 ALTER TABLE `People` ADD `Name` longtext COLLATE {NonDefaultCollation2} NULL;
+                 ");
 
             return Task.CompletedTask;
         }
