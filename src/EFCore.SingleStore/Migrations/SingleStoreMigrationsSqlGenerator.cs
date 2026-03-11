@@ -371,30 +371,11 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 }
                 else
                 {
-                    // Reset to database defaults (SingleStore): use INFORMATION_SCHEMA.SCHEMATA
-                    var resetSql = $@"
-SET @__ss_charset = (
-  SELECT DEFAULT_CHARACTER_SET_NAME
-  FROM INFORMATION_SCHEMA.SCHEMATA
-  WHERE SCHEMA_NAME = DATABASE()
-);
-SET @__ss_collation = (
-  SELECT DEFAULT_COLLATION_NAME
-  FROM INFORMATION_SCHEMA.SCHEMATA
-  WHERE SCHEMA_NAME = DATABASE()
-);
-SET @__ss_stmt = CONCAT(
-  'ALTER TABLE {Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema)} ',
-  'CHARACTER SET ', @__ss_charset,
-  ', COLLATE ', @__ss_collation,
-  '{Dependencies.SqlGenerationHelper.StatementTerminator}'
-);
-PREPARE __ss_exec FROM @__ss_stmt;
-EXECUTE __ss_exec;
-DEALLOCATE PREPARE __ss_exec;
-";
-                    builder.AppendLine(resetSql);
-                    EndStatement(builder);
+                    // Do not emit a table-level "reset to database defaults" statement here.
+                    // In practice this path shows up for delegation-only charset/collation changes,
+                    // where explicit column ALTERs already represent the real schema change.
+                    // The previous dynamic-SQL implementation using PREPARE/EXECUTE caused
+                    // invalid SQL execution on SingleStore.
                 }
             }
 
@@ -462,6 +443,30 @@ DEALLOCATE PREPARE __ss_exec;
                         "Drop and re-add the column explicitly.");
                 }
 
+                var dependentIndexes = model?
+                    .GetRelationalModel()
+                    .FindTable(operation.Table, operation.Schema)?
+                    .Indexes
+                    .Where(i => i.Name != null &&
+                                i.Columns.Any(c => string.Equals(c.Name, operation.Name, StringComparison.Ordinal)))
+                    .ToList();
+
+                if (dependentIndexes != null)
+                {
+                    foreach (var index in dependentIndexes)
+                    {
+                        Generate(
+                            new DropIndexOperation
+                            {
+                                Name = index.Name,
+                                Schema = operation.Schema,
+                                Table = operation.Table,
+                            },
+                            model,
+                            builder);
+                    }
+                }
+
                 // DROP COLUMN
                 builder
                     .Append("ALTER TABLE ")
@@ -488,6 +493,15 @@ DEALLOCATE PREPARE __ss_exec;
 
                 builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
                 builder.EndCommand();
+
+                if (dependentIndexes != null)
+                {
+                    foreach (var index in dependentIndexes)
+                    {
+                        var createIndexOperation = CreateIndexOperation.CreateFrom(index);
+                        Generate(createIndexOperation, model, builder);
+                    }
+                }
 
                 return;
             }
@@ -1238,10 +1252,10 @@ DEALLOCATE PREPARE __ss_exec;
         }
 
         protected override void DefaultValue(
-            object defaultValue,
-            string defaultValueSql,
-            string columnType,
-            MigrationCommandListBuilder builder)
+        object defaultValue,
+        string defaultValueSql,
+        string columnType,
+        MigrationCommandListBuilder builder)
         {
             Check.NotNull(builder, nameof(builder));
 
@@ -1255,14 +1269,18 @@ DEALLOCATE PREPARE __ss_exec;
                 }
                 else
                 {
-                    Dependencies.MigrationsLogger.DefaultValueNotSupportedWarning(defaultValueSql, _options.ServerVersion, columnType);
+                    Dependencies.MigrationsLogger.DefaultValueNotSupportedWarning(
+                        defaultValueSql,
+                        _options.ServerVersion,
+                        columnType);
                 }
             }
             else if (defaultValue is not null)
             {
-                var isDefaultValueSupported = IsDefaultValueSupported(columnType);
-                var supportsDefaultExpressionSyntax = _options.ServerVersion.Supports.DefaultExpression ||
-                                                      _options.ServerVersion.Supports.AlternativeDefaultExpression;
+                var isLiteralDefaultValueSupported = IsLiteralDefaultValueSupported(columnType);
+                var supportsDefaultExpressionSyntax =
+                    _options.ServerVersion.Supports.DefaultExpression ||
+                    _options.ServerVersion.Supports.AlternativeDefaultExpression;
 
                 var typeMapping = Dependencies.TypeMappingSource.GetMappingForValue(defaultValue);
 
@@ -1273,10 +1291,9 @@ DEALLOCATE PREPARE __ss_exec;
 
                 var sqlLiteralDefaultValue = typeMapping.GenerateSqlLiteral(defaultValue);
 
-                if (isDefaultValueSupported ||
-                    supportsDefaultExpressionSyntax)
+                if (isLiteralDefaultValueSupported || supportsDefaultExpressionSyntax)
                 {
-                    var useDefaultExpressionSyntax = !isDefaultValueSupported;
+                    var useDefaultExpressionSyntax = !isLiteralDefaultValueSupported;
 
                     builder.Append(" DEFAULT ");
 
@@ -1302,9 +1319,27 @@ DEALLOCATE PREPARE __ss_exec;
             }
         }
 
+        private bool IsLiteralDefaultValueSupported(string columnType)
+        {
+            if (IsSpatialStoreType(columnType))
+            {
+                return false;
+            }
+
+            if (columnType.Contains("blob", StringComparison.OrdinalIgnoreCase) ||
+                columnType.Contains("text", StringComparison.OrdinalIgnoreCase) ||
+                columnType.Contains("json", StringComparison.OrdinalIgnoreCase))
+            {
+                // SingleStore supports defaults for BLOB/TEXT/JSON starting with 8.1.12.
+                return _options.ServerVersion.Version >= new Version(8, 1, 12);
+            }
+
+            return true;
+        }
+
         private bool IsDefaultValueSqlSupported(string defaultValueSql, string columnType)
         {
-            if (IsDefaultValueSupported(columnType))
+            if (IsLiteralDefaultValueSupported(columnType))
             {
                 return true;
             }

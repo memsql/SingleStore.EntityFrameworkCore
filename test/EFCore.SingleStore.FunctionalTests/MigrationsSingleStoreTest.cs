@@ -76,23 +76,22 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         public override async Task Alter_column_make_computed(bool? stored)
         {
-            if (stored == true)
+            // SingleStore computed columns are PERSISTED; virtual computed columns aren't supported/observable
+            if (stored == false)
             {
-                await base.Alter_column_make_computed(stored);
-
-                var computedColumnTypeSql = stored == true ? " STORED" : "";
-
-                AssertSql(
-                    $"""
-                     ALTER TABLE `People` MODIFY COLUMN `Sum` int AS (`X` + `Y`){computedColumnTypeSql};
-                     """);
+                return;
             }
-            else
-            {
-                var exception = await Assert.ThrowsAsync<SingleStoreException>(() => base.Alter_column_make_computed(stored));
-                Assert.True(exception.Message is "'Changing the STORED status' is not supported for generated columns."
-                    or "This is not yet supported for generated columns");
-            }
+
+            await base.Alter_column_make_computed(stored);
+
+            AssertSql(
+                """
+                ALTER TABLE `People` DROP COLUMN `Sum`;
+                """,
+                //
+                """
+                ALTER TABLE `People` ADD `Sum` AS (`X` + `Y`) PERSISTED int;
+                """);
         }
 
         public override async Task Add_column_computed_with_collation(bool stored)
@@ -491,12 +490,12 @@ ALTER SEQUENCE `foo` INCREMENT BY 2 NO MINVALUE NO MAXVALUE NOCYCLE;
             await base.Create_schema();
 
             AssertSql(
-"""
-CREATE TABLE `People` (
-    `Id` int NOT NULL AUTO_INCREMENT,
-    CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
-) CHARACTER SET=utf8mb4;
-""");
+                """
+                CREATE TABLE `SomeOtherSchema_People` (
+                    `Id` int NOT NULL,
+                    CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
+                ) CHARACTER SET=utf8mb4;
+                """);
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
@@ -692,36 +691,42 @@ DROP SEQUENCE `TestSequence`;
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
         public override async Task Add_required_primitive_collection_with_custom_default_value_sql_to_existing_table()
         {
-            // Classic/literal default values like `DEFAULT '[3, 2, 1]'` are not allowed for `json`, `blob` or `text` data types, but
-            // default *expressions* like `DEFAULT ('[3, 2, 1]')` are.
-            await base.Add_required_primitive_collection_with_custom_default_value_sql_to_existing_table_core("('[3, 2, 1]')");
+            await base.Add_required_primitive_collection_with_custom_default_value_sql_to_existing_table_core("'[3, 2, 1]'");
 
             AssertSql(
 """
-ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('[3, 2, 1]');
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT '[3, 2, 1]';
 """);
         }
 
         public override async Task Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table()
         {
-            // Classic/literal default values like `DEFAULT '[3, 2, 1]'` are not allowed for `json`, `blob` or `text` data types, but
-            // default *expressions* like `DEFAULT ('[3, 2, 1]')` are.
-            await base.Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table_core("('[3, 2, 1]')");
+            await base.Add_required_primitve_collection_with_custom_default_value_sql_to_existing_table_core("'[3, 2, 1]'");
 
             AssertSql(
 """
-ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('[3, 2, 1]');
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT '[3, 2, 1]';
 """);
         }
 
         public override async Task Move_table()
         {
-            await base.Move_table();
+            await Test(
+                builder => builder.Entity("TestTable").Property<int>("Id"),
+                builder => { },
+                builder => builder.Entity("TestTable").ToTable("TestTable", "TestTableSchema"),
+                model =>
+                {
+                    var table = Assert.Single(model.Tables);
+
+                    Assert.Equal("TestTableSchema_TestTable", table.Name);
+                    Assert.Null(table.Schema);
+                });
 
             AssertSql(
-"""
-ALTER TABLE `TestTable` RENAME `TestTable`;
-""");
+                """
+                ALTER TABLE `TestTable` RENAME TO `TestTableSchema_TestTable`;
+                """);
         }
 
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.Sequences))]
@@ -786,21 +791,26 @@ ALTER TABLE `TestTable` RENAME `TestTable`;
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
         public override async Task Create_table_with_computed_column(bool? stored)
         {
+            // SingleStore computed columns are PERSISTED; virtual computed columns aren't supported/observable
+            if (stored == false)
+            {
+                return;
+            }
+
             await base.Create_table_with_computed_column(stored);
 
-            var computedColumnTypeSql = stored == true ? " STORED" : "";
             var nullableGeneratedColumnSql = AppConfig.ServerVersion.Supports.NullableGeneratedColumns ? " NULL" : string.Empty;
 
             AssertSql(
-$"""
- CREATE TABLE `People` (
-     `Id` int NOT NULL AUTO_INCREMENT,
-     `Sum` longtext CHARACTER SET utf8mb4 AS (`X` + `Y`){computedColumnTypeSql}{nullableGeneratedColumnSql},
-     `X` int NOT NULL,
-     `Y` int NOT NULL,
-     CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
- ) CHARACTER SET=utf8mb4;
- """);
+                $"""
+                 CREATE TABLE `People` (
+                     `Id` int NOT NULL,
+                     `Sum` AS (`X` + `Y`) PERSISTED longtext CHARACTER SET utf8mb4{nullableGeneratedColumnSql},
+                     `X` int NOT NULL,
+                     `Y` int NOT NULL,
+                     CONSTRAINT `PK_People` PRIMARY KEY (`Id`)
+                 ) CHARACTER SET=utf8mb4;
+                 """);
         }
 
         [ConditionalFact(Skip = "ALTER TABLE doesn't support changing computed columns.'")]
@@ -1093,6 +1103,8 @@ $"""
                 });
 
             AssertSql(
+                $@"ALTER TABLE `IceCream` COLLATE {NonDefaultCollation2};",
+                //
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Name` longtext COLLATE {NonDefaultCollation} NULL;",
                 //
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Brand` longtext COLLATE {NonDefaultCollation2} NULL;");
@@ -1307,9 +1319,9 @@ $"""
         }
 
         [ConditionalFact]
-        public override Task Add_column_with_collation()
+        public override async Task Add_column_with_collation()
         {
-            Test(
+            await Test(
                 builder => builder.Entity("People").Property<int>("Id"),
                 builder => { },
                 builder => builder.Entity("People").Property<string>("Name")
@@ -1326,11 +1338,7 @@ $"""
                 });
 
             AssertSql(
-                $@"
-                 ALTER TABLE `People` ADD `Name` longtext COLLATE {NonDefaultCollation2} NULL;
-                 ");
-
-            return Task.CompletedTask;
+                $@"ALTER TABLE `People` ADD `Name` longtext COLLATE {NonDefaultCollation2} NULL;");
         }
 
         [ConditionalFact]
@@ -1408,6 +1416,8 @@ $"""
                 result => { });
 
             AssertSql(
+                $@"ALTER TABLE `IceCream` CHARACTER SET {DefaultCharSet};",
+                //
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Name` longtext CHARACTER SET {NonDefaultCharSet} NULL;",
                 //
                 $@"ALTER TABLE `IceCream` MODIFY COLUMN `Brand` longtext CHARACTER SET {NonDefaultCharSet2} NULL;");
@@ -1746,7 +1756,19 @@ ALTER TABLE `People` ADD `FullName` longtext CHARACTER SET utf8mb4 NULL COMMENT 
 
             AssertSql(
 """
-ALTER TABLE `People` MODIFY COLUMN `Sum` int AS (`X` - `Y`);
+ALTER TABLE `People` DROP INDEX `IX_People_Sum`;
+""",
+        //
+"""
+ALTER TABLE `People` DROP COLUMN `Sum`;
+""",
+        //
+"""
+ALTER TABLE `People` ADD `Sum` AS (`X` - `Y`) PERSISTED int;
+""",
+        //
+"""
+CREATE INDEX `IX_People_Sum` ON `People` (`Sum`);
 """);
         }
 
@@ -1850,13 +1872,29 @@ ALTER TABLE `People` DROP INDEX `IX_People_SomeField`;
 
         public override async Task Add_primary_key_int()
         {
-            await base.Add_primary_key_int();
+            // SingleStore can't support this migration on an existing distributed table:
+            // the source table starts keylessly sharded, PRIMARY/UNIQUE keys must be compatible
+            // with the shard key, shard keys can't be added/changed later, and AUTO_INCREMENT on
+            // distributed tables requires BIGINT.
+            var exception = await Assert.ThrowsAsync<SingleStoreConnector.SingleStoreException>(
+                () => Test(
+                    builder => builder.Entity("People").Property<int>("SomeField"),
+                    builder => { },
+                    builder => builder.Entity("People").HasKey("SomeField"),
+                    model =>
+                    {
+                        var table = Assert.Single(model.Tables);
+                        var primaryKey = table.PrimaryKey;
+                        Assert.NotNull(primaryKey);
+                        Assert.Same(table, primaryKey!.Table);
+                        Assert.Same(table.Columns.Single(), Assert.Single(primaryKey.Columns));
+                        if (AssertConstraintNames)
+                        {
+                            Assert.Equal("PK_People", primaryKey.Name);
+                        }
+                    }));
 
-            AssertSql(
-"""
-ALTER TABLE `People` MODIFY COLUMN `SomeField` int NOT NULL AUTO_INCREMENT,
-ADD CONSTRAINT `PK_People` PRIMARY KEY (`SomeField`);
-""");
+            Assert.Contains("unique keys must contain all columns of the shard key", exception.Message);
         }
 
         public override async Task InsertDataOperation()
@@ -1991,7 +2029,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL;
 
             AssertSql(
 """
-ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('[1,2,3]');
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT '[1,2,3]';
 """);
         }
 
@@ -2008,7 +2046,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
 
             AssertSql(
 """
-ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('some numbers');
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT 'some numbers';
 """);
         }
 
@@ -2068,7 +2106,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL;
 
             AssertSql(
 """
-ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('[1,2,3]');
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT '[1,2,3]';
 """);
         }
 
@@ -2085,7 +2123,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
 
             AssertSql(
 """
-ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT ('some numbers');
+ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DEFAULT 'some numbers';
 """);
         }
 
