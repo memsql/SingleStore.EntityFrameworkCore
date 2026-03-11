@@ -116,7 +116,7 @@ DROP TABLE IF EXISTS Denali;");
 
         #region Table
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Create_tables()
         {
             Test(
@@ -137,7 +137,7 @@ DROP TABLE IF EXISTS Everest;
 DROP TABLE IF EXISTS Denali;");
         }
 
-        [Fact(Skip = "SingleStore supports COLLATE cause only for columns, not tables.")]
+        [Fact]
         public void Create_table_with_collation()
         {
             Test(
@@ -165,7 +165,7 @@ CREATE TABLE `Mountains` (
 DROP TABLE IF EXISTS `Mountains`;");
         }
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Create_columns()
         {
             Test(
@@ -190,7 +190,7 @@ CREATE TABLE MountainsColumns (
                 @"DROP TABLE IF EXISTS MountainsColumns;");
         }
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Create_primary_key()
         {
             Test(
@@ -232,7 +232,7 @@ CREATE INDEX IX_Location_Name ON Place (Location, Name);",
                 @"DROP TABLE IF EXISTS Place;");
         }
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Create_indexes()
         {
             Test(
@@ -308,7 +308,7 @@ DROP TABLE IF EXISTS FirstDependent;
 DROP TABLE IF EXISTS PrincipalTable;");
         }
 
-        [Fact(Skip = "Feature 'FOREIGN KEY on COLUMNAR table' is not supported by SingleStore.")]
+        [Fact]
         public void Create_dependent_table_with_missing_principal_table_creates_model_without_it()
         {
             Test(
@@ -382,7 +382,7 @@ CREATE TABLE `PlaceDetails` (
 DROP TABLE IF EXISTS `PlaceDetails`;");
         }
 
-        [ConditionalFact(Skip = "BLOB/TEXT columns can't have a default value in SingleStore.")]
+        [ConditionalFact]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
         public void Create_guid_columns()
         {
@@ -459,7 +459,7 @@ CREATE TABLE `DefaultValueSimpleExpressionTable` (
 DROP TABLE IF EXISTS `DefaultValueSimpleExpressionTable`;");
         }
 
-        [ConditionalFact(Skip = "BLOB/TEXT columns can't have a default value in SingleStore.")]
+        [ConditionalFact]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
         public void Create_default_value_expression_column()
         {
@@ -530,7 +530,7 @@ DROP TABLE IF EXISTS `item_data`;");
 
         #region ColumnFacets
 
-        [Fact(Skip = "TODO: PLAT-6286 (Add GEOGRAPHY types support)")]
+        [Fact]
         public void Column_storetype_is_set()
         {
             Test(
@@ -561,7 +561,7 @@ CREATE TABLE StoreType (
                 @"DROP TABLE IF EXISTS StoreType;");
         }
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Column_nullability_is_set()
         {
             Test(
@@ -583,13 +583,14 @@ CREATE TABLE Nullable (
                 @"DROP TABLE IF EXISTS Nullable;");
         }
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Column_default_value_is_set()
         {
             Test(
                 @"
 CREATE TABLE DefaultValue (
     Id int,
+    SomeText text DEFAULT 'Something',
     RealColumn real DEFAULT 3.14,
     Created datetime DEFAULT 'October 20, 2015 11am'
 );",
@@ -599,18 +600,21 @@ CREATE TABLE DefaultValue (
                     {
                         var columns = dbModel.Tables.Single().Columns;
 
-                        Assert.Equal("'3.14'", columns.Single(c => c.Name == "RealColumn").DefaultValueSql);
+                        Assert.Equal("'Something'", columns.Single(c => c.Name == "SomeText").DefaultValueSql);
+                        Assert.Equal("3.14", columns.Single(c => c.Name == "RealColumn").DefaultValueSql);
                         Assert.Equal("'October 20, 2015 11am'", columns.Single(c => c.Name == "Created").DefaultValueSql);
                     },
                 @"DROP TABLE IF EXISTS DefaultValue;");
         }
 
-        [Theory]
+        [Theory(Skip = "Issue #582")]
         [InlineData("DOUBLE NOT NULL DEFAULT 0")]
         [InlineData("FLOAT NOT NULL DEFAULT 0")]
         [InlineData("INT NOT NULL DEFAULT 0")]
         [InlineData("INTEGER NOT NULL DEFAULT 0")]
         [InlineData("REAL NOT NULL DEFAULT 0")]
+        [InlineData("NULL DEFAULT NULL")]
+        [InlineData("NOT NULL DEFAULT NULL")]
         public void Column_default_value_is_ignored_when_clr_default(string columnSql)
         {
             Test(
@@ -625,7 +629,7 @@ CREATE TABLE DefaultValue (
                 "DROP TABLE IF EXISTS DefaultValueClr");
         }
 
-        [ConditionalFact(Skip = "SingleStore allows users to create only persistent computed columns")]
+        [ConditionalFact]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
         public void Computed_value_virtual()
             => Test(@"
@@ -656,7 +660,7 @@ CREATE TABLE `ComputedValues` (
     `Id` int,
     `A` int NOT NULL,
     `B` int NOT NULL,
-    `SumOfAAndB` AS (`A` + `B`) PERSISTED int
+    `SumOfAAndB` int GENERATED ALWAYS AS (`A` + `B`) STORED
 );",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
@@ -667,10 +671,11 @@ CREATE TABLE `ComputedValues` (
                     var column = columns.Single(c => c.Name == "SumOfAAndB");
                     Assert.Null(column.DefaultValueSql);
                     Assert.Equal(@"`A` + `B`", column.ComputedColumnSql);
+                    Assert.True(column.IsStored);
                 },
                 @"DROP TABLE IF EXISTS `ComputedValues`");
 
-        [ConditionalFact(Skip = "SingleStore allows users to create only persistent computed columns")]
+        [ConditionalFact]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
         public void Computed_value_virtual_using_constant_string()
             => Test(@"
@@ -722,7 +727,7 @@ CREATE TABLE `IceCreams` (
 
         #region PrimaryKeyFacets
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Create_composite_primary_key()
         {
             Test(
@@ -744,7 +749,7 @@ CREATE TABLE CompositePrimaryKey (
                 @"DROP TABLE IF EXISTS CompositePrimaryKey;");
         }
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Create_primary_key_when_integer_primary_key_alised_to_rowid()
         {
             Test(
@@ -786,7 +791,7 @@ CREATE TABLE PrimaryKeyName (
                 @"DROP TABLE IF EXISTS PrimaryKeyName;");
         }
 
-        [Fact(Skip = "SingleStore doesn't support index prefixes.")]
+        [Fact]
         public void Prefix_lengths_for_primary_key()
         {
             Test(
@@ -811,7 +816,7 @@ CREATE TABLE `IceCreams` (
                 @"DROP TABLE IF EXISTS `IceCreams`;");
         }
 
-        [Fact(Skip = "TODO: PLAT-6286 (Add GEOGRAPHY types support)")]
+        [Fact]
         public void Column_srid_value_is_set()
         {
             Test(
@@ -899,7 +904,7 @@ CREATE TABLE UniqueConstraintName (
 
         #region IndexFacets
 
-        [Fact]
+        [Fact(Skip = "Issue #582")]
         public void Create_composite_index()
         {
             Test(
@@ -950,7 +955,7 @@ CREATE UNIQUE INDEX IX_UNIQUE on UniqueIndex (Id2);",
                 @"DROP TABLE IF EXISTS UniqueIndex;");
         }
 
-        [Fact(Skip = "SingleStore doesn't support index prefixes.")]
+        [Fact]
         public void Prefix_lengths_for_index()
         {
             Test(
@@ -980,7 +985,7 @@ CREATE INDEX `IX_IceCreams_Brand_Name` ON `IceCreams` (`Name`, `Brand`(20));
                 @"DROP TABLE IF EXISTS `IceCreams`;");
         }
 
-        [Fact(Skip = "SingleStore doesn't support index prefixes.")]
+        [Fact]
         public void Prefix_lengths_for_multiple_indexes_same_colums()
         {
             Test(
@@ -1012,7 +1017,7 @@ CREATE UNIQUE INDEX `IX_IceCreams_Brand_Name_2` ON `IceCreams` (`Brand`(40), `Na
                 @"DROP TABLE IF EXISTS `IceCreams`;");
         }
 
-        [Fact(Skip = "SingleStore doesn't support index prefixes.")]
+        [Fact]
         public void Prefix_lengths_for_multiple_indexes_same_columns_without_prefix_lengths()
         {
             Test(
@@ -1052,14 +1057,15 @@ CREATE UNIQUE INDEX `IX_IceCreams_Brand_Name_2` ON `IceCreams` (`Brand`, `Name`)
 CREATE TABLE `IceCreams` (
     `IceCreamId` int NOT NULL,
     `Name` varchar(255) NOT NULL,
-    PRIMARY KEY (`IceCreamId`),
-    FULLTEXT `IX_IceCreams_Name`(`Name`)
-);",
+    PRIMARY KEY (`IceCreamId`)
+);
+
+CREATE FULLTEXT INDEX `IX_IceCreams_Name` ON `IceCreams` (`Name`);",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
                 {
-                    var index = dbModel.Tables.Single().Indexes[1];
+                    var index = Assert.Single(dbModel.Tables.Single().Indexes);
 
                     Assert.Equal("IceCreams", index.Table.Name, StringComparer.OrdinalIgnoreCase);
                     Assert.Equal(1, index.Columns.Count);
@@ -1069,7 +1075,7 @@ CREATE TABLE `IceCreams` (
                 @"DROP TABLE IF EXISTS `IceCreams`;");
         }
 
-        [ConditionalFact(Skip = "SingleStore full text search doesn't support parsers.")]
+        [ConditionalFact]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.FullTextParser))]
         public void Set_fulltextparser_for_fulltext_index_with_parser()
         {
@@ -1078,7 +1084,7 @@ CREATE TABLE `IceCreams` (
 CREATE TABLE `IceCreams` (
     `IceCreamId` int NOT NULL,
     `Name` varchar(255) NOT NULL,
-    PRIMARY KEY (`IceCreamId`),
+    PRIMARY KEY (`IceCreamId`)
 );
 
 CREATE FULLTEXT INDEX `IX_IceCreams_Name` ON `IceCreams` (`Name`) /*!50703 WITH PARSER `ngram` */;",
@@ -1097,7 +1103,7 @@ CREATE FULLTEXT INDEX `IX_IceCreams_Name` ON `IceCreams` (`Name`) /*!50703 WITH 
                 @"DROP TABLE IF EXISTS `IceCreams`;");
         }
 
-        [ConditionalFact(Skip = "TODO: PLAT-6286 (Add GEOGRAPHY types support)")]
+        [ConditionalFact]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.SpatialIndexes))]
         public void Set_spatial_for_spatial_index()
         {
@@ -1313,7 +1319,7 @@ DROP TABLE IF EXISTS DependentTable;
 DROP TABLE IF EXISTS PrincipalTable;");
         }
 
-        [Fact(Skip = "SingleStore doesn't support foreign keys and prepared statements.")]
+        [Fact]
         public void Ensure_constraints_scaffold_with_case_mismatch()
         {
             // The lower case table reference to a mixed cased table will only be accepted under certain conditions

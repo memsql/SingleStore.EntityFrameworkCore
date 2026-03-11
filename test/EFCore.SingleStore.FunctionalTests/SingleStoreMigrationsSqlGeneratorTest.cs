@@ -978,7 +978,11 @@ ALTER DATABASE COLLATE latin1_swedish_ci;" + EOL,
                 });
 
             Assert.Equal(
-                "ALTER TABLE `People` MODIFY COLUMN `Blob` AS ('TEST') PERSISTED varchar(95);" + EOL,
+                """
+                ALTER TABLE `People` DROP COLUMN `Blob`;
+
+                ALTER TABLE `People` ADD `Blob` AS ('TEST') PERSISTED varchar(95);
+                """ + EOL,
                 Sql);
         }
 
