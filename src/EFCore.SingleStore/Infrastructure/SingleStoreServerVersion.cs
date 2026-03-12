@@ -62,7 +62,7 @@ namespace Microsoft.EntityFrameworkCore
             public override bool DoubleCast => false;
             public override bool OuterApply => false;
             public override bool CrossApply => false;
-            public override bool OuterReferenceInMultiLevelSubquery => false;
+            public override bool OuterReferenceInMultiLevelSubquery => ServerVersion.Version >= new Version(9, 0, 0);
             public override bool Json => false; // TODO: PLAT-6409
             public override bool GeneratedColumns => true;
             public override bool NullableGeneratedColumns => true;

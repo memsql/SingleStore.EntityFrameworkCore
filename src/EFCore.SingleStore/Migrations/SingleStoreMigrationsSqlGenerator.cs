@@ -498,7 +498,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 {
                     foreach (var index in dependentIndexes)
                     {
-                        var createIndexOperation = CreateIndexOperation.CreateFrom(index);
+                        var createIndexOperation = CreateIndexOperationRuntimeSafe(index);
                         Generate(createIndexOperation, model, builder);
                     }
                 }
@@ -522,6 +522,64 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
             builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
             builder.EndCommand();
+        }
+
+        private static T TryGetRuntimeSafe<T>(Func<T> getter, T fallback = default)
+        {
+            try
+            {
+                return getter();
+            }
+            catch (InvalidOperationException)
+            {
+                return fallback;
+            }
+        }
+
+        private static CreateIndexOperation CreateIndexOperationRuntimeSafe(ITableIndex index)
+        {
+            var operation = new CreateIndexOperation
+            {
+                Name = index.Name,
+                Table = index.Table.Name,
+                Schema = index.Table.Schema,
+                Columns = index.Columns.Select(c => c.Name).ToArray(),
+                IsUnique = index.IsUnique,
+            };
+
+            var isDescending = TryGetRuntimeSafe(() => index.IsDescending);
+            if (isDescending != null)
+            {
+                operation.IsDescending = isDescending.ToArray();
+            }
+
+            var filter = TryGetRuntimeSafe(() => index.Filter);
+            if (filter != null)
+            {
+                operation.Filter = filter;
+            }
+
+            if (index.FindAnnotation(SingleStoreAnnotationNames.IndexPrefixLength)?.Value is int[] prefixLengths)
+            {
+                operation[SingleStoreAnnotationNames.IndexPrefixLength] = prefixLengths;
+            }
+
+            if (index.FindAnnotation(SingleStoreAnnotationNames.SpatialIndex)?.Value is bool spatial)
+            {
+                operation[SingleStoreAnnotationNames.SpatialIndex] = spatial;
+            }
+
+            if (index.FindAnnotation(SingleStoreAnnotationNames.FullTextIndex)?.Value is bool fullText)
+            {
+                operation[SingleStoreAnnotationNames.FullTextIndex] = fullText;
+            }
+
+            if (index.FindAnnotation(SingleStoreAnnotationNames.FullTextParser)?.Value is string parser)
+            {
+                operation[SingleStoreAnnotationNames.FullTextParser] = parser;
+            }
+
+            return operation;
         }
 
         /// <summary>
