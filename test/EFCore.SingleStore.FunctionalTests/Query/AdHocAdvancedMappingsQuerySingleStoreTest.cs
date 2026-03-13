@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
@@ -194,6 +195,13 @@ ORDER BY `s`.`Id`
     [ConditionalFact]
     public override async Task Double_convert_interface_created_expression_tree()
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context17794>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
@@ -216,22 +224,32 @@ ORDER BY `s`.`Id`
 
     public override async Task Casts_are_removed_from_expression_tree_when_redundant()
     {
-        var contextFactory = await InitializeAsync<Context18087>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
-        {
-            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
-            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
-            modelBuilder.Entity<Context18087.MockEntity>()
-                .Property(e => e.Id)
-                .HasColumnType("bigint");
-        });
+        var contextFactory = await InitializeAsync<Context18087>(
+            seed: c => c.SeedAsync(),
+            onModelCreating: modelBuilder =>
+            {
+                // We're changing the data type of the field from INT to BIGINT, because in SingleStore
+                // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column.
+                modelBuilder.Entity<Context18087.MockEntity>()
+                    .Property(e => e.Id)
+                    .HasColumnType("bigint");
+            });
 
         using (var context = contextFactory.CreateContext())
         {
-            var queryBase = (IQueryable)context.MockEntities;
-            var id = 1;
-            var query = queryBase.Cast<Context18087.IDomainEntity>().FirstOrDefault(x => x.Id == id);
+            var expected = context.MockEntities
+                .OrderBy(e => e.Id)
+                .Select(e => e.Id)
+                .First();
 
-            Assert.Equal(1, query.Id);
+            var queryBase = (IQueryable)context.MockEntities;
+            var query = queryBase
+                .Cast<Context18087.IDomainEntity>()
+                .OrderBy(x => x.Id)
+                .FirstOrDefault();
+
+            Assert.NotNull(query);
+            Assert.Equal(expected, query.Id);
         }
 
         using (var context = contextFactory.CreateContext())
@@ -245,7 +263,10 @@ ORDER BY `s`.`Id`
         using (var context = contextFactory.CreateContext())
         {
             var queryBase = (IQueryable)context.MockEntities;
-            var id = 1;
+            var id = context.MockEntities
+                .OrderBy(e => e.Id)
+                .Select(e => e.Id)
+                .First();
 
             var message = Assert.Throws<InvalidOperationException>(
                 () => queryBase.Cast<Context18087.IDummyEntity>().FirstOrDefault(x => x.Id == id)).Message;

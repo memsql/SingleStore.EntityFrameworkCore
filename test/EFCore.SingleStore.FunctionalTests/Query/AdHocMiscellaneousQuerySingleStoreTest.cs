@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using NameSpace1;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
@@ -167,6 +168,13 @@ public class AdHocMiscellaneousQuerySingleStoreTest : AdHocMiscellaneousQueryRel
     [ConditionalFact]
     public override async Task Conditional_expression_with_conditions_does_not_collapse_if_nullable_bool()
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context9468>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
@@ -267,6 +275,13 @@ public class AdHocMiscellaneousQuerySingleStoreTest : AdHocMiscellaneousQueryRel
     [ConditionalFact]
     public override async Task First_FirstOrDefault_ix_async()
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context603>(onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
@@ -333,6 +348,13 @@ public class AdHocMiscellaneousQuerySingleStoreTest : AdHocMiscellaneousQueryRel
     [MemberData(nameof(IsAsyncData))]
     public override async Task GroupBy_Aggregate_over_navigations_repeated(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context27083>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
@@ -547,6 +569,13 @@ public class AdHocMiscellaneousQuerySingleStoreTest : AdHocMiscellaneousQueryRel
     [ConditionalFact]
     public override async Task QueryBuffer_requirement_is_computed_when_querying_base_type_while_derived_type_has_shadow_prop()
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context11104>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
@@ -596,6 +625,13 @@ public class AdHocMiscellaneousQuerySingleStoreTest : AdHocMiscellaneousQueryRel
     [MemberData(nameof(IsAsyncData))]
     public override async Task SelectMany_where_Select(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context26744>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
@@ -628,6 +664,13 @@ public class AdHocMiscellaneousQuerySingleStoreTest : AdHocMiscellaneousQueryRel
     [ConditionalFact]
     public override async Task Shadow_property_with_inheritance()
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context6986>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore

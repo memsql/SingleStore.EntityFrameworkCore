@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Tests;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
@@ -14,6 +15,13 @@ public class AdHocManyToManyQuerySingleStoreTest : AdHocManyToManyQueryRelationa
     [ConditionalFact]
     public override async Task SelectMany_with_collection_selector_having_subquery()
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<MyContext7973>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
@@ -43,6 +51,13 @@ public class AdHocManyToManyQuerySingleStoreTest : AdHocManyToManyQueryRelationa
     [MemberData(nameof(IsAsyncData))]
     public override async Task Many_to_many_load_works_when_join_entity_has_custom_key(bool async)
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context20277>(onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
