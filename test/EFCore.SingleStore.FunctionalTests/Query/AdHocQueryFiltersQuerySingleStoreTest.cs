@@ -68,16 +68,26 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
                 .HasColumnType("bigint");
         });
         using var context = contextFactory.CreateContext();
-        context.Entities.Select(
-            s =>
-                new Context13517.EntityDto13517
+
+        var result = context.Entities
+            .Select(
+                s => new Context13517.EntityDto13517
                 {
                     Id = s.Id,
                     RefEntity = s.RefEntity == null
                         ? null
-                        : new Context13517.RefEntityDto13517 { Id = s.RefEntity.Id, Public = s.RefEntity.Public },
+                        : new Context13517.RefEntityDto13517
+                        {
+                            Id = s.RefEntity.Id,
+                            Public = s.RefEntity.Public
+                        },
                     RefEntityId = s.RefEntityId
-                }).Single(p => p.Id == 1);
+                })
+            .Single();
+
+        Assert.NotNull(result);
+        Assert.Null(result.RefEntity);
+        Assert.NotNull(result.RefEntityId);
     }
 
     [ConditionalFact]
@@ -142,6 +152,13 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
     [ConditionalFact]
     public override async Task GroupJoin_SelectMany_gets_flattened()
     {
+        // We're skipping this test when we're running tests on Managed Service due to the specifics of
+        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        if (AppConfig.ManagedService)
+        {
+            return;
+        }
+
         var contextFactory = await InitializeAsync<Context19708>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
@@ -207,7 +224,10 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
                 .HasColumnType("bigint");
         });
 
-        if (!AppConfig.ServerVersion.Supports.OuterReferenceInMultiLevelSubquery)
+        var supportsThisQueryShape =
+            AppConfig.ServerVersion.Supports.Version(ServerVersion.Parse("9.0"));
+
+        if (!supportsThisQueryShape)
         {
             using var context = contextFactory.CreateContext();
             await Assert.ThrowsAsync<SingleStoreException>(() => async
@@ -284,7 +304,10 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
                 .HasColumnType("bigint");
         });
 
-        if (!AppConfig.ServerVersion.Supports.OuterReferenceInMultiLevelSubquery)
+        var supportsThisQueryShape =
+            AppConfig.ServerVersion.Supports.Version(ServerVersion.Parse("9.0"));
+
+        if (!supportsThisQueryShape)
         {
             using var context = contextFactory.CreateContext();
             await Assert.ThrowsAsync<SingleStoreException>(() => async

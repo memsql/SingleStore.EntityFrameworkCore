@@ -1362,14 +1362,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
                     var table = Assert.Single(result.Tables);
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
 
-                    if (S2ServerVersion.Supports.Version(ServerVersion.Parse("9.0")))
-                    {
-                        Assert.Equal(NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
-                    }
-                    else
-                    {
-                        Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4 ? null : NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
-                    }
+                    Assert.Equal(NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
                     Assert.Equal("longtext", nameColumn.StoreType);
                 });
 
