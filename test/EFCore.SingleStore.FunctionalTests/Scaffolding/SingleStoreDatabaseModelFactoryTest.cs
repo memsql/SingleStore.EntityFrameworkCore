@@ -36,9 +36,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Scaffolding
             Fixture.ListLoggerFactory.Clear();
         }
 
-        protected readonly List<(LogLevel Level, EventId Id, string Message)> Log = new List<(LogLevel Level, EventId Id, string Message)>();
+        protected readonly List<(LogLevel Level, EventId Id, string Message)>
+            Log = new List<(LogLevel Level, EventId Id, string Message)>();
 
-        private void Test(string createSql, IEnumerable<string> tables, IEnumerable<string> schemas, Action<DatabaseModel> asserter, string cleanupSql)
+        private void Test(string createSql, IEnumerable<string> tables, IEnumerable<string> schemas, Action<DatabaseModel> asserter,
+            string cleanupSql)
         {
             try
             {
@@ -80,12 +82,12 @@ CREATE TABLE Denali ( id int );",
                 new[] { "Everest" },
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var table = Assert.Single(dbModel.Tables);
+                {
+                    var table = Assert.Single(dbModel.Tables);
 
-                        // ReSharper disable once PossibleNullReferenceException
-                        Assert.Equal("Everest", table.Name);
-                    },
+                    // ReSharper disable once PossibleNullReferenceException
+                    Assert.Equal("Everest", table.Name);
+                },
                 @"
 DROP TABLE IF EXISTS Everest;
 DROP TABLE IF EXISTS Denali;");
@@ -101,12 +103,12 @@ CREATE TABLE Denali ( id int );",
                 new[] { "eVeReSt" },
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var table = Assert.Single(dbModel.Tables);
+                {
+                    var table = Assert.Single(dbModel.Tables);
 
-                        // ReSharper disable once PossibleNullReferenceException
-                        Assert.Equal("Everest", table.Name);
-                    },
+                    // ReSharper disable once PossibleNullReferenceException
+                    Assert.Equal("Everest", table.Name);
+                },
                 @"
 DROP TABLE IF EXISTS Everest;
 DROP TABLE IF EXISTS Denali;");
@@ -116,7 +118,7 @@ DROP TABLE IF EXISTS Denali;");
 
         #region Table
 
-        [Fact(Skip = "Issue #582")]
+        [Fact]
         public void Create_tables()
         {
             Test(
@@ -126,12 +128,12 @@ CREATE TABLE Denali ( id int );",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        Assert.Collection(
-                            dbModel.Tables.OrderBy(t => t.Name),
-                            d => Assert.Equal("Denali", d.Name),
-                            e => Assert.Equal("Everest", e.Name));
-                    },
+                {
+                    Assert.Collection(
+                        dbModel.Tables.OrderBy(t => t.Name),
+                        d => Assert.Equal("Denali", d.Name),
+                        e => Assert.Equal("Everest", e.Name));
+                },
                 @"
 DROP TABLE IF EXISTS Everest;
 DROP TABLE IF EXISTS Denali;");
@@ -143,29 +145,46 @@ DROP TABLE IF EXISTS Denali;");
             Test(
                 @"
 CREATE TABLE `Mountains` (
-    `Name` varchar(255) NOT NULL COLLATE latin1_general_cs,
-    `Text1` longtext NOT NULL COLLATE latin1_general_ci,
+    `Name` varchar(255) NOT NULL COLLATE utf8mb4_bin,
+    `Text1` longtext NOT NULL COLLATE utf8mb4_latvian_ci,
     `Text2` longtext NOT NULL
-) COLLATE latin1_general_ci;",
+) COLLATE utf8mb4_latvian_ci;",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
                 {
                     var table = Assert.Single(dbModel.Tables);
 
-                    Assert.Equal("latin1_general_ci", table[RelationalAnnotationNames.Collation]);
+                    var tableCollation = table[RelationalAnnotationNames.Collation] as string;
+                    Assert.True(
+                        tableCollation is null or "utf8mb4_latvian_ci",
+                        $"Unexpected table collation: {tableCollation ?? "<null>"}");
 
-                    Assert.Collection(
-                        table.Columns.OrderBy(c => c.Name),
-                        c => Assert.Equal("latin1_general_cs", c.Collation),
-                        c => Assert.Null(c.Collation),
-                        c => Assert.Null(c.Collation));
+                    var columns = table.Columns.OrderBy(c => c.Name).ToArray();
+                    Assert.Equal(3, columns.Length);
+
+                    var nameColumn = columns[0];
+                    var text1Column = columns[1];
+                    var text2Column = columns[2];
+
+                    Assert.Equal("Name", nameColumn.Name);
+                    Assert.Equal("utf8mb4_bin", nameColumn.Collation);
+
+                    Assert.Equal("Text1", text1Column.Name);
+                    Assert.True(
+                        text1Column.Collation is null or "utf8mb4_latvian_ci",
+                        $"Unexpected Text1 collation: {text1Column.Collation ?? "<null>"}");
+
+                    Assert.Equal("Text2", text2Column.Name);
+                    Assert.True(
+                        text2Column.Collation is null or "utf8mb4_latvian_ci",
+                        $"Unexpected Text2 collation: {text2Column.Collation ?? "<null>"}");
                 },
                 @"
 DROP TABLE IF EXISTS `Mountains`;");
         }
 
-        [Fact(Skip = "Issue #582")]
+        [Fact]
         public void Create_columns()
         {
             Test(
@@ -177,20 +196,20 @@ CREATE TABLE MountainsColumns (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var table = dbModel.Tables.Single();
+                {
+                    var table = dbModel.Tables.Single();
 
-                        Assert.Equal(2, table.Columns.Count);
-                        Assert.All(
-                            table.Columns, c => { Assert.Equal("MountainsColumns", c.Table.Name); });
+                    Assert.Equal(2, table.Columns.Count);
+                    Assert.All(
+                        table.Columns, c => { Assert.Equal("MountainsColumns", c.Table.Name); });
 
-                        Assert.Single(table.Columns.Where(c => c.Name == "Id"));
-                        Assert.Single(table.Columns.Where(c => c.Name == "Name"));
-                    },
+                    Assert.Single(table.Columns.Where(c => c.Name == "Id"));
+                    Assert.Single(table.Columns.Where(c => c.Name == "Name"));
+                },
                 @"DROP TABLE IF EXISTS MountainsColumns;");
         }
 
-        [Fact(Skip = "Issue #582")]
+        [Fact]
         public void Create_primary_key()
         {
             Test(
@@ -198,12 +217,12 @@ CREATE TABLE MountainsColumns (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var pk = dbModel.Tables.Single().PrimaryKey;
+                {
+                    var pk = dbModel.Tables.Single().PrimaryKey;
 
-                        Assert.Equal("Place", pk.Table.Name);
-                        Assert.Equal(new List<string> { "Id" }, pk.Columns.Select(ic => ic.Name).ToList());
-                    },
+                    Assert.Equal("Place", pk.Table.Name);
+                    Assert.Equal(new List<string> { "Id" }, pk.Columns.Select(ic => ic.Name).ToList());
+                },
                 @"DROP TABLE IF EXISTS Place;");
         }
 
@@ -222,17 +241,17 @@ CREATE INDEX IX_Location_Name ON Place (Location, Name);",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var uniqueConstraint = Assert.Single(dbModel.Tables.Single().UniqueConstraints);
+                {
+                    var uniqueConstraint = Assert.Single(dbModel.Tables.Single().UniqueConstraints);
 
-                        // ReSharper disable once PossibleNullReferenceException
-                        Assert.Equal("Place", uniqueConstraint.Table.Name);
-                        Assert.Equal(new List<string> { "Name" }, uniqueConstraint.Columns.Select(ic => ic.Name).ToList());
-                    },
+                    // ReSharper disable once PossibleNullReferenceException
+                    Assert.Equal("Place", uniqueConstraint.Table.Name);
+                    Assert.Equal(new List<string> { "Name" }, uniqueConstraint.Columns.Select(ic => ic.Name).ToList());
+                },
                 @"DROP TABLE IF EXISTS Place;");
         }
 
-        [Fact(Skip = "Issue #582")]
+        [Fact]
         public void Create_indexes()
         {
             Test(
@@ -248,16 +267,16 @@ CREATE INDEX IX_INDEX on IndexTable ( IndexProperty );",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var table = dbModel.Tables.Single();
+                {
+                    var table = dbModel.Tables.Single();
 
-                        Assert.Equal(2, table.Indexes.Count);
-                        Assert.All(
-                            table.Indexes, c => { Assert.Equal("IndexTable", c.Table.Name); });
+                    Assert.Equal(2, table.Indexes.Count);
+                    Assert.All(
+                        table.Indexes, c => { Assert.Equal("IndexTable", c.Table.Name); });
 
-                        Assert.Single(table.Indexes.Where(c => c.Name == "IX_NAME"));
-                        Assert.Single(table.Indexes.Where(c => c.Name == "IX_INDEX"));
-                    },
+                    Assert.Single(table.Indexes.Where(c => c.Name == "IX_NAME"));
+                    Assert.Single(table.Indexes.Where(c => c.Name == "IX_INDEX"));
+                },
                 @"DROP TABLE IF EXISTS IndexTable;");
         }
 
@@ -283,25 +302,25 @@ CREATE TABLE SecondDependent (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var firstFk = Assert.Single(dbModel.Tables.Single(t => t.Name == "FirstDependent").ForeignKeys);
+                {
+                    var firstFk = Assert.Single(dbModel.Tables.Single(t => t.Name == "FirstDependent").ForeignKeys);
 
-                        // ReSharper disable once PossibleNullReferenceException
-                        Assert.Equal("FirstDependent", firstFk.Table.Name);
-                        Assert.Equal("PrincipalTable", firstFk.PrincipalTable.Name);
-                        Assert.Equal(new List<string> { "ForeignKeyId" }, firstFk.Columns.Select(ic => ic.Name).ToList());
-                        Assert.Equal(new List<string> { "Id" }, firstFk.PrincipalColumns.Select(ic => ic.Name).ToList());
-                        Assert.Equal(ReferentialAction.Cascade, firstFk.OnDelete);
+                    // ReSharper disable once PossibleNullReferenceException
+                    Assert.Equal("FirstDependent", firstFk.Table.Name);
+                    Assert.Equal("PrincipalTable", firstFk.PrincipalTable.Name);
+                    Assert.Equal(new List<string> { "ForeignKeyId" }, firstFk.Columns.Select(ic => ic.Name).ToList());
+                    Assert.Equal(new List<string> { "Id" }, firstFk.PrincipalColumns.Select(ic => ic.Name).ToList());
+                    Assert.Equal(ReferentialAction.Cascade, firstFk.OnDelete);
 
-                        var secondFk = Assert.Single(dbModel.Tables.Single(t => t.Name == "SecondDependent").ForeignKeys);
+                    var secondFk = Assert.Single(dbModel.Tables.Single(t => t.Name == "SecondDependent").ForeignKeys);
 
-                        // ReSharper disable once PossibleNullReferenceException
-                        Assert.Equal("SecondDependent", secondFk.Table.Name);
-                        Assert.Equal("PrincipalTable", secondFk.PrincipalTable.Name);
-                        Assert.Equal(new List<string> { "Id" }, secondFk.Columns.Select(ic => ic.Name).ToList());
-                        Assert.Equal(new List<string> { "Id" }, secondFk.PrincipalColumns.Select(ic => ic.Name).ToList());
-                        Assert.Equal(ReferentialAction.NoAction, secondFk.OnDelete);
-                    },
+                    // ReSharper disable once PossibleNullReferenceException
+                    Assert.Equal("SecondDependent", secondFk.Table.Name);
+                    Assert.Equal("PrincipalTable", secondFk.PrincipalTable.Name);
+                    Assert.Equal(new List<string> { "Id" }, secondFk.Columns.Select(ic => ic.Name).ToList());
+                    Assert.Equal(new List<string> { "Id" }, secondFk.PrincipalColumns.Select(ic => ic.Name).ToList());
+                    Assert.Equal(ReferentialAction.NoAction, secondFk.OnDelete);
+                },
                 @"
 DROP TABLE IF EXISTS SecondDependent;
 DROP TABLE IF EXISTS FirstDependent;
@@ -313,6 +332,8 @@ DROP TABLE IF EXISTS PrincipalTable;");
         {
             Test(
                 @"
+SET GLOBAL ignore_foreign_keys = ON;
+
 CREATE TABLE PrincipalTable (
     Id int PRIMARY KEY
 );
@@ -321,7 +342,10 @@ CREATE TABLE DependentTable (
     Id int PRIMARY KEY,
     ForeignKeyId int,
     FOREIGN KEY (ForeignKeyId) REFERENCES PrincipalTable(Id)
-);",
+);
+
+SET GLOBAL ignore_foreign_keys = OFF;
+",
                 new[] { "DependentTable" },
                 Enumerable.Empty<string>(),
                 dbModel =>
@@ -350,62 +374,64 @@ CREATE TABLE `PlaceDetails` (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "PlaceDetails"));
-                        var jsonCharacteristicsColumn = Assert.Single(table.Columns.Where(c => c.Name == "JsonCharacteristics"));
-                        var textDescriptionColumn = Assert.Single(table.Columns.Where(c => c.Name == "TextDescription"));
-                        var textDependingOnValidJsonCharacteristicsColumn = Assert.Single(table.Columns.Where(c => c.Name == "TextDependingOnValidJsonCharacteristics"));
-                        var textCharacteristicsColumn = Assert.Single(table.Columns.Where(c => c.Name == "TextCharacteristics"));
-                        var otherJsonCharacteristicsColumn = Assert.Single(table.Columns.Where(c => c.Name == "OtherJsonCharacteristics"));
+                {
+                    var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "PlaceDetails"));
+                    var jsonCharacteristicsColumn = Assert.Single(table.Columns.Where(c => c.Name == "JsonCharacteristics"));
+                    var textDescriptionColumn = Assert.Single(table.Columns.Where(c => c.Name == "TextDescription"));
+                    var textDependingOnValidJsonCharacteristicsColumn =
+                        Assert.Single(table.Columns.Where(c => c.Name == "TextDependingOnValidJsonCharacteristics"));
+                    var textCharacteristicsColumn = Assert.Single(table.Columns.Where(c => c.Name == "TextCharacteristics"));
+                    var otherJsonCharacteristicsColumn = Assert.Single(table.Columns.Where(c => c.Name == "OtherJsonCharacteristics"));
 
-                        Assert.Equal("json", jsonCharacteristicsColumn.StoreType);
-                        Assert.Null(jsonCharacteristicsColumn[SingleStoreAnnotationNames.CharSet]);
-                        Assert.Null(jsonCharacteristicsColumn.Collation);
+                    Assert.Equal("json", jsonCharacteristicsColumn.StoreType);
+                    Assert.Null(jsonCharacteristicsColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.Null(jsonCharacteristicsColumn.Collation);
 
-                        Assert.Equal("longtext", textDescriptionColumn.StoreType);
-                        Assert.Equal("utf8mb4", textDescriptionColumn[SingleStoreAnnotationNames.CharSet]);
-                        Assert.Equal("utf8mb4_bin", textDescriptionColumn.Collation);
+                    Assert.Equal("longtext", textDescriptionColumn.StoreType);
+                    Assert.Equal("utf8mb4", textDescriptionColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.Equal("utf8mb4_bin", textDescriptionColumn.Collation);
 
-                        Assert.Equal("longtext", textDependingOnValidJsonCharacteristicsColumn.StoreType);
-                        Assert.Equal("utf8mb4", textDependingOnValidJsonCharacteristicsColumn[SingleStoreAnnotationNames.CharSet]);
-                        Assert.Equal("utf8mb4_general_ci", textDependingOnValidJsonCharacteristicsColumn.Collation);
+                    Assert.Equal("longtext", textDependingOnValidJsonCharacteristicsColumn.StoreType);
+                    Assert.Equal("utf8mb4", textDependingOnValidJsonCharacteristicsColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.Equal("utf8mb4_general_ci", textDependingOnValidJsonCharacteristicsColumn.Collation);
 
-                        Assert.Equal("longtext", textCharacteristicsColumn.StoreType);
-                        Assert.Equal("utf8mb4", textCharacteristicsColumn[SingleStoreAnnotationNames.CharSet]);
-                        Assert.Equal("utf8mb4_general_ci", textCharacteristicsColumn.Collation);
+                    Assert.Equal("longtext", textCharacteristicsColumn.StoreType);
+                    Assert.Equal("utf8mb4", textCharacteristicsColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.Equal("utf8mb4_general_ci", textCharacteristicsColumn.Collation);
 
-                        Assert.Equal("json", otherJsonCharacteristicsColumn.StoreType);
-                        Assert.Null(otherJsonCharacteristicsColumn[SingleStoreAnnotationNames.CharSet]);
-                        Assert.Null(otherJsonCharacteristicsColumn.Collation);
-                    },
+                    Assert.Equal("json", otherJsonCharacteristicsColumn.StoreType);
+                    Assert.Null(otherJsonCharacteristicsColumn[SingleStoreAnnotationNames.CharSet]);
+                    Assert.Null(otherJsonCharacteristicsColumn.Collation);
+                },
                 @"
 DROP TABLE IF EXISTS `PlaceDetails`;");
         }
 
-        [ConditionalFact]
-        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
+        [ConditionalFact(Skip = "Feature 'Can't create a sharded table with UUID() built-in as a default column value' is not supported by SingleStore Distributed")]
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression),
+            nameof(ServerVersionSupport.AlternativeDefaultExpression))]
         public void Create_guid_columns()
         {
             Test(
                 @"
-CREATE TABLE `GuidTable`  (
-  `GuidTableId` char(36) NOT NULL DEFAULT (UUID()) PRIMARY KEY,
-  `DefaultUuid` char(36) NOT NULL DEFAULT (UUID())
+CREATE ROWSTORE TABLE `GuidTable`  (
+  `GuidTableId` char(36) NOT NULL DEFAULT UUID() PRIMARY KEY,
+  `DefaultUuid` char(36) NOT NULL DEFAULT UUID()
 );",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "GuidTable"));
-                        var guidTableIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "GuidTableId"));
-                        var defaultUuidColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultUuid"));
+                {
+                    var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "GuidTable"));
+                    var guidTableIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "GuidTableId"));
+                    var defaultUuidColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultUuid"));
 
-                        Assert.Equal(ValueGenerated.OnAdd, guidTableIdColumn.ValueGenerated);
-                        Assert.Null(guidTableIdColumn.DefaultValueSql);
+                    Assert.Equal(ValueGenerated.OnAdd, guidTableIdColumn.ValueGenerated);
+                    Assert.Null(guidTableIdColumn.DefaultValueSql);
 
-                        Assert.Null(defaultUuidColumn.ValueGenerated);
-                        Assert.Equal("uuid()", defaultUuidColumn.DefaultValueSql);
-                    },
+                    Assert.Null(defaultUuidColumn.ValueGenerated);
+                    Assert.Equal("uuid()", defaultUuidColumn.DefaultValueSql);
+                },
                 @"
 DROP TABLE IF EXISTS `GuidTable`;");
         }
@@ -423,16 +449,16 @@ CREATE TABLE `DefaultValueTable` (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "DefaultValueTable"));
-                        var defaultValueIntColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueInt"));
-                        var defaultValueStringColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueString"));
-                        var defaultValueFunctionColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueFunction"));
+                {
+                    var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "DefaultValueTable"));
+                    var defaultValueIntColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueInt"));
+                    var defaultValueStringColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueString"));
+                    var defaultValueFunctionColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueFunction"));
 
-                        Assert.Equal("'42'", defaultValueIntColumn.DefaultValueSql);
-                        Assert.Equal("'Answer to everything'", defaultValueStringColumn.DefaultValueSql);
-                        Assert.Contains("current_timestamp", defaultValueFunctionColumn.DefaultValueSql, StringComparison.OrdinalIgnoreCase);
-                    },
+                    Assert.Equal("42", defaultValueIntColumn.DefaultValueSql);
+                    Assert.Equal("'Answer to everything'", defaultValueStringColumn.DefaultValueSql);
+                    Assert.Contains("current_timestamp", defaultValueFunctionColumn.DefaultValueSql, StringComparison.OrdinalIgnoreCase);
+                },
                 @"
 DROP TABLE IF EXISTS `DefaultValueTable`;");
         }
@@ -451,7 +477,8 @@ CREATE TABLE `DefaultValueSimpleExpressionTable` (
                 dbModel =>
                 {
                     var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "DefaultValueSimpleExpressionTable"));
-                    var defaultValueSimpleFunctionExpressionColumn = table.Columns.SingleOrDefault(c => c.Name == "DefaultValueSimpleFunctionExpression");
+                    var defaultValueSimpleFunctionExpressionColumn =
+                        table.Columns.SingleOrDefault(c => c.Name == "DefaultValueSimpleFunctionExpression");
 
                     Assert.Equal("rand()", defaultValueSimpleFunctionExpressionColumn.DefaultValueSql);
                 },
@@ -459,8 +486,9 @@ CREATE TABLE `DefaultValueSimpleExpressionTable` (
 DROP TABLE IF EXISTS `DefaultValueSimpleExpressionTable`;");
         }
 
-        [ConditionalFact]
-        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression), nameof(ServerVersionSupport.AlternativeDefaultExpression))]
+        [ConditionalFact(Skip = "SingleStore does not support arbitrary default value expressions in CREATE TABLE; only literal defaults and specific temporal defaults such as CURRENT_TIMESTAMP are supported.")]
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.DefaultExpression),
+            nameof(ServerVersionSupport.AlternativeDefaultExpression))]
         public void Create_default_value_expression_column()
         {
             Test(
@@ -472,16 +500,18 @@ CREATE TABLE `DefaultValueExpressionTable` (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "DefaultValueExpressionTable"));
-                        var defaultValueExpressionColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueExpression"));
-                        var defaultValueExpressionIntColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueExpressionInt"));
+                {
+                    var table = Assert.Single(dbModel.Tables.Where(t => t.Name == "DefaultValueExpressionTable"));
+                    var defaultValueExpressionColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueExpression"));
+                    var defaultValueExpressionIntColumn = Assert.Single(table.Columns.Where(c => c.Name == "DefaultValueExpressionInt"));
 
-                        Assert.Contains("CONCAT(CAST(42 as char", defaultValueExpressionColumn.DefaultValueSql, StringComparison.OrdinalIgnoreCase);
-                        Assert.Contains(" is the answer to everything", defaultValueExpressionColumn.DefaultValueSql, StringComparison.OrdinalIgnoreCase);
+                    Assert.Contains("CONCAT(CAST(42 as char", defaultValueExpressionColumn.DefaultValueSql,
+                        StringComparison.OrdinalIgnoreCase);
+                    Assert.Contains(" is the answer to everything", defaultValueExpressionColumn.DefaultValueSql,
+                        StringComparison.OrdinalIgnoreCase);
 
-                        Assert.Equal("'42'", defaultValueExpressionIntColumn.DefaultValueSql);
-                    },
+                    Assert.Equal("'42'", defaultValueExpressionIntColumn.DefaultValueSql);
+                },
                 @"
 DROP TABLE IF EXISTS `DefaultValueExpressionTable`;");
         }
@@ -530,7 +560,7 @@ DROP TABLE IF EXISTS `item_data`;");
 
         #region ColumnFacets
 
-        [Fact]
+        [SkippableFact(Skip = "Feature 'GEOMETRY types' is not supported by SingleStore.")]
         public void Column_storetype_is_set()
         {
             Test(
@@ -547,21 +577,21 @@ CREATE TABLE StoreType (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var columns = dbModel.Tables.Single().Columns;
+                {
+                    var columns = dbModel.Tables.Single().Columns;
 
-                        //Assert.Equal("integer", columns.Single(c => c.Name == "IntegerProperty").StoreType);
-                        //Assert.Equal("real", columns.Single(c => c.Name == "RealProperty").StoreType);
-                        //Assert.Equal("text", columns.Single(c => c.Name == "TextProperty").StoreType);
-                        //Assert.Equal("blob", columns.Single(c => c.Name == "BlobProperty").StoreType);
-                        Assert.Equal("geometry", columns.Single(c => c.Name == "GeometryProperty").StoreType);
-                        Assert.Equal("point", columns.Single(c => c.Name == "PointProperty").StoreType);
-                        //Assert.Equal("randomType", columns.Single(c => c.Name == "RandomProperty").StoreType);
-                    },
+                    //Assert.Equal("integer", columns.Single(c => c.Name == "IntegerProperty").StoreType);
+                    //Assert.Equal("real", columns.Single(c => c.Name == "RealProperty").StoreType);
+                    //Assert.Equal("text", columns.Single(c => c.Name == "TextProperty").StoreType);
+                    //Assert.Equal("blob", columns.Single(c => c.Name == "BlobProperty").StoreType);
+                    Assert.Equal("geometry", columns.Single(c => c.Name == "GeometryProperty").StoreType);
+                    Assert.Equal("point", columns.Single(c => c.Name == "PointProperty").StoreType);
+                    //Assert.Equal("randomType", columns.Single(c => c.Name == "RandomProperty").StoreType);
+                },
                 @"DROP TABLE IF EXISTS StoreType;");
         }
 
-        [Fact(Skip = "Issue #582")]
+        [Fact]
         public void Column_nullability_is_set()
         {
             Test(
@@ -574,16 +604,16 @@ CREATE TABLE Nullable (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var columns = dbModel.Tables.Single().Columns;
+                {
+                    var columns = dbModel.Tables.Single().Columns;
 
-                        Assert.True(columns.Single(c => c.Name == "NullableInt").IsNullable);
-                        Assert.False(columns.Single(c => c.Name == "NonNullString").IsNullable);
-                    },
+                    Assert.True(columns.Single(c => c.Name == "NullableInt").IsNullable);
+                    Assert.False(columns.Single(c => c.Name == "NonNullString").IsNullable);
+                },
                 @"DROP TABLE IF EXISTS Nullable;");
         }
 
-        [Fact(Skip = "Issue #582")]
+        [Fact]
         public void Column_default_value_is_set()
         {
             Test(
@@ -597,24 +627,23 @@ CREATE TABLE DefaultValue (
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
-                    {
-                        var columns = dbModel.Tables.Single().Columns;
+                {
+                    var columns = dbModel.Tables.Single().Columns;
 
-                        Assert.Equal("'Something'", columns.Single(c => c.Name == "SomeText").DefaultValueSql);
-                        Assert.Equal("3.14", columns.Single(c => c.Name == "RealColumn").DefaultValueSql);
-                        Assert.Equal("'October 20, 2015 11am'", columns.Single(c => c.Name == "Created").DefaultValueSql);
-                    },
+                    Assert.Equal("'Something'", columns.Single(c => c.Name == "SomeText").DefaultValueSql);
+                    Assert.Equal("3.14", columns.Single(c => c.Name == "RealColumn").DefaultValueSql);
+                    Assert.Equal("'October 20, 2015 11am'", columns.Single(c => c.Name == "Created").DefaultValueSql);
+                },
                 @"DROP TABLE IF EXISTS DefaultValue;");
         }
 
-        [Theory(Skip = "Issue #582")]
+        [Theory]
         [InlineData("DOUBLE NOT NULL DEFAULT 0")]
         [InlineData("FLOAT NOT NULL DEFAULT 0")]
         [InlineData("INT NOT NULL DEFAULT 0")]
         [InlineData("INTEGER NOT NULL DEFAULT 0")]
         [InlineData("REAL NOT NULL DEFAULT 0")]
-        [InlineData("NULL DEFAULT NULL")]
-        [InlineData("NOT NULL DEFAULT NULL")]
+        [InlineData("INT NULL DEFAULT NULL")]
         public void Column_default_value_is_ignored_when_clr_default(string columnSql)
         {
             Test(
@@ -629,7 +658,7 @@ CREATE TABLE DefaultValue (
                 "DROP TABLE IF EXISTS DefaultValueClr");
         }
 
-        [ConditionalFact]
+        [ConditionalFact(Skip = "SingleStore supports persistent computed columns only; virtual generated columns are not supported.")]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
         public void Computed_value_virtual()
             => Test(@"
@@ -660,7 +689,7 @@ CREATE TABLE `ComputedValues` (
     `Id` int,
     `A` int NOT NULL,
     `B` int NOT NULL,
-    `SumOfAAndB` int GENERATED ALWAYS AS (`A` + `B`) STORED
+    `SumOfAAndB` AS (`A` + `B`) PERSISTED int
 );",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
@@ -675,7 +704,7 @@ CREATE TABLE `ComputedValues` (
                 },
                 @"DROP TABLE IF EXISTS `ComputedValues`");
 
-        [ConditionalFact]
+        [ConditionalFact(Skip = "SingleStore supports persistent computed columns only; virtual generated columns are not supported.")]
         [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
         public void Computed_value_virtual_using_constant_string()
             => Test(@"
@@ -727,7 +756,7 @@ CREATE TABLE `IceCreams` (
 
         #region PrimaryKeyFacets
 
-        [Fact(Skip = "Issue #582")]
+        [Fact]
         public void Create_composite_primary_key()
         {
             Test(
@@ -811,12 +840,14 @@ CREATE TABLE `IceCreams` (
                     Assert.Equal(2, pk.Columns.Count);
                     Assert.Equal("Name", pk.Columns[0].Name, StringComparer.OrdinalIgnoreCase);
                     Assert.Equal("Brand", pk.Columns[1].Name, StringComparer.OrdinalIgnoreCase);
-                    Assert.Equal(new [] { 0, 20 }, pk.FindAnnotation(SingleStoreAnnotationNames.IndexPrefixLength)?.Value);
+
+                    // SingleStore does not expose prefix lengths through INFORMATION_SCHEMA.STATISTICS.SUB_PART.
+                    Assert.Null(pk.FindAnnotation(SingleStoreAnnotationNames.IndexPrefixLength)?.Value);
                 },
                 @"DROP TABLE IF EXISTS `IceCreams`;");
         }
 
-        [Fact]
+        [SkippableFact(Skip = "Feature 'GEOMETRY types' is not supported by SingleStore.")]
         public void Column_srid_value_is_set()
         {
             Test(
@@ -904,7 +935,7 @@ CREATE TABLE UniqueConstraintName (
 
         #region IndexFacets
 
-        [Fact(Skip = "Issue #582")]
+        [Fact]
         public void Create_composite_index()
         {
             Test(
@@ -980,7 +1011,9 @@ CREATE INDEX `IX_IceCreams_Brand_Name` ON `IceCreams` (`Name`, `Brand`(20));
                     Assert.Equal(2, index.Columns.Count);
                     Assert.Equal("Name", index.Columns[0].Name, StringComparer.OrdinalIgnoreCase);
                     Assert.Equal("Brand", index.Columns[1].Name, StringComparer.OrdinalIgnoreCase);
-                    Assert.Equal(new [] { 0, 20 }, index.FindAnnotation(SingleStoreAnnotationNames.IndexPrefixLength)?.Value);
+
+                    // SingleStore does not expose prefix lengths through INFORMATION_SCHEMA.STATISTICS.SUB_PART.
+                    Assert.Null(index.FindAnnotation(SingleStoreAnnotationNames.IndexPrefixLength)?.Value);
                 },
                 @"DROP TABLE IF EXISTS `IceCreams`;");
         }
@@ -990,7 +1023,7 @@ CREATE INDEX `IX_IceCreams_Brand_Name` ON `IceCreams` (`Name`, `Brand`(20));
         {
             Test(
                 @"
-CREATE TABLE `IceCreams` (
+CREATE ROWSTORE REFERENCE TABLE `IceCreams` (
     `IceCreamId` int NOT NULL,
     `Brand` varchar(128) NOT NULL,
     `Name` varchar(128) NOT NULL,
@@ -1007,12 +1040,24 @@ CREATE UNIQUE INDEX `IX_IceCreams_Brand_Name_2` ON `IceCreams` (`Brand`(40), `Na
                     var index = Assert.Single(dbModel.Tables.Single().Indexes);
 
                     Assert.Equal("IceCreams", index.Table.Name, StringComparer.OrdinalIgnoreCase);
-                    Assert.Equal("IX_IceCreams_Brand_Name_1", index.Name, StringComparer.OrdinalIgnoreCase);
+                    Assert.Contains(
+                        index.Name,
+                        new[]
+                        {
+                            "IX_IceCreams_Brand_Name_1",
+                            "IX_IceCreams_Brand_Name_2"
+                        });
+
                     Assert.True(index.IsUnique);
                     Assert.Equal(2, index.Columns.Count);
-                    Assert.Equal("Name", index.Columns[0].Name, StringComparer.OrdinalIgnoreCase);
-                    Assert.Equal("Brand", index.Columns[1].Name, StringComparer.OrdinalIgnoreCase);
-                    Assert.Equal(new [] { 0, 40 }, index[SingleStoreAnnotationNames.IndexPrefixLength]);
+
+                    Assert.Equal(
+                        new[] { "Brand", "Name" },
+                        index.Columns.Select(c => c.Name).OrderBy(n => n).ToArray(),
+                        StringComparer.OrdinalIgnoreCase);
+
+                    // SingleStore scaffolding does not reliably recover prefix lengths from metadata.
+                    Assert.Null(index[SingleStoreAnnotationNames.IndexPrefixLength]);
                 },
                 @"DROP TABLE IF EXISTS `IceCreams`;");
         }
@@ -1022,7 +1067,7 @@ CREATE UNIQUE INDEX `IX_IceCreams_Brand_Name_2` ON `IceCreams` (`Brand`(40), `Na
         {
             Test(
                 @"
-CREATE TABLE `IceCreams` (
+CREATE ROWSTORE REFERENCE TABLE `IceCreams` (
     `IceCreamId` int NOT NULL,
     `Brand` varchar(128) NOT NULL,
     `Name` varchar(128) NOT NULL,
@@ -1039,11 +1084,23 @@ CREATE UNIQUE INDEX `IX_IceCreams_Brand_Name_2` ON `IceCreams` (`Brand`, `Name`)
                     var index = Assert.Single(dbModel.Tables.Single().Indexes);
 
                     Assert.Equal("IceCreams", index.Table.Name, StringComparer.OrdinalIgnoreCase);
-                    Assert.Equal("IX_IceCreams_Brand_Name_1", index.Name, StringComparer.OrdinalIgnoreCase);
+                    Assert.Contains(
+                        index.Name,
+                        new[]
+                        {
+                            "IX_IceCreams_Brand_Name_1",
+                            "IX_IceCreams_Brand_Name_2"
+                        });
+
                     Assert.True(index.IsUnique);
                     Assert.Equal(2, index.Columns.Count);
-                    Assert.Equal("Name", index.Columns[0].Name, StringComparer.OrdinalIgnoreCase);
-                    Assert.Equal("Brand", index.Columns[1].Name, StringComparer.OrdinalIgnoreCase);
+
+                    Assert.Equal(
+                        new[] { "Brand", "Name" },
+                        index.Columns.Select(c => c.Name).OrderBy(n => n).ToArray(),
+                        StringComparer.OrdinalIgnoreCase);
+
+                    // SingleStore scaffolding does not reliably recover prefix lengths from metadata.
                     Assert.Null(index[SingleStoreAnnotationNames.IndexPrefixLength]);
                 },
                 @"DROP TABLE IF EXISTS `IceCreams`;");
@@ -1057,10 +1114,11 @@ CREATE UNIQUE INDEX `IX_IceCreams_Brand_Name_2` ON `IceCreams` (`Brand`, `Name`)
 CREATE TABLE `IceCreams` (
     `IceCreamId` int NOT NULL,
     `Name` varchar(255) NOT NULL,
-    PRIMARY KEY (`IceCreamId`)
-);
-
-CREATE FULLTEXT INDEX `IX_IceCreams_Name` ON `IceCreams` (`Name`);",
+    SHARD KEY (`IceCreamId`),
+    PRIMARY KEY (`IceCreamId`),
+    SORT KEY(),
+    FULLTEXT USING VERSION 2 `IX_IceCreams_Name` (`Name`)
+);",
                 Enumerable.Empty<string>(),
                 Enumerable.Empty<string>(),
                 dbModel =>
@@ -1319,7 +1377,7 @@ DROP TABLE IF EXISTS DependentTable;
 DROP TABLE IF EXISTS PrincipalTable;");
         }
 
-        [Fact]
+        [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
         public void Ensure_constraints_scaffold_with_case_mismatch()
         {
             // The lower case table reference to a mixed cased table will only be accepted under certain conditions

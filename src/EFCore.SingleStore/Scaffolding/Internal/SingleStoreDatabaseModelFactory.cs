@@ -245,6 +245,45 @@ AND
                     }
                 }
 
+                // SingleStore may not expose table charset/collation reliably via INFORMATION_SCHEMA.TABLES.
+                // Rehydrate missing table options from SHOW CREATE TABLE before scaffolding columns, so inherited
+                // column charset/collation can be detected correctly.
+                foreach (var table in tables)
+                {
+                    if (table is DatabaseView)
+                    {
+                        continue;
+                    }
+
+                    if ((!Settings.CharSet || table[SingleStoreAnnotationNames.CharSet] != null) &&
+                        (!Settings.Collation || table[RelationalAnnotationNames.Collation] != null))
+                    {
+                        continue;
+                    }
+
+                    var createTableSql = GetCreateTableQuery(connection, table);
+
+                    if (Settings.CharSet && table[SingleStoreAnnotationNames.CharSet] == null)
+                    {
+                        var parsedCharSet = TryParseTableCharSet(createTableSql);
+                        if (parsedCharSet != null &&
+                            !string.Equals(parsedCharSet, defaultCharSet, StringComparison.OrdinalIgnoreCase))
+                        {
+                            table[SingleStoreAnnotationNames.CharSet] = parsedCharSet;
+                        }
+                    }
+
+                    if (Settings.Collation && table[RelationalAnnotationNames.Collation] == null)
+                    {
+                        var parsedCollation = TryParseTableCollation(createTableSql);
+                        if (parsedCollation != null &&
+                            !string.Equals(parsedCollation, defaultCollation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            table[RelationalAnnotationNames.Collation] = parsedCollation;
+                        }
+                    }
+                }
+
                 // This is done separately due to MARS property may be turned off
                 GetColumns(connection, tables, filter, defaultCharSet, defaultCollation);
                 GetPrimaryKeys(connection, tables);
@@ -346,6 +385,9 @@ ORDER BY
                 var columnTypeOverrides = GetColumnTypeOverrides(connection, table);
                 var createTableQuery = GetCreateTableQuery(connection, table);
 
+                var effectiveTableCharSet = table[SingleStoreAnnotationNames.CharSet] as string ?? defaultCharSet;
+                var effectiveTableCollation = table[RelationalAnnotationNames.Collation] as string ?? defaultCollation;
+
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = string.Format(GetColumnsQuery, table.Name);
@@ -378,7 +420,6 @@ ORDER BY
                                 ? createTableColumnDefinition
                                 : columnType;
 
-                            // Recover explicit charset/collation when INFORMATION_SCHEMA omits them.
                             var explicitColumnCharSet = TryParseSingleStoreComputedColumnCharacterSet(columnDefinitionForClauseParsing);
                             var explicitColumnCollation = TryParseSingleStoreComputedColumnCollation(columnDefinitionForClauseParsing);
 
@@ -392,8 +433,15 @@ ORDER BY
                                 collation = explicitColumnCollation;
                             }
 
-                            var hasExplicitColumnCharSet = explicitColumnCharSet != null;
-                            var hasExplicitColumnCollation = explicitColumnCollation != null;
+                            // Treat a column charset/collation as explicit only if it differs from the effective table setting.
+                            // If it matches the table setting, scaffold it as inherited (null annotation).
+                            var hasExplicitColumnCharSet =
+                                explicitColumnCharSet != null &&
+                                !string.Equals(explicitColumnCharSet, effectiveTableCharSet, StringComparison.OrdinalIgnoreCase);
+
+                            var hasExplicitColumnCollation =
+                                explicitColumnCollation != null &&
+                                !string.Equals(explicitColumnCollation, effectiveTableCollation, StringComparison.OrdinalIgnoreCase);
 
                             var isSingleStoreComputed =
                                 extra.Contains("computed", StringComparison.OrdinalIgnoreCase) ||
@@ -555,14 +603,13 @@ ORDER BY
                                 [SingleStoreAnnotationNames.CharSet] = Settings.CharSet &&
                                                                        charset != null &&
                                                                        (hasExplicitColumnCharSet ||
-                                                                        charset != (table[SingleStoreAnnotationNames.CharSet] as string ??
-                                                                                    defaultCharSet))
+                                                                        !string.Equals(charset, effectiveTableCharSet, StringComparison.OrdinalIgnoreCase))
                                     ? charset
                                     : null,
                                 Collation = Settings.Collation &&
                                             collation != null &&
                                             (hasExplicitColumnCollation ||
-                                             collation != (table[RelationalAnnotationNames.Collation] as string ?? defaultCollation))
+                                             !string.Equals(collation, effectiveTableCollation, StringComparison.OrdinalIgnoreCase))
                                     ? collation
                                     : null,
                                 [SingleStoreAnnotationNames.SpatialReferenceSystemId] = srid.HasValue
@@ -639,6 +686,20 @@ ORDER BY
         private static bool IsSimpleNumericDefaultValue(string defaultValue)
             => Regex.IsMatch(defaultValue, @"^\d+(?:\.\d+)?$");
 
+        private static bool IsNumericDataType(string dataType)
+            => dataType != null
+               && (dataType.Equals("tinyint", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("smallint", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("mediumint", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("int", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("integer", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("bigint", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("decimal", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("numeric", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("float", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("double", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("real", StringComparison.OrdinalIgnoreCase));
+
         protected virtual string FilterClrDefaults(string dataTypeName, bool nullable, string defaultValue)
         {
             if (defaultValue == null)
@@ -699,6 +760,12 @@ ORDER BY
                 return defaultValue;
             }
 
+            // Numeric defaults should not be quoted.
+            if (IsSimpleNumericDefaultValue(defaultValue) && IsNumericDataType(dataType))
+            {
+                return defaultValue;
+            }
+
             return "'" + defaultValue.Replace(@"\", @"\\").Replace("'", "''") + "'";
         }
 
@@ -740,8 +807,7 @@ ORDER BY
                                     .Select(int.Parse)
                                     .ToArray();
 
-                                if (prefixLengths.Length > 1 ||
-                                    prefixLengths.Length == 1 && prefixLengths[0] > 0)
+                                if (prefixLengths.Any(n => n > 0))
                                 {
                                     key[SingleStoreAnnotationNames.IndexPrefixLength] = prefixLengths;
                                 }
@@ -782,6 +848,7 @@ ORDER BY
      WHERE `TABLE_SCHEMA` = '{0}'
      AND `TABLE_NAME` = '{1}'
      AND `INDEX_NAME` <> 'PRIMARY'
+     AND `INDEX_TYPE` <> 'SHARD'
      GROUP BY `INDEX_NAME`, `NON_UNIQUE`, `INDEX_TYPE`;";
 
         private const string GetCreateTableStatementQuery = @"SHOW CREATE TABLE `{0}`.`{1}`;";
@@ -1127,6 +1194,59 @@ WHERE `t`.`TABLE_SCHEMA` = '{0}' AND `t`.`CONSTRAINT_SCHEMA` = `t`.`TABLE_SCHEMA
 
             return match.Success
                 ? match.Groups["collation"].Value
+                : null;
+        }
+
+        private static string TryGetCreateTableOptions(string createTableQuery)
+        {
+            if (string.IsNullOrEmpty(createTableQuery))
+            {
+                return null;
+            }
+
+            // Take everything after the final closing parenthesis of the CREATE TABLE body.
+            var lastClosingParen = createTableQuery.LastIndexOf(')');
+            if (lastClosingParen < 0 || lastClosingParen >= createTableQuery.Length - 1)
+            {
+                return null;
+            }
+
+            return createTableQuery[(lastClosingParen + 1)..].Trim();
+        }
+
+        private static string TryParseTableCharSet(string createTableQuery)
+        {
+            var options = TryGetCreateTableOptions(createTableQuery);
+            if (string.IsNullOrEmpty(options))
+            {
+                return null;
+            }
+
+            var match = Regex.Match(
+                options,
+                @"\b(?:CHARACTER\s+SET|CHARSET)(?:\s*=\s*|\s+)`?(?<value>[A-Za-z0-9_]+)`?\b",
+                RegexOptions.IgnoreCase);
+
+            return match.Success
+                ? match.Groups["value"].Value
+                : null;
+        }
+
+        private static string TryParseTableCollation(string createTableQuery)
+        {
+            var options = TryGetCreateTableOptions(createTableQuery);
+            if (string.IsNullOrEmpty(options))
+            {
+                return null;
+            }
+
+            var match = Regex.Match(
+                options,
+                @"\bCOLLATE(?:\s*=\s*|\s+)`?(?<value>[A-Za-z0-9_]+)`?\b",
+                RegexOptions.IgnoreCase);
+
+            return match.Success
+                ? match.Groups["value"].Value
                 : null;
         }
     }
