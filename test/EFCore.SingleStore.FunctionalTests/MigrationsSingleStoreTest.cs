@@ -401,7 +401,19 @@ ALTER TABLE `People` MODIFY COLUMN `SomeColumn` bigint NOT NULL;
 
         public override async Task Alter_column_set_collation()
         {
-            await base.Alter_column_set_collation();
+            await Test(
+                builder => builder.Entity("People").Property<string>("Name"),
+                builder => { },
+                builder => builder.Entity("People").Property<string>("Name")
+                    .UseCollation(NonDefaultCollation),
+                model =>
+                {
+                    var nameColumn = Assert.Single(Assert.Single(model.Tables).Columns);
+                    if (AssertCollations)
+                    {
+                        Assert.Equal(NonDefaultCollation, nameColumn.Collation);
+                    }
+                });
 
             AssertSql(
                 $"""
@@ -874,7 +886,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
-                    Assert.Equal(DefaultCollation, nameColumn.Collation);
+                    Assert.Null(nameColumn.Collation);
                     Assert.Equal(NonDefaultCollation, brandColumn.Collation);
                 });
 
@@ -1013,7 +1025,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
                     var table = Assert.Single(result.Tables);
                     var iceCreamIdColumn = Assert.Single(table.Columns.Where(c => c.Name == "IceCreamId"));
 
-                    Assert.Equal(iceCreamIdColumn.Collation, DefaultCollation);
+                    Assert.Null(iceCreamIdColumn.Collation);
                 });
 
             AssertSql(
@@ -1056,7 +1068,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
                     Assert.Equal(NonDefaultCollation, nameColumn.Collation);
-                    Assert.Equal(DefaultCollation, brandColumn.Collation);
+                    Assert.Null(brandColumn.Collation);
                 });
 
             AssertSql(
@@ -1099,7 +1111,11 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
                     var brandColumn = Assert.Single(table.Columns.Where(c => c.Name == "Brand"));
 
                     Assert.Equal(NonDefaultCollation, nameColumn.Collation);
-                    Assert.Equal(NonDefaultCollation2, brandColumn.Collation);
+                    var expectedBrandCollation = S2ServerVersion.Supports.Version(ServerVersion.Parse("9.0"))
+                        ? null
+                        : NonDefaultCollation2;
+
+                    Assert.Equal(expectedBrandCollation, brandColumn.Collation);
                 });
 
             AssertSql(
@@ -1362,7 +1378,14 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
                     var table = Assert.Single(result.Tables);
                     var nameColumn = Assert.Single(table.Columns.Where(c => c.Name == "Name"));
 
-                    Assert.Equal(NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    if (S2ServerVersion.Supports.Version(ServerVersion.Parse("9.0")))
+                    {
+                        Assert.Equal(NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    }
+                    else
+                    {
+                        Assert.Equal(S2ServerVersion.Supports.DefaultCharSetUtf8Mb4 ? null : NonDefaultCharSet, nameColumn[SingleStoreAnnotationNames.CharSet]);
+                    }
                     Assert.Equal("longtext", nameColumn.StoreType);
                 });
 
@@ -1797,21 +1820,7 @@ ALTER TABLE `People` MODIFY COLUMN `Id` int NOT NULL;
 
         public override async Task Alter_column_reset_collation()
         {
-            await Test(
-                builder => builder.Entity("People").Property<string>("Name"),
-                builder => builder.Entity("People").Property<string>("Name")
-                    .UseCollation(NonDefaultCollation),
-                builder => { },
-                model =>
-                {
-                    var nameColumn = Assert.Single(Assert.Single(model.Tables).Columns);
-
-                    var expectedCollation = S2ServerVersion.Supports.Version(ServerVersion.Parse("9.0"))
-                        ? "utf8mb4_bin"
-                        : DefaultCollation;
-
-                    Assert.Equal(expectedCollation, nameColumn.Collation);
-                });
+            await base.Alter_column_reset_collation();
 
             AssertSql(
         """
@@ -2182,6 +2191,11 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
         // SingleStore does not support the concept of schemas.
         protected override bool AssertSchemaNames
             => false;
+
+        protected override bool AssertCollations
+            => base.AssertCollations
+               && !(AppConfig.ServerVersion.Version.Major == 9
+                    && AppConfig.ServerVersion.Version.Minor == 0);
 
         protected virtual string DefaultCollation => ((SingleStoreTestStore)Fixture.TestStore).DatabaseCollation;
 

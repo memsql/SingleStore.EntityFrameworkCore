@@ -105,12 +105,8 @@ namespace EntityFrameworkCore.SingleStore.Scaffolding.Internal
         }
 
         private const string GetDatabaseSettings = @"SELECT
-	`DEFAULT_CHARACTER_SET_NAME`,
-    `DEFAULT_COLLATION_NAME`
-FROM
-	`INFORMATION_SCHEMA`.`SCHEMATA`
-WHERE
-	`SCHEMA_NAME` = SCHEMA()";
+    @@character_set_database AS `DEFAULT_CHARACTER_SET_NAME`,
+    @@collation_database AS `DEFAULT_COLLATION_NAME`;";
 
         protected virtual DatabaseModel GetDatabase(DbConnection connection, DatabaseModelFactoryOptions options)
         {
@@ -226,11 +222,11 @@ AND
                         table.Name = name;
                         table.Comment = string.IsNullOrEmpty(comment) ? null : comment;
                         table[SingleStoreAnnotationNames.CharSet] = Settings.CharSet &&
-                                                                    charset != defaultCharSet
+                                                                    !string.Equals(charset, defaultCharSet, StringComparison.OrdinalIgnoreCase)
                             ? charset
                             : null;
                         table[RelationalAnnotationNames.Collation] = Settings.Collation &&
-                                                                     collation != defaultCollation
+                                                                     !string.Equals(collation, defaultCollation, StringComparison.OrdinalIgnoreCase)
                             ? collation
                             : null;
 
@@ -385,9 +381,6 @@ ORDER BY
                 var columnTypeOverrides = GetColumnTypeOverrides(connection, table);
                 var createTableQuery = GetCreateTableQuery(connection, table);
 
-                var effectiveTableCharSet = table[SingleStoreAnnotationNames.CharSet] as string ?? defaultCharSet;
-                var effectiveTableCollation = table[RelationalAnnotationNames.Collation] as string ?? defaultCollation;
-
                 using (var command = connection.CreateCommand())
                 {
                     command.CommandText = string.Format(GetColumnsQuery, table.Name);
@@ -414,42 +407,42 @@ ORDER BY
                                 ? reader.GetValueOrDefault<uint?>("SRS_ID")
                                 : null;
 
-                            // `SHOW CREATE TABLE` is the most reliable source for explicit column-level CHARACTER SET / COLLATE clauses.
                             var createTableColumnDefinition = TryGetColumnDefinitionFromCreateTable(createTableQuery, name);
-                            var columnDefinitionForClauseParsing = !string.IsNullOrEmpty(createTableColumnDefinition)
-                                ? createTableColumnDefinition
-                                : columnType;
-
-                            var explicitColumnCharSet = TryParseSingleStoreComputedColumnCharacterSet(columnDefinitionForClauseParsing);
-                            var explicitColumnCollation = TryParseSingleStoreComputedColumnCollation(columnDefinitionForClauseParsing);
-
-                            if (charset is null)
-                            {
-                                charset = explicitColumnCharSet;
-                            }
-
-                            if (collation is null)
-                            {
-                                collation = explicitColumnCollation;
-                            }
-
-                            // Treat a column charset/collation as explicit only if it differs from the effective table setting.
-                            // If it matches the table setting, scaffold it as inherited (null annotation).
-                            var hasExplicitColumnCharSet =
-                                explicitColumnCharSet != null &&
-                                !string.Equals(explicitColumnCharSet, effectiveTableCharSet, StringComparison.OrdinalIgnoreCase);
-
-                            var hasExplicitColumnCollation =
-                                explicitColumnCollation != null &&
-                                !string.Equals(explicitColumnCollation, effectiveTableCollation, StringComparison.OrdinalIgnoreCase);
 
                             var isSingleStoreComputed =
                                 extra.Contains("computed", StringComparison.OrdinalIgnoreCase) ||
                                 extra.Contains("generated", StringComparison.OrdinalIgnoreCase) ||
-                                (!string.IsNullOrEmpty(columnDefinitionForClauseParsing) &&
-                                 columnDefinitionForClauseParsing.Contains("PERSISTED", StringComparison.OrdinalIgnoreCase));
+                                (!string.IsNullOrEmpty(createTableColumnDefinition) &&
+                                 createTableColumnDefinition.Contains("PERSISTED", StringComparison.OrdinalIgnoreCase));
 
-                            var singleStoreComputedColumnTypeDefinition = columnDefinitionForClauseParsing;
+                            var singleStoreComputedColumnTypeDefinition = columnType;
+
+                            // SingleStore 9.0 may omit CHARACTER_SET_NAME / COLLATION_NAME from INFORMATION_SCHEMA.COLUMNS
+                            // for regular string columns as well. Use SHOW CREATE TABLE only as a fallback source when
+                            // INFORMATION_SCHEMA is missing the value.
+                            if (!string.IsNullOrEmpty(createTableColumnDefinition))
+                            {
+                                var parsedCharSet = TryParseColumnCharacterSet(createTableColumnDefinition);
+                                var parsedCollation = TryParseColumnCollation(createTableColumnDefinition);
+
+                                // SHOW CREATE TABLE is the authoritative source for explicit column-level charset/collation.
+                                // Let the final column annotation assignment decide whether the value should be scaffolded
+                                // relative to the table/database defaults.
+                                if (parsedCharSet != null)
+                                {
+                                    charset = parsedCharSet;
+                                }
+
+                                if (parsedCollation != null)
+                                {
+                                    collation = parsedCollation;
+                                }
+
+                                if (isSingleStoreComputed)
+                                {
+                                    singleStoreComputedColumnTypeDefinition = createTableColumnDefinition;
+                                }
+                            }
 
                             // SingleStore: generation expression may not be exposed via INFORMATION_SCHEMA,
                             // but SHOW CREATE TABLE / COLUMN_TYPE contains "... AS <expr> PERSISTED ...".
@@ -485,8 +478,6 @@ ORDER BY
                             {
                                 charset = null;
                                 collation = null;
-                                hasExplicitColumnCharSet = false;
-                                hasExplicitColumnCollation = false;
                             }
 
                             if (generation is not null)
@@ -588,6 +579,9 @@ ORDER BY
                                 valueGenerated = null;
                             }
 
+                            var tableCharSet = table[SingleStoreAnnotationNames.CharSet] as string ?? defaultCharSet;
+                            var tableCollation = table[RelationalAnnotationNames.Collation] as string ?? defaultCollation;
+
                             var column = new DatabaseColumn
                             {
                                 Table = table,
@@ -601,15 +595,11 @@ ORDER BY
                                 ValueGenerated = valueGenerated,
                                 Comment = string.IsNullOrEmpty(comment) ? null : comment,
                                 [SingleStoreAnnotationNames.CharSet] = Settings.CharSet &&
-                                                                       charset != null &&
-                                                                       (hasExplicitColumnCharSet ||
-                                                                        !string.Equals(charset, effectiveTableCharSet, StringComparison.OrdinalIgnoreCase))
+                                                                       !string.Equals(charset, tableCharSet, StringComparison.OrdinalIgnoreCase)
                                     ? charset
                                     : null,
                                 Collation = Settings.Collation &&
-                                            collation != null &&
-                                            (hasExplicitColumnCollation ||
-                                             !string.Equals(collation, effectiveTableCollation, StringComparison.OrdinalIgnoreCase))
+                                            !string.Equals(collation, tableCollation, StringComparison.OrdinalIgnoreCase)
                                     ? collation
                                     : null,
                                 [SingleStoreAnnotationNames.SpatialReferenceSystemId] = srid.HasValue
@@ -1163,7 +1153,7 @@ WHERE `t`.`TABLE_SCHEMA` = '{0}' AND `t`.`CONSTRAINT_SCHEMA` = `t`.`TABLE_SCHEMA
                 : null;
         }
 
-        private static string TryParseSingleStoreComputedColumnCharacterSet(string columnTypeDefinition)
+        private static string TryParseColumnCharacterSet(string columnTypeDefinition)
         {
             if (string.IsNullOrEmpty(columnTypeDefinition))
             {
@@ -1172,7 +1162,7 @@ WHERE `t`.`TABLE_SCHEMA` = '{0}' AND `t`.`CONSTRAINT_SCHEMA` = `t`.`TABLE_SCHEMA
 
             var match = Regex.Match(
                 columnTypeDefinition,
-                @"\bCHARACTER\s+SET\s+(?<charset>[A-Za-z0-9_]+)\b",
+                @"\bCHARACTER\s+SET(?:\s*=\s*|\s+)`?(?<charset>[A-Za-z0-9_]+)`?\b",
                 RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
             return match.Success
@@ -1180,7 +1170,7 @@ WHERE `t`.`TABLE_SCHEMA` = '{0}' AND `t`.`CONSTRAINT_SCHEMA` = `t`.`TABLE_SCHEMA
                 : null;
         }
 
-        private static string TryParseSingleStoreComputedColumnCollation(string columnTypeDefinition)
+        private static string TryParseColumnCollation(string columnTypeDefinition)
         {
             if (string.IsNullOrEmpty(columnTypeDefinition))
             {
@@ -1189,7 +1179,7 @@ WHERE `t`.`TABLE_SCHEMA` = '{0}' AND `t`.`CONSTRAINT_SCHEMA` = `t`.`TABLE_SCHEMA
 
             var match = Regex.Match(
                 columnTypeDefinition,
-                @"\bCOLLATE\s+(?<collation>[A-Za-z0-9_]+)\b",
+                @"\bCOLLATE(?:\s*=\s*|\s+)`?(?<collation>[A-Za-z0-9_]+)`?\b",
                 RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
             return match.Success
