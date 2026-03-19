@@ -26,7 +26,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
     {
         private const string MigrationsScript = nameof(MigrationsScript);
 
-        // Similar to the old GET_LOCK timeout (72h), but now used as command timeout while waiting on row lock.
         private const int LockTimeoutSeconds = 60 * 60 * 24 * 3;
 
         private readonly SingleStoreSqlGenerationHelper _sqlGenerationHelper;
@@ -38,13 +37,11 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
         {
             _sqlGenerationHelper = (SingleStoreSqlGenerationHelper)dependencies.SqlGenerationHelper;
 
-            // Capture early to avoid password being stripped after Open() (PersistSecurityInfo default is false).
+            // Capture early to avoid password being stripped after Open()
             _lockConnectionString = dependencies.Connection.ConnectionString
                                     ?? dependencies.Connection.DbConnection.ConnectionString;
         }
 
-        // We now use a dedicated connection + transaction to hold a row lock,
-        // therefore the lock must be released explicitly by disposing the lock object.
         public override LockReleaseBehavior LockReleaseBehavior
             => LockReleaseBehavior.Explicit;
 
@@ -106,7 +103,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
             var connection = new SingleStoreConnection(_lockConnectionString);
             connection.Open();
 
-            // Make sure the lock connection is using the same database as the main connection.
             var db = Dependencies.Connection.DbConnection.Database;
             if (!string.IsNullOrEmpty(db) &&
                 !string.Equals(connection.Database, db, StringComparison.OrdinalIgnoreCase))
@@ -124,7 +120,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
             using var command = connection.CreateCommand();
             command.CommandTimeout = LockTimeoutSeconds;
 
-            // ROWSTORE ensures fast, predictable locking behavior.
             command.CommandText = $"""
 CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
   `Id` INT NOT NULL PRIMARY KEY
@@ -162,7 +157,6 @@ CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
             command.Transaction = (SingleStoreTransaction)transaction;
             command.CommandTimeout = LockTimeoutSeconds;
 
-            // A write statement acquires a row lock that is held until the transaction ends.
             command.CommandText = $"""UPDATE {table} SET `Id` = `Id` WHERE `Id` = 1;""";
             command.ExecuteNonQuery();
         }

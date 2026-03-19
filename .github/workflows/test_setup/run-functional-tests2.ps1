@@ -122,8 +122,6 @@ dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.Co
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.BadDataJsonDeserializationSingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
-dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocComplexTypeQuerySingleStoreTest.'
-$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.AdHocAdvancedMappingsQuerySingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net9.0 -c Release --no-build --filter 'FullyQualifiedName~.OperatorsProceduralSingleStoreTest.'

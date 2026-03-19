@@ -356,10 +356,8 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             else if (newCharSet != oldCharSet ||
                      newCollation != oldCollation && newCollation == null)
             {
-                // The charset has been changed or the collation has been reset to the default.
                 if (newCharSet != null)
                 {
-                    // A new charset has been set without an explicit collation.
                     builder
                         .Append("ALTER TABLE ")
                         .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema))
@@ -372,10 +370,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 else
                 {
                     // Do not emit a table-level "reset to database defaults" statement here.
-                    // In practice this path shows up for delegation-only charset/collation changes,
-                    // where explicit column ALTERs already represent the real schema change.
-                    // The previous dynamic-SQL implementation using PREPARE/EXECUTE caused
-                    // invalid SQL execution on SingleStore.
                 }
             }
 
@@ -432,7 +426,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
             // SingleStore does not support MODIFY COLUMN for computed columns.
             // Computed columns must be dropped and re-added.
-            // (ALTER TABLE ... MODIFY COLUMN <col> AS (...) PERSISTED <type> is invalid syntax in SingleStore.)
             if (operation.ComputedColumnSql != null || operation.OldColumn?.ComputedColumnSql != null)
             {
                 // If the target is no longer computed, we can’t "modify away" the computed definition either.
@@ -467,7 +460,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                     }
                 }
 
-                // DROP COLUMN
                 builder
                     .Append("ALTER TABLE ")
                     .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
@@ -477,7 +469,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
                 builder.EndCommand();
 
-                // ADD COLUMN (recreate with the new definition)
                 builder
                     .Append("ALTER TABLE ")
                     .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
@@ -506,7 +497,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 return;
             }
 
-            // Default path (normal columns)
             builder
                 .Append("ALTER TABLE ")
                 .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))

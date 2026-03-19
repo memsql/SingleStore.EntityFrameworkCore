@@ -241,9 +241,6 @@ AND
                     }
                 }
 
-                // SingleStore may not expose table charset/collation reliably via INFORMATION_SCHEMA.TABLES.
-                // Rehydrate missing table options from SHOW CREATE TABLE before scaffolding columns, so inherited
-                // column charset/collation can be detected correctly.
                 foreach (var table in tables)
                 {
                     if (table is DatabaseView)
@@ -425,9 +422,6 @@ ORDER BY
                                 var parsedCharSet = TryParseColumnCharacterSet(createTableColumnDefinition);
                                 var parsedCollation = TryParseColumnCollation(createTableColumnDefinition);
 
-                                // SHOW CREATE TABLE is the authoritative source for explicit column-level charset/collation.
-                                // Let the final column annotation assignment decide whether the value should be scaffolded
-                                // relative to the table/database defaults.
                                 if (parsedCharSet != null)
                                 {
                                     charset = parsedCharSet;
@@ -451,7 +445,6 @@ ORDER BY
                                 generation = singleStoreComputedColumnTypeDefinition;
                             }
 
-                            // Compute IsStored AFTER generation has been set
                             bool? isStored = generation is not null
                                 ? (bool?)(
                                     // MySQL/MariaDB signal
@@ -495,7 +488,6 @@ ORDER BY
                                     }
                                     else
                                     {
-                                        // Fallback to previous behavior if format is unexpected.
                                         var pStart = generation.IndexOf("(");
                                         var pEnd = generation.LastIndexOf(")");
                                         if (pStart >= 0 && pEnd > pStart)
@@ -510,7 +502,6 @@ ORDER BY
                                 }
                                 else
                                 {
-                                    // Previous behavior for MySQL/MariaDB generation strings that include parentheses.
                                     var parenthesisStart = generation.IndexOf("(");
                                     var parenthesisEnd = generation.IndexOf(")");
                                     if (parenthesisStart >= 0 && parenthesisEnd > parenthesisStart)
