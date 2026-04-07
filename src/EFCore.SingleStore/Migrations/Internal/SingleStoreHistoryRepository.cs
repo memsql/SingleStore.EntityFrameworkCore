@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Storage.Internal;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
@@ -22,25 +23,24 @@ using SingleStoreConnector;
 
 namespace EntityFrameworkCore.SingleStore.Migrations.Internal
 {
-    public class SingleStoreHistoryRepository : HistoryRepository
+    public class SingleStoreHistoryRepository(
+        [NotNull] HistoryRepositoryDependencies dependencies,
+        [NotNull] ISingleStoreOptions singleStoreOptions)
+        : HistoryRepository(dependencies)
     {
         private const string MigrationsScript = nameof(MigrationsScript);
 
-        private const int LockTimeoutSeconds = 60 * 60 * 24 * 3;
+        private readonly SingleStoreSqlGenerationHelper _sqlGenerationHelper =
+            (SingleStoreSqlGenerationHelper)dependencies.SqlGenerationHelper;
 
-        private readonly SingleStoreSqlGenerationHelper _sqlGenerationHelper;
+        private readonly string _lockConnectionString =
+            dependencies.Connection.ConnectionString
+            ?? dependencies.Connection.DbConnection.ConnectionString;
 
-        private readonly string _lockConnectionString;
+        private readonly int _migrationLockCommandTimeoutSeconds =
+            ToCommandTimeoutSeconds(singleStoreOptions.MigrationLockTimeout);
 
-        public SingleStoreHistoryRepository([NotNull] HistoryRepositoryDependencies dependencies)
-            : base(dependencies)
-        {
-            _sqlGenerationHelper = (SingleStoreSqlGenerationHelper)dependencies.SqlGenerationHelper;
-
-            // Capture early to avoid password being stripped after Open()
-            _lockConnectionString = dependencies.Connection.ConnectionString
-                                    ?? dependencies.Connection.DbConnection.ConnectionString;
-        }
+        // ... rest of the class stays the same
 
         public override LockReleaseBehavior LockReleaseBehavior
             => LockReleaseBehavior.Explicit;
@@ -71,7 +71,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
         {
             Dependencies.MigrationsLogger.AcquiringMigrationLock();
 
-            var lockConnection = CreateLockConnection();
+            var lockConnection = await CreateLockConnectionAsync(cancellationToken).ConfigureAwait(false);
             try
             {
                 await EnsureLockTableAsync(lockConnection, cancellationToken).ConfigureAwait(false);
@@ -90,7 +90,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
         }
 
         /// <summary>
-        ///     Returns the name of the database-wide lock for migrations.
+        /// Returns the name of the database-wide lock for migrations.
         /// </summary>
         protected virtual string GetDatabaseLockName(string databaseName)
             => $"__{databaseName}_EFMigrationsLock";
@@ -98,19 +98,71 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
         private string GetLockTableName()
             => GetDatabaseLockName(Dependencies.Connection.DbConnection.Database);
 
-        private SingleStoreConnection CreateLockConnection()
+        private static int ToCommandTimeoutSeconds(TimeSpan timeout)
         {
-            var connection = new SingleStoreConnection(_lockConnectionString);
-            connection.Open();
-
-            var db = Dependencies.Connection.DbConnection.Database;
-            if (!string.IsNullOrEmpty(db) &&
-                !string.Equals(connection.Database, db, StringComparison.OrdinalIgnoreCase))
+            if (timeout <= TimeSpan.Zero)
             {
-                connection.ChangeDatabase(db);
+                throw new ArgumentOutOfRangeException(
+                    nameof(timeout),
+                    timeout,
+                    "The migration lock timeout must be greater than zero.");
             }
 
-            return connection;
+            if (timeout.TotalSeconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(timeout),
+                    timeout,
+                    $"The migration lock timeout must be less than or equal to {TimeSpan.FromSeconds(int.MaxValue)}.");
+            }
+
+            return checked((int)Math.Ceiling(timeout.TotalSeconds));
+        }
+
+        private string CreateLockConnectionString()
+        {
+            var databaseName = Dependencies.Connection.DbConnection.Database;
+            if (string.IsNullOrEmpty(databaseName))
+            {
+                return _lockConnectionString;
+            }
+
+            var builder = new SingleStoreConnectionStringBuilder(_lockConnectionString)
+            {
+                Database = databaseName,
+            };
+
+            return builder.ConnectionString;
+        }
+
+        private SingleStoreConnection CreateLockConnection()
+        {
+            var connection = new SingleStoreConnection(CreateLockConnectionString());
+            try
+            {
+                connection.Open();
+                return connection;
+            }
+            catch
+            {
+                connection.Dispose();
+                throw;
+            }
+        }
+
+        private async Task<SingleStoreConnection> CreateLockConnectionAsync(CancellationToken cancellationToken)
+        {
+            var connection = new SingleStoreConnection(CreateLockConnectionString());
+            try
+            {
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                return connection;
+            }
+            catch
+            {
+                await connection.DisposeAsync().ConfigureAwait(false);
+                throw;
+            }
         }
 
         private void EnsureLockTable(SingleStoreConnection connection)
@@ -118,7 +170,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
             var table = SqlGenerationHelper.DelimitIdentifier(GetLockTableName());
 
             using var command = connection.CreateCommand();
-            command.CommandTimeout = LockTimeoutSeconds;
+            command.CommandTimeout = _migrationLockCommandTimeoutSeconds;
 
             command.CommandText = $"""
 CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
@@ -136,7 +188,7 @@ CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
             var table = SqlGenerationHelper.DelimitIdentifier(GetLockTableName());
 
             using var command = connection.CreateCommand();
-            command.CommandTimeout = LockTimeoutSeconds;
+            command.CommandTimeout = _migrationLockCommandTimeoutSeconds;
 
             command.CommandText = $"""
 CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
@@ -155,19 +207,26 @@ CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
 
             using var command = connection.CreateCommand();
             command.Transaction = (SingleStoreTransaction)transaction;
-            command.CommandTimeout = LockTimeoutSeconds;
+            command.CommandTimeout = _migrationLockCommandTimeoutSeconds;
 
+            // Touch the single sentinel row inside the dedicated lock transaction.
+            // If another migrator already holds the row lock, this statement waits until the
+            // configured command timeout expires. Once acquired, the lock remains held until the
+            // transaction/connection is disposed by SingleStoreMigrationDatabaseLock.
             command.CommandText = $"""UPDATE {table} SET `Id` = `Id` WHERE `Id` = 1;""";
             command.ExecuteNonQuery();
         }
 
-        private async Task AcquireRowLockAsync(SingleStoreConnection connection, DbTransaction transaction, CancellationToken cancellationToken)
+        private async Task AcquireRowLockAsync(
+            SingleStoreConnection connection,
+            DbTransaction transaction,
+            CancellationToken cancellationToken)
         {
             var table = SqlGenerationHelper.DelimitIdentifier(GetLockTableName());
 
             using var command = connection.CreateCommand();
             command.Transaction = (SingleStoreTransaction)transaction;
-            command.CommandTimeout = LockTimeoutSeconds;
+            command.CommandTimeout = _migrationLockCommandTimeoutSeconds;
 
             command.CommandText = $"""UPDATE {table} SET `Id` = `Id` WHERE `Id` = 1;""";
             await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
@@ -303,14 +362,30 @@ DROP PROCEDURE {MigrationsScript};
 
             public void Dispose()
             {
-                try { lockTransaction.Rollback(); } catch { /* ignore */ }
+                try
+                {
+                    lockTransaction.Rollback();
+                }
+                catch
+                {
+                    // Ignore rollback failures while releasing the migrations lock.
+                }
+
                 lockTransaction.Dispose();
                 lockConnection.Dispose();
             }
 
             public async ValueTask DisposeAsync()
             {
-                try { await lockTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false); } catch { /* ignore */ }
+                try
+                {
+                    await lockTransaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
+                }
+                catch
+                {
+                    // Ignore rollback failures while releasing the migrations lock.
+                }
+
                 await lockTransaction.DisposeAsync().ConfigureAwait(false);
                 await lockConnection.DisposeAsync().ConfigureAwait(false);
             }

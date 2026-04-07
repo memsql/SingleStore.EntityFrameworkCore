@@ -49,6 +49,8 @@ namespace EntityFrameworkCore.SingleStore.Internal
             LimitKeyedOrIndexedStringColumnLength = true;
             StringComparisonTranslations = false;
             PrimitiveCollectionsSupport = false;
+
+            MigrationLockTimeout = SingleStoreOptionsExtension.DefaultMigrationLockTimeout;
         }
 
         public virtual void Initialize(IDbContextOptions options)
@@ -70,6 +72,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             LimitKeyedOrIndexedStringColumnLength = mySqlOptions.LimitKeyedOrIndexedStringColumnLength;
             StringComparisonTranslations = mySqlOptions.StringComparisonTranslations;
             PrimitiveCollectionsSupport = mySqlOptions.PrimitiveCollectionsSupport;
+            MigrationLockTimeout = mySqlOptions.MigrationLockTimeout;
         }
 
         public virtual void Validate(IDbContextOptions options)
@@ -195,6 +198,14 @@ namespace EntityFrameworkCore.SingleStore.Internal
                         nameof(SingleStoreDbContextOptionsBuilder.EnablePrimitiveCollectionsSupport),
                         nameof(DbContextOptionsBuilder.UseInternalServiceProvider)));
             }
+
+            if (!Equals(MigrationLockTimeout, mySqlOptions.MigrationLockTimeout))
+            {
+                throw new InvalidOperationException(
+                    CoreStrings.SingletonOptionChanged(
+                        nameof(SingleStoreDbContextOptionsBuilder.MigrationLockTimeout),
+                        nameof(DbContextOptionsBuilder.UseInternalServiceProvider)));
+            }
         }
 
         protected virtual SingleStoreDefaultDataTypeMappings ApplyDefaultDataTypeMappings(SingleStoreDefaultDataTypeMappings defaultDataTypeMappings, SingleStoreConnectionSettings connectionSettings)
@@ -269,7 +280,8 @@ namespace EntityFrameworkCore.SingleStore.Internal
                    JsonChangeTrackingOptions == other.JsonChangeTrackingOptions &&
                    LimitKeyedOrIndexedStringColumnLength == other.LimitKeyedOrIndexedStringColumnLength &&
                    StringComparisonTranslations == other.StringComparisonTranslations &&
-                   PrimitiveCollectionsSupport == other.PrimitiveCollectionsSupport;
+                   PrimitiveCollectionsSupport == other.PrimitiveCollectionsSupport &&
+                   MigrationLockTimeout == other.MigrationLockTimeout;
         }
 
         public override bool Equals(object obj)
@@ -311,6 +323,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             hashCode.Add(LimitKeyedOrIndexedStringColumnLength);
             hashCode.Add(StringComparisonTranslations);
             hashCode.Add(PrimitiveCollectionsSupport);
+            hashCode.Add(MigrationLockTimeout);
 
             return hashCode.ToHashCode();
         }
@@ -335,5 +348,6 @@ namespace EntityFrameworkCore.SingleStore.Internal
         public virtual bool LimitKeyedOrIndexedStringColumnLength { get; private set; }
         public virtual bool StringComparisonTranslations { get; private set; }
         public virtual bool PrimitiveCollectionsSupport { get; private set; }
+        public virtual TimeSpan MigrationLockTimeout { get; private set; }
     }
 }

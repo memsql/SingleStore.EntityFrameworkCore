@@ -105,8 +105,8 @@ namespace EntityFrameworkCore.SingleStore.Scaffolding.Internal
         }
 
         private const string GetDatabaseSettings = @"SELECT
-    @@character_set_database AS `DEFAULT_CHARACTER_SET_NAME`,
-    @@collation_database AS `DEFAULT_COLLATION_NAME`;";
+    @@character_set_server AS `DEFAULT_CHARACTER_SET_NAME`,
+    @@collation_server AS `DEFAULT_COLLATION_NAME`;";
 
         protected virtual DatabaseModel GetDatabase(DbConnection connection, DatabaseModelFactoryOptions options)
         {
