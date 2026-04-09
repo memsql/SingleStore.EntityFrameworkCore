@@ -1430,7 +1430,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             // We will therefore reverse that behavior to leaving the key order unchanged again.
             // This will lead to two issues:
             //     - Migrations that upgrade vom Pomelo < 9.0 to Pomelo 9.0 will not include this change automatically, because the model
-            //       never changed (we only made the change (before and now) here in MySqlMigrationsSqlGenerator).
+            //       never changed (we only made the change (before and now) here in SingleStoreMigrationsSqlGenerator).
             //     - There now needs to be an index for those cases, that contains the AUTO_INCREMENT column as its first column.
 
             base.CreateTablePrimaryKeyConstraint(operation, model, builder);

@@ -2194,8 +2194,7 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
 
         protected override bool AssertCollations
             => base.AssertCollations
-               && !(AppConfig.ServerVersion.Version.Major == 9
-                    && AppConfig.ServerVersion.Version.Minor == 0);
+               && AppConfig.ServerVersion.Version.Major < 9;
 
         protected virtual string DefaultCollation => ((SingleStoreTestStore)Fixture.TestStore).DatabaseCollation;
 
