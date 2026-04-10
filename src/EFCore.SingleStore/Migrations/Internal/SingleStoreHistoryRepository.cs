@@ -40,8 +40,6 @@ namespace EntityFrameworkCore.SingleStore.Migrations.Internal
         private readonly int _migrationLockCommandTimeoutSeconds =
             ToCommandTimeoutSeconds(singleStoreOptions.MigrationLockTimeout);
 
-        // ... rest of the class stays the same
-
         public override LockReleaseBehavior LockReleaseBehavior
             => LockReleaseBehavior.Explicit;
 
@@ -273,10 +271,26 @@ CREATE ROWSTORE TABLE IF NOT EXISTS {table} (
             return script.Insert(script.IndexOf("CREATE TABLE", StringComparison.Ordinal) + 12, " IF NOT EXISTS");
         }
 
+        /// <summary>
+        ///     Overridden by database providers to generate a SQL Script that will `BEGIN` a block
+        ///     of SQL if and only if the migration with the given identifier does not already exist in the history table.
+        /// </summary>
+        /// <param name="migrationId"> The migration identifier. </param>
+        /// <returns> The generated SQL. </returns>
         public override string GetBeginIfNotExistsScript(string migrationId) => GetBeginIfScript(migrationId, true);
 
+        /// <summary>
+        ///     Overridden by database providers to generate a SQL Script that will `BEGIN` a block
+        ///     of SQL if and only if the migration with the given identifier already exists in the history table.
+        /// </summary>
+        /// <param name="migrationId"> The migration identifier. </param>
+        /// <returns> The generated SQL. </returns>
         public override string GetBeginIfExistsScript(string migrationId) => GetBeginIfScript(migrationId, false);
 
+        /// <summary>
+        ///     Overridden by database providers to generate a SQL script to `END` the SQL block.
+        /// </summary>
+        /// <returns> The generated SQL. </returns>
         public virtual string GetBeginIfScript(string migrationId, bool notExists) => $@"DROP PROCEDURE IF EXISTS {MigrationsScript};
 DELIMITER //
 CREATE PROCEDURE {MigrationsScript}()
@@ -284,6 +298,10 @@ BEGIN
     IF{(notExists ? " NOT" : null)} EXISTS(SELECT 1 FROM {SqlGenerationHelper.DelimitIdentifier(TableName, TableSchema)} WHERE {SqlGenerationHelper.DelimitIdentifier(MigrationIdColumnName)} = '{migrationId}') THEN
 ";
 
+        /// <summary>
+        ///     Overridden by database providers to generate a SQL script to `END` the SQL block.
+        /// </summary>
+        /// <returns> The generated SQL. </returns>
         public override string GetEndIfScript() => $@"
     END IF;
 END //
@@ -301,12 +319,14 @@ DROP PROCEDURE {MigrationsScript};
         private string _migrationIdColumnName;
         private string _productVersionColumnName;
 
+        // Customized implementation
         protected virtual IModel EnsureModel()
         {
             if (_model == null)
             {
                 var conventionSet = Dependencies.ConventionSetBuilder.CreateConventionSet();
 
+                // Use public API to remove the convention, issue #214
                 ConventionSet.Remove(conventionSet.ModelInitializedConventions, typeof(DbSetFindingConvention));
                 ConventionSet.Remove(conventionSet.ModelInitializedConventions, typeof(RelationalDbFunctionAttributeConvention));
 
