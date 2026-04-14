@@ -19,6 +19,9 @@ namespace Microsoft.EntityFrameworkCore
 
         public override ServerVersionSupport Supports { get; }
 
+        public override string DefaultUtf8CsCollation => Supports.DefaultCharSetUtf8Mb4 ? "utf8mb4_bin" : "utf8_bin";
+        public override string DefaultUtf8CiCollation => Supports.DefaultCharSetUtf8Mb4 ? "utf8mb4_general_ci" : "utf8_general_ci";
+
         public SingleStoreServerVersion(Version version)
             : base(version, ServerType.SingleStore)
         {
@@ -93,9 +96,12 @@ namespace Microsoft.EntityFrameworkCore
             public override bool LimitWithNonConstantValue => false;
             public override bool JsonTable => false;
             public override bool JsonValue => false;
+            public override bool JsonOverlaps => false;
             public override bool Values => false;
             public override bool ValuesWithRows => false;
             public override bool WhereSubqueryReferencesOuterQuery => false;
+            public override bool FieldReferenceInTableValueConstructor => true;
+            public override bool CollationCharacterSetApplicabilityWithFullCollationNameColumn => false;
 
             public override bool JsonTableImplementationStable => false;
             public override bool JsonTableImplementationWithoutMySqlBugs => false; // Other non-fatal bugs regarding JSON_TABLE.

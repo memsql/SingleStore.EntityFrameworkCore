@@ -31,7 +31,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             => new SingleStoreQueryTranslationPostprocessor(
                 _dependencies,
                 _relationalDependencies,
-                queryCompilationContext,
+                (SingleStoreQueryCompilationContext)queryCompilationContext,
                 _options,
                 _sqlExpressionFactory);
     }

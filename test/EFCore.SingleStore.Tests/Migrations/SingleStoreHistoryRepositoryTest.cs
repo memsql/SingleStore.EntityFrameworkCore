@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Migrations.Internal;
 using Xunit;
 
@@ -50,8 +51,8 @@ public class SingleStoreHistoryRepositoryTest
 
     private class TestMysqlHistoryRepository : SingleStoreHistoryRepository
     {
-        public TestMysqlHistoryRepository([NotNull] HistoryRepositoryDependencies dependencies)
-            : base(dependencies)
+        public TestMysqlHistoryRepository([NotNull] HistoryRepositoryDependencies dependencies, [NotNull] ISingleStoreOptions singleStoreOptions)
+            : base(dependencies, singleStoreOptions)
         {
         }
 

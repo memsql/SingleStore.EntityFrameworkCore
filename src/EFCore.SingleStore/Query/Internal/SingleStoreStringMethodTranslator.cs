@@ -111,6 +111,17 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                                     p.ParameterType.GetGenericTypeDefinition() == typeof(IEnumerable<>))))
             .ToArray();
 
+        private static readonly MethodInfo[] _joinMethodInfos = typeof(string).GetRuntimeMethods()
+            .Where(
+                m => m is { Name: nameof(string.Join) } &&
+                     m.GetParameters() is { Length: 2 } parameters &&
+                     (parameters[0].ParameterType == typeof(string) ||
+                      parameters[0].ParameterType == typeof(char)) &&
+                     (parameters[1].ParameterType == typeof(string[]) ||
+                      parameters[1].ParameterType == typeof(object[]) ||
+                      parameters[1].ParameterType == typeof(IEnumerable<>)))
+            .ToArray();
+
         private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
 
         public SingleStoreStringMethodTranslator(
@@ -170,7 +181,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                             _sqlExpressionFactory.IsNotNull(replacementArgument),
                             replaceCall)
                     },
-                    _sqlExpressionFactory.Constant(null, RelationalTypeMapping.NullMapping));
+                    _sqlExpressionFactory.Constant(null, replaceCall.Type, replaceCall.TypeMapping));
             }
 
             if (_toLowerMethodInfo.Equals(method)
@@ -430,6 +441,54 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                     concatArguments,
                     method.ReturnType,
                     onlyNullWhenAnyNullPropagatingArgumentIsNull: arguments[0] is not SingleStoreComplexFunctionArgumentExpression);
+            }
+
+            if (_joinMethodInfos.Contains(
+                    (method.IsGenericMethod
+                        ? method.GetGenericMethodDefinition()
+                        : null) ?? method))
+            {
+                // Handle
+                //     char, object[]
+                //     char, string[]
+                //     char, IEnumerable<T>
+                //     string, object[]
+                //     string, string[]
+                //     string, IEnumerable<string>
+                //     string, IEnumerable<T>
+                //
+                // Some call signature variants can never reach this code, because they will be directly called and thus only their result
+                // is translated.
+                var concatWsArguments = arguments[1] is SingleStoreComplexFunctionArgumentExpression mySqlComplexFunctionArgumentExpression
+                    ? [
+                        arguments[0],
+                        // CONCAT_WS filters out nulls, but string.Join treats them as empty strings; so coalesce (which is a no-op for
+                        // non-nullable arguments).
+                        mySqlComplexFunctionArgumentExpression.Update(
+                            mySqlComplexFunctionArgumentExpression.ArgumentParts
+                                .Select(e => _sqlExpressionFactory.Coalesce(e, _sqlExpressionFactory.Constant(string.Empty)))
+                                .ToList(),
+                            mySqlComplexFunctionArgumentExpression.Delimiter)]
+                    : arguments.Select(
+                            e => e switch
+                            {
+                                SqlConstantExpression c => _sqlExpressionFactory.Constant(c.Value.ToString()),
+                                SqlParameterExpression p => p.ApplyTypeMapping(
+                                    ((SingleStoreStringTypeMapping)_typeMappingSource.GetMapping(typeof(string))).Clone(forceToString: true)),
+                                _ => e,
+                            })
+                        .Prepend(arguments[0])
+                        .ToArray();
+
+                // We haven't implemented expansion of MySqlComplexFunctionArgumentExpression yet, so the default nullability check would
+                // result in an invalid SQL generation.
+                // TODO: Fix at some point.
+                return _sqlExpressionFactory.NullableFunction(
+                    "CONCAT_WS",
+                    concatWsArguments,
+                    method.ReturnType,
+                    onlyNullWhenAnyNullPropagatingArgumentIsNull: arguments[0] is not SingleStoreComplexFunctionArgumentExpression,
+                    argumentsPropagateNullability: [true, false]);
             }
 
             return null;

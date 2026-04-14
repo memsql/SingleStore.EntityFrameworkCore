@@ -82,14 +82,14 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         {
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
 
-            public override void Reseed()
+            public override async Task ReseedAsync()
             {
-                using var context = CreateContext();
+                await using var context = CreateContext();
                 context.Set<TransactionCustomer>().RemoveRange(context.Set<TransactionCustomer>());
                 context.Set<TransactionOrder>().RemoveRange(context.Set<TransactionOrder>());
-                context.SaveChanges();
+                await context.SaveChangesAsync();
 
-                base.Seed(context);
+                await base.SeedAsync(context);
             }
 
             public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)

@@ -59,6 +59,20 @@ FROM `Entities1` AS `e`
 WHERE @__prm_0 = (`e`.`NullableBoolC` IS NOT NULL)");
         }
 
+        [ConditionalTheory]
+        [MemberData(nameof(IsAsyncData))]
+        public override Task CaseOpWhen_predicate(bool async)
+            => AssertQuery(
+                async,
+                ss => ss.Set<NullSemanticsEntity1>()
+                    .Where(
+                        x => NullSemanticsQueryFixtureBase.BoolSwitch(
+                                 x.StringA == "Foo", 3, 2
+                             )
+                             == 2),
+                assertOrder: false
+            );
+
         [ConditionalTheory(Skip = "LIKE ... ESCAPE is not supported by SingleStore Distributed.")]
         public override async Task Like_with_escape_char(bool async)
         {

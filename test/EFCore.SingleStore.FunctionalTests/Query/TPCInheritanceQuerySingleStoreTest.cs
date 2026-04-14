@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
@@ -19,9 +20,9 @@ public class TPCInheritanceQuerySingleStoreTest : TPCInheritanceQueryTestBase<TP
     }
 
     [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore.")]
-    public override void Setting_foreign_key_to_a_different_type_throws()
+    public override Task Setting_foreign_key_to_a_different_type_throws()
     {
-        base.Setting_foreign_key_to_a_different_type_throws();
+        return base.Setting_foreign_key_to_a_different_type_throws();
     }
 
     protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)

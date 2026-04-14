@@ -15,7 +15,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         {
         }
 
-        public class ManyToManyFieldsLoadSingleStoreFixture : ManyToManyFieldsLoadFixtureBase
+        public class ManyToManyFieldsLoadSingleStoreFixture : ManyToManyFieldsLoadFixtureBase, ITestSqlLoggerFactory
         {
             public TestSqlLoggerFactory TestSqlLoggerFactory
                 => (TestSqlLoggerFactory)ListLoggerFactory;

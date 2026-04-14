@@ -14,9 +14,9 @@ public class TPHInheritanceQuerySingleStoreTest : TPHInheritanceQueryTestBase<TP
     }
 
     [ConditionalFact(Skip = "Feature 'FOREIGN KEY' is not supported by SingleStore Distributed.")]
-    public override void Setting_foreign_key_to_a_different_type_throws()
+    public override Task Setting_foreign_key_to_a_different_type_throws()
     {
-        base.Setting_foreign_key_to_a_different_type_throws();
+        return base.Setting_foreign_key_to_a_different_type_throws();
     }
 
     [ConditionalTheory]
@@ -34,15 +34,15 @@ public class TPHInheritanceQuerySingleStoreTest : TPHInheritanceQueryTestBase<TP
     }
 
     [ConditionalFact]
-    public override void Can_insert_update_delete()
+    public override Task Can_insert_update_delete()
     {
         // Skipping this test when running on Managed Service due to the specifics of
         // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
         if (AppConfig.ManagedService)
         {
-            return;
+            return Task.CompletedTask;
         }
 
-        base.Can_insert_update_delete();
+        return base.Can_insert_update_delete();
     }
 }

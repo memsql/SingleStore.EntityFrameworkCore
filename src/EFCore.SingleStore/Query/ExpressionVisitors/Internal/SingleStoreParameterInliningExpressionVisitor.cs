@@ -108,7 +108,7 @@ public class SingleStoreParameterInliningExpressionVisitor : ExpressionVisitor
 
         return new SingleStoreInlinedParameterExpression(
             sqlParameterExpression,
-            _sqlExpressionFactory.Constant(
+            (SqlConstantExpression)_sqlExpressionFactory.Constant(
                 _parametersValues[sqlParameterExpression.Name],
                 sqlParameterExpression.TypeMapping));
     }

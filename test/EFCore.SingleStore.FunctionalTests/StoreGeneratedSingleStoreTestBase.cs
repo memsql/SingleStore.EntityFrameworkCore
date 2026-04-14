@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Threading.Tasks;
 using System.Linq;
 using System.Reflection;
 using EntityFrameworkCore.SingleStore.Tests;
@@ -4535,9 +4536,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             Action<DbContext>? nestedTestOperation1 = null,
             Action<DbContext>? nestedTestOperation2 = null,
             Action<DbContext>? nestedTestOperation3 = null)
-            => TestHelpers.ExecuteWithStrategyInTransaction(
+            => TestHelpers.ExecuteWithStrategyInTransactionAsync(
                 CreateContext, UseTransaction,
-                testOperation, nestedTestOperation1, nestedTestOperation2, nestedTestOperation3);
+                async context => { testOperation(context); await Task.CompletedTask; },
+                nestedTestOperation1 == null ? null : async context => { nestedTestOperation1(context); await Task.CompletedTask; },
+                nestedTestOperation2 == null ? null : async context => { nestedTestOperation2(context); await Task.CompletedTask; },
+                nestedTestOperation3 == null ? null : async context => { nestedTestOperation3(context); await Task.CompletedTask; }).GetAwaiter().GetResult();
 
         protected virtual void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
         {

@@ -17,7 +17,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
         public SingleStoreQueryTranslationPostprocessor(
             QueryTranslationPostprocessorDependencies dependencies,
             RelationalQueryTranslationPostprocessorDependencies relationalDependencies,
-            QueryCompilationContext queryCompilationContext,
+            SingleStoreQueryCompilationContext queryCompilationContext,
             ISingleStoreOptions options,
             SingleStoreSqlExpressionFactory sqlExpressionFactory)
             : base(dependencies, relationalDependencies, queryCompilationContext)
@@ -28,7 +28,14 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 
         public override Expression Process(Expression query)
         {
+            var mySqlHavingExpressionVisitor = new SingleStoreHavingExpressionVisitor(_sqlExpressionFactory);
+
+            query = mySqlHavingExpressionVisitor.Process(query, usePrePostprocessorMode: true);
+
+            // Changes `SelectExpression.IsMutable` from `true` to `false`.
             query = base.Process(query);
+
+            query = mySqlHavingExpressionVisitor.Process(query, usePrePostprocessorMode: false);
 
             query = new SingleStoreJsonParameterExpressionVisitor(_sqlExpressionFactory, _options).Visit(query);
 
@@ -36,6 +43,8 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             {
                 query = new SingleStoreBug96947WorkaroundExpressionVisitor(_sqlExpressionFactory).Visit(query);
             }
+
+            query = new BitwiseOperationReturnTypeCorrectingExpressionVisitor(_sqlExpressionFactory).Visit(query);
 
             return query;
         }

@@ -60,6 +60,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure
         public virtual bool CrossApply => false;
         public virtual bool OuterReferenceInMultiLevelSubquery => false;
         public virtual bool Json => false;
+        public virtual bool JsonOverlaps => false;
         public virtual bool GeneratedColumns => false;
         public virtual bool NullableGeneratedColumns => false;
         public virtual bool ParenthesisEnclosedGeneratedColumnExpressions => false;
@@ -97,6 +98,8 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure
         public virtual bool Values => false;
         public virtual bool ValuesWithRows => false;
         public virtual bool WhereSubqueryReferencesOuterQuery => false;
+        public virtual bool FieldReferenceInTableValueConstructor => false;
+        public virtual bool CollationCharacterSetApplicabilityWithFullCollationNameColumn => false;
 
         public virtual bool JsonTableImplementationStable => JsonTable;
         public virtual bool JsonTableImplementationWithoutMySqlBugs => JsonTable;

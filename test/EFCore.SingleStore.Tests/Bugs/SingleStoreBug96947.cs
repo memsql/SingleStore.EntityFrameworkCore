@@ -1,14 +1,11 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore;
-using EntityFrameworkCore.SingleStore.Infrastructure;
-using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace EntityFrameworkCore.SingleStore.Bugs
 {
     // Made internal to skip all tests.
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.SingleStoreBug96947Workaround))]
     internal class SingleStoreBug96947 : RawSqlTestWithFixture<SingleStoreBug96947.FixtureClass>
     {
         public SingleStoreBug96947(FixtureClass fixture, ITestOutputHelper testOutputHelper)

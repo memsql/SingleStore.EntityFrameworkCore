@@ -10,7 +10,7 @@ using EntityFrameworkCore.SingleStore.FunctionalTests.TestModels.Northwind;
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
     public class NorthwindQuerySingleStoreFixture<TModelCustomizer> : NorthwindQueryRelationalFixture<TModelCustomizer>
-        where TModelCustomizer : IModelCustomizer, new()
+        where TModelCustomizer : ITestModelCustomizer, new()
     {
         protected override ITestStoreFactory TestStoreFactory => SingleStoreNorthwindTestStoreFactory.Instance;
         protected override Type ContextType => typeof(NorthwindSingleStoreContext);

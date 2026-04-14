@@ -5,12 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
+using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Utilities;
 
 namespace EntityFrameworkCore.SingleStore.Query.Internal
@@ -29,11 +29,14 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                 { nameof(DateTime.Millisecond), ("microsecond", 1000) },
             };
         private readonly SingleStoreSqlExpressionFactory _sqlExpressionFactory;
+        private readonly ISingleStoreOptions _mySqlOptions;
+
         private readonly string _sessionTimeZone;
 
-        public SingleStoreDateTimeMemberTranslator(ISqlExpressionFactory sqlExpressionFactory, IDbContextOptions dbContextOptions)
+        public SingleStoreDateTimeMemberTranslator(ISqlExpressionFactory sqlExpressionFactory, IDbContextOptions dbContextOptions, ISingleStoreOptions mySqlOptions)
         {
             _sqlExpressionFactory = (SingleStoreSqlExpressionFactory)sqlExpressionFactory;
+            _mySqlOptions = mySqlOptions;
 
             // Read the configured session time zone offset (e.g. "-08:00") from provider options.
             // If not configured, we default to "+00:00" (UTC) because SingleStore ignores @@session.time_zone at runtime.
@@ -109,13 +112,17 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                             declaringType == typeof(DateTimeOffset)
                                 ? "UTC_TIMESTAMP"
                                 : "CURRENT_TIMESTAMP",
-                            Array.Empty<SqlExpression>(),
+                            _mySqlOptions.ServerVersion.Supports.DateTime6 ?
+                                new [] { _sqlExpressionFactory.Constant(6)} :
+                                Array.Empty<SqlExpression>(),
                             returnType);
 
                     case nameof(DateTime.UtcNow):
                         return _sqlExpressionFactory.NonNullableFunction(
                             "UTC_TIMESTAMP",
-                            Array.Empty<SqlExpression>(),
+                            _mySqlOptions.ServerVersion.Supports.DateTime6 ?
+                                new [] { _sqlExpressionFactory.Constant(6)} :
+                                ArraySegment<SqlExpression>.Empty,
                             returnType);
 
                     case nameof(DateTime.Today):

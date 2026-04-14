@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Storage.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using SingleStoreConnector;
 
@@ -48,6 +49,8 @@ namespace EntityFrameworkCore.SingleStore.Internal
             LimitKeyedOrIndexedStringColumnLength = true;
             StringComparisonTranslations = false;
             PrimitiveCollectionsSupport = false;
+
+            MigrationLockTimeout = SingleStoreOptionsExtension.DefaultMigrationLockTimeout;
         }
 
         public virtual void Initialize(IDbContextOptions options)
@@ -55,7 +58,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             var mySqlOptions = options.FindExtension<SingleStoreOptionsExtension>() ?? new SingleStoreOptionsExtension();
             var mySqlJsonOptions = (SingleStoreJsonOptionsExtension)options.Extensions.LastOrDefault(e => e is SingleStoreJsonOptionsExtension);
 
-            ConnectionSettings = GetConnectionSettings(mySqlOptions);
+            ConnectionSettings = GetConnectionSettings(mySqlOptions, options);
             DataSource = mySqlOptions.DataSource;
             ServerVersion = mySqlOptions.ServerVersion ?? throw new InvalidOperationException($"The {nameof(ServerVersion)} has not been set.");
             NoBackslashEscapes = mySqlOptions.NoBackslashEscapes;
@@ -69,13 +72,14 @@ namespace EntityFrameworkCore.SingleStore.Internal
             LimitKeyedOrIndexedStringColumnLength = mySqlOptions.LimitKeyedOrIndexedStringColumnLength;
             StringComparisonTranslations = mySqlOptions.StringComparisonTranslations;
             PrimitiveCollectionsSupport = mySqlOptions.PrimitiveCollectionsSupport;
+            MigrationLockTimeout = mySqlOptions.MigrationLockTimeout;
         }
 
         public virtual void Validate(IDbContextOptions options)
         {
             var mySqlOptions = options.FindExtension<SingleStoreOptionsExtension>() ?? new SingleStoreOptionsExtension();
             var mySqlJsonOptions = (SingleStoreJsonOptionsExtension)options.Extensions.LastOrDefault(e => e is SingleStoreJsonOptionsExtension);
-            var connectionSettings = GetConnectionSettings(mySqlOptions);
+            var connectionSettings = GetConnectionSettings(mySqlOptions, options);
 
             //
             // CHECK: To we have to ensure that the ApplicationServiceProvider itself is not replaced, because we rely on it in our
@@ -194,6 +198,14 @@ namespace EntityFrameworkCore.SingleStore.Internal
                         nameof(SingleStoreDbContextOptionsBuilder.EnablePrimitiveCollectionsSupport),
                         nameof(DbContextOptionsBuilder.UseInternalServiceProvider)));
             }
+
+            if (!Equals(MigrationLockTimeout, mySqlOptions.MigrationLockTimeout))
+            {
+                throw new InvalidOperationException(
+                    CoreStrings.SingletonOptionChanged(
+                        nameof(SingleStoreDbContextOptionsBuilder.MigrationLockTimeout),
+                        nameof(DbContextOptionsBuilder.UseInternalServiceProvider)));
+            }
         }
 
         protected virtual SingleStoreDefaultDataTypeMappings ApplyDefaultDataTypeMappings(SingleStoreDefaultDataTypeMappings defaultDataTypeMappings, SingleStoreConnectionSettings connectionSettings)
@@ -245,10 +257,12 @@ namespace EntityFrameworkCore.SingleStore.Internal
             return defaultDataTypeMappings;
         }
 
-        private static SingleStoreConnectionSettings GetConnectionSettings(SingleStoreOptionsExtension relationalOptions)
+        private static SingleStoreConnectionSettings GetConnectionSettings(SingleStoreOptionsExtension relationalOptions, IDbContextOptions options)
             => relationalOptions.Connection != null
                 ? new SingleStoreConnectionSettings(relationalOptions.Connection)
-                : new SingleStoreConnectionSettings(relationalOptions.ConnectionString);
+                : new SingleStoreConnectionSettings(
+                    new NamedConnectionStringResolver(options)
+                        .ResolveConnectionString(relationalOptions.ConnectionString ?? string.Empty));
 
         protected virtual bool Equals(SingleStoreOptions other)
         {
@@ -266,7 +280,8 @@ namespace EntityFrameworkCore.SingleStore.Internal
                    JsonChangeTrackingOptions == other.JsonChangeTrackingOptions &&
                    LimitKeyedOrIndexedStringColumnLength == other.LimitKeyedOrIndexedStringColumnLength &&
                    StringComparisonTranslations == other.StringComparisonTranslations &&
-                   PrimitiveCollectionsSupport == other.PrimitiveCollectionsSupport;
+                   PrimitiveCollectionsSupport == other.PrimitiveCollectionsSupport &&
+                   MigrationLockTimeout == other.MigrationLockTimeout;
         }
 
         public override bool Equals(object obj)
@@ -308,6 +323,7 @@ namespace EntityFrameworkCore.SingleStore.Internal
             hashCode.Add(LimitKeyedOrIndexedStringColumnLength);
             hashCode.Add(StringComparisonTranslations);
             hashCode.Add(PrimitiveCollectionsSupport);
+            hashCode.Add(MigrationLockTimeout);
 
             return hashCode.ToHashCode();
         }
@@ -332,5 +348,6 @@ namespace EntityFrameworkCore.SingleStore.Internal
         public virtual bool LimitKeyedOrIndexedStringColumnLength { get; private set; }
         public virtual bool StringComparisonTranslations { get; private set; }
         public virtual bool PrimitiveCollectionsSupport { get; private set; }
+        public virtual TimeSpan MigrationLockTimeout { get; private set; }
     }
 }

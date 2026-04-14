@@ -2,6 +2,8 @@
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.Infrastructure;
+using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -15,13 +17,22 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        protected override bool CanExecuteQueryString
-            => true;
-
         public class OwnedQuerySingleStoreFixture : RelationalOwnedQueryFixture
         {
             protected override ITestStoreFactory TestStoreFactory
                 => SingleStoreTestStoreFactory.Instance;
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.WhereSubqueryReferencesOuterQuery))]
+        public override Task Union_over_owned_collection(bool async)
+        {
+            return base.Union_over_owned_collection(async);
+        }
+
+        [SupportedServerVersionCondition(nameof(ServerVersionSupport.WhereSubqueryReferencesOuterQuery))]
+        public override Task Distinct_over_owned_collection(bool async)
+        {
+            return base.Distinct_over_owned_collection(async);
         }
 
         [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore")]

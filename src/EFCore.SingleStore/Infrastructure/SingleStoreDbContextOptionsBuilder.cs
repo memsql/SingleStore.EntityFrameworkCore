@@ -145,5 +145,20 @@ namespace Microsoft.EntityFrameworkCore.Infrastructure
 
             return this;
         }
+
+        /// <summary>
+        /// Configures how long commands involved in acquiring the EF Core migrations lock are allowed to wait.
+        /// The default is three days.
+        /// </summary>
+        /// <remarks>
+        /// This timeout applies while creating the lock table and while waiting to acquire the lock row.
+        /// It does not limit how long the lock is held after acquisition; the lock is held until the
+        /// dedicated lock transaction/connection is disposed.
+        /// </remarks>
+        /// <param name="timeout">
+        /// A positive timeout value.
+        /// </param>
+        public virtual SingleStoreDbContextOptionsBuilder MigrationLockTimeout(TimeSpan timeout)
+            => WithOption(e => e.WithMigrationLockTimeout(timeout));
     }
 }

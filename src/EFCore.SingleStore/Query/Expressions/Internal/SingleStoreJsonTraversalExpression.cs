@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -18,6 +19,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
     /// </summary>
     public class SingleStoreJsonTraversalExpression : SqlExpression, IEquatable<SingleStoreJsonTraversalExpression>
     {
+        private static ConstructorInfo _quotingConstructor;
+
         /// <summary>
         /// The JSON column.
         /// </summary>
@@ -67,6 +70,16 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
             => Update(
                 (SqlExpression)visitor.Visit(Expression),
                 Path.Select(p => (SqlExpression)visitor.Visit(p)).ToArray());
+
+        /// <inheritdoc />
+        public override Expression Quote()
+            => New(
+                _quotingConstructor ??= typeof(SingleStoreInlinedParameterExpression).GetConstructor(
+                    [typeof(SqlExpression), typeof(IReadOnlyList<SqlExpression>), typeof(bool), typeof(Type), typeof(RelationalTypeMapping)])!,
+                Expression.Quote(),
+                NewArrayInit(typeof(SqlExpression), Path.Select(p => p.Quote())),
+                Constant(ReturnsText),
+                RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreJsonTraversalExpression Update(
             [NotNull] SqlExpression expression,

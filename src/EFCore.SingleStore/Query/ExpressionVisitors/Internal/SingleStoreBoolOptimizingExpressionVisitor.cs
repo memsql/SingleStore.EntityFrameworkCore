@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -99,7 +100,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
         }
 
         protected override Expression VisitDelete(DeleteExpression deleteExpression)
-            => deleteExpression.Update((SelectExpression)Visit(deleteExpression.SelectExpression));
+            => deleteExpression.Update(deleteExpression.Table, (SelectExpression)Visit(deleteExpression.SelectExpression));
 
         protected override Expression VisitDistinct(DistinctExpression distinctExpression)
         {
@@ -245,7 +246,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 
             return changed
                 ? selectExpression.Update(
-                    projections, tables, predicate, groupBy, havingExpression, orderings, limit, offset)
+                    tables, predicate, groupBy, havingExpression, projections, orderings, offset, limit)
                 : selectExpression;
         }
 
@@ -672,14 +673,25 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             var parentOptimize = _optimize;
             _optimize = false;
 
-            var rowValues = new RowValueExpression[valuesExpression.RowValues.Count];
-            for (var i = 0; i < rowValues.Length; i++)
+            switch (valuesExpression)
             {
-                rowValues[i] = (RowValueExpression)Visit(valuesExpression.RowValues[i]);
-            }
+                case { RowValues: not null }:
+                    var rowValues = new RowValueExpression[valuesExpression.RowValues!.Count];
+                    for (var i = 0; i < rowValues.Length; i++)
+                    {
+                        rowValues[i] = (RowValueExpression)Visit(valuesExpression.RowValues[i]);
+                    }
+                    _optimize = parentOptimize;
+                    return valuesExpression.Update(rowValues);
 
-            _optimize = parentOptimize;
-            return valuesExpression.Update(rowValues);
+                case { ValuesParameter: not null }:
+                    var valuesParameter = (SqlParameterExpression)Visit(valuesExpression.ValuesParameter);
+                    _optimize = parentOptimize;
+                    return valuesExpression.Update(valuesParameter);
+
+                default:
+                    throw new UnreachableException();
+            }
         }
     }
 }

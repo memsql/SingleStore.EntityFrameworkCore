@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Utilities;
 using EntityFrameworkCore.SingleStore.Metadata.Internal;
 
@@ -80,6 +81,12 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
             = typeof(SingleStorePropertyBuilderExtensions).GetRequiredRuntimeMethod(
                 nameof(SingleStorePropertyBuilderExtensions.HasCharSet),
                 typeof(PropertyBuilder),
+                typeof(string));
+
+        private static readonly MethodInfo _complexTypePropertyHasCharSetMethodInfo
+            = typeof(SingleStoreComplexTypePropertyBuilderExtensions).GetRequiredRuntimeMethod(
+                nameof(SingleStoreComplexTypePropertyBuilderExtensions.HasCharSet),
+                typeof(ComplexTypePropertyBuilder),
                 typeof(string));
 
         public SingleStoreAnnotationCodeGenerator([JetBrains.Annotations.NotNull] AnnotationCodeGeneratorDependencies dependencies)
@@ -264,6 +271,13 @@ namespace EntityFrameworkCore.SingleStore.Design.Internal
             switch (annotation.Name)
             {
                 case SingleStoreAnnotationNames.CharSet when annotation.Value is string { Length: > 0 } charSet:
+                    if (property.DeclaringType is IComplexType)
+                    {
+                        return new MethodCallCodeFragment(
+                            _complexTypePropertyHasCharSetMethodInfo,
+                            charSet);
+                    }
+
                     return new MethodCallCodeFragment(
                         _propertyHasCharSetMethodInfo,
                         charSet);

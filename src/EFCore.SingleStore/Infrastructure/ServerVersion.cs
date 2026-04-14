@@ -5,6 +5,8 @@
 using System;
 using System.Data;
 using System.Text.RegularExpressions;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Utilities;
 using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.Infrastructure;
@@ -37,8 +39,8 @@ namespace Microsoft.EntityFrameworkCore
 
         public virtual int MaxKeyLength => Supports.LargerKeyLength ? 3072 : 767;
         public virtual CharSet DefaultCharSet => Supports.DefaultCharSetUtf8Mb4 ? CharSet.Utf8Mb4 : CharSet.Utf8;
-        public virtual string DefaultUtf8CsCollation => Supports.DefaultCharSetUtf8Mb4 ? "utf8mb4_bin" : "utf8_bin";
-        public virtual string DefaultUtf8CiCollation => Supports.DefaultCharSetUtf8Mb4 ? "utf8mb4_general_ci" : "utf8_general_ci";
+        public abstract string DefaultUtf8CsCollation { get; }
+        public abstract string DefaultUtf8CiCollation { get; }
 
         public override bool Equals(object obj)
             => obj is ServerVersion version &&
@@ -85,6 +87,36 @@ namespace Microsoft.EntityFrameworkCore
         /// <summary>
         /// Retrieves the <see cref="ServerVersion"/> (version number and server type) from a database server.
         /// </summary>
+        /// <param name="connectionString">The connection string.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>
+        /// A task that represents the asynchronous auto detect operation. The task result contains the <see cref="ServerVersion"/> of the database.
+        /// </returns>
+        /// <remarks>
+        /// Uses a connection string to open a connection to the database server and then executes a command.
+        /// The connection will ignore the database specified in the connection string. It therefore makes not difference, whether the
+        /// database already exists or not.
+        /// </remarks>
+        public static async Task<ServerVersion> AutoDetectAsync(string connectionString, CancellationToken cancellationToken = default)
+        {
+            var connection = new SingleStoreConnection(
+                new SingleStoreConnectionStringBuilder(connectionString)
+                {
+                    Database = string.Empty,
+                    AutoEnlist = false,
+                    Pooling = false,
+                }.ConnectionString);
+
+            await using (connection.ConfigureAwait(false))
+            {
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                return Parse(connection.S2ServerVersion);
+            }
+        }
+
+        /// <summary>
+        /// Retrieves the <see cref="ServerVersion"/> (version number and server type) from a database server.
+        /// </summary>
         /// <param name="connection">The connection.</param>
         /// <returns>The <see cref="ServerVersion"/>.</returns>
         /// <remarks>
@@ -116,6 +148,102 @@ namespace Microsoft.EntityFrameworkCore
             }
 
             return Parse(serverVersion);
+        }
+
+        /// <summary>
+        /// Retrieves the <see cref="ServerVersion"/> (version number and server type) from a database server.
+        /// </summary>
+        /// <param name="connection">The connection.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>
+        /// A task that represents the asynchronous auto detect operation. The task result contains the <see cref="ServerVersion"/> of the database.
+        /// </returns>
+        /// <remarks>
+        /// Uses a connection to the database server to execute a command.
+        /// If the connection has already been opened, the connection is is being used as is. Otherwise, the connection is being cloned and
+        /// ignores any database specified in the connection string of the connection. It therefore makes not difference, whether the
+        /// database already exists or not, and the <see cref="ConnectionState"/> of the <paramref name="connection"/> parameter after the
+        /// return of the call is the same as before the call.
+        /// </remarks>
+        public static async Task<ServerVersion> AutoDetectAsync(SingleStoreConnection connection, CancellationToken cancellationToken = default)
+        {
+            string serverVersion;
+
+            if (connection.State != ConnectionState.Open)
+            {
+                var clonedConnection = connection.CloneWith(
+                    new SingleStoreConnectionStringBuilder(connection.ConnectionString)
+                    {
+                        Database = string.Empty,
+                        AutoEnlist = false,
+                        Pooling = false,
+                    }.ConnectionString);
+
+                await using (clonedConnection.ConfigureAwait(false))
+                {
+                    await clonedConnection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                    serverVersion = clonedConnection.S2ServerVersion;
+                }
+            }
+            else
+            {
+                serverVersion = connection.S2ServerVersion;
+            }
+
+            return Parse(serverVersion);
+        }
+
+        /// <summary>
+        /// Retrieves the <see cref="ServerVersion"/> (version number and server type) from a database server.
+        /// </summary>
+        /// <param name="dataSource">The data source.</param>
+        /// <returns>The <see cref="ServerVersion"/>.</returns>
+        /// <remarks>
+        /// Uses a <see cref="SingleStoreDataSource"/> that represents a database to execute a command.
+        /// The data source is used to create a connection to the database server and ignores any database specified in the underlying
+        /// connection string. It therefore makes not difference, whether a specified database already exists or not.
+        /// </remarks>
+        public static ServerVersion AutoDetect(SingleStoreDataSource dataSource)
+        {
+            using var connection = dataSource.CreateConnection();
+            connection.ConnectionString = new SingleStoreConnectionStringBuilder(connection.ConnectionString)
+            {
+                Database = string.Empty,
+                AutoEnlist = false,
+                Pooling = false,
+            }.ConnectionString;
+            connection.Open();
+            return Parse(connection.S2ServerVersion);
+        }
+
+        /// <summary>
+        /// Retrieves the <see cref="ServerVersion"/> (version number and server type) from a database server.
+        /// </summary>
+        /// <param name="dataSource">The data source.</param>
+        /// <param name="cancellationToken">A <see cref="CancellationToken" /> to observe while waiting for the task to complete.</param>
+        /// <returns>
+        /// A task that represents the asynchronous auto detect operation. The task result contains the <see cref="ServerVersion"/> of the database.
+        /// </returns>
+        /// <remarks>
+        /// Uses a <see cref="SingleStoreDataSource"/> that represents a database to execute a command.
+        /// The data source is used to create a connection to the database server and ignores any database specified in the underlying
+        /// connection string. It therefore makes not difference, whether a specified database already exists or not.
+        /// </remarks>
+        public static async Task<ServerVersion> AutoDetectAsync(SingleStoreDataSource dataSource, CancellationToken cancellationToken = default)
+        {
+            var connection = dataSource.CreateConnection();
+            await using (connection.ConfigureAwait(false))
+            {
+                connection.ConnectionString = new SingleStoreConnectionStringBuilder(connection.ConnectionString)
+                {
+                    Database = string.Empty,
+                    AutoEnlist = false,
+                    Pooling = false,
+                }.ConnectionString;
+
+                await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+                return Parse(connection.S2ServerVersion);
+            }
         }
 
         /// <summary>

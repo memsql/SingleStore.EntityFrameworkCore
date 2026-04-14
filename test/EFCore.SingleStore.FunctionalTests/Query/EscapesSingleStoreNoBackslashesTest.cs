@@ -18,9 +18,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         }
 
         [ConditionalFact]
-        public override void Input_query_escapes_parameter()
+        public override async Task Input_query_escapes_parameter()
         {
-            base.Input_query_escapes_parameter();
+            await base.Input_query_escapes_parameter();
 
             if (AppConfig.ServerVersion.Supports.Returning)
             {

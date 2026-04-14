@@ -13,7 +13,7 @@ public class ToSqlQuerySingleStoreTest : ToSqlQueryTestBase
 
     [ConditionalFact]
     public virtual void Check_all_tests_overridden()
-        => TestHelpers.AssertAllMethodsOverridden(GetType());
+        => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
     public override async Task Entity_type_with_navigation_mapped_to_SqlQuery(bool async)
     {

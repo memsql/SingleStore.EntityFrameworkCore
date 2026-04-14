@@ -105,20 +105,12 @@ namespace EntityFrameworkCore.SingleStore.Scaffolding.Internal
         }
 
         private const string GetDatabaseSettings = @"SELECT
-	`DEFAULT_CHARACTER_SET_NAME`,
-    `DEFAULT_COLLATION_NAME`
-FROM
-	`INFORMATION_SCHEMA`.`SCHEMATA`
-WHERE
-	`SCHEMA_NAME` = SCHEMA()";
+    @@character_set_server AS `DEFAULT_CHARACTER_SET_NAME`,
+    @@collation_server AS `DEFAULT_COLLATION_NAME`;";
 
         protected virtual DatabaseModel GetDatabase(DbConnection connection, DatabaseModelFactoryOptions options)
         {
-            var databaseModel = new DatabaseModel
-            {
-                DatabaseName = connection.Database,
-                DefaultSchema = GetDefaultSchema(connection)
-            };
+            var databaseModel = new DatabaseModel { DatabaseName = connection.Database, DefaultSchema = GetDefaultSchema(connection) };
 
             using (var command = connection.CreateCommand())
             {
@@ -145,7 +137,8 @@ WHERE
             var tableList = options.Tables.ToList();
             var tableFilter = GenerateTableFilter(tableList, schemaList);
 
-            var tables = GetTables(connection, tableFilter, (string)databaseModel[SingleStoreAnnotationNames.CharSet], databaseModel.Collation);
+            var tables = GetTables(connection, tableFilter, (string)databaseModel[SingleStoreAnnotationNames.CharSet],
+                databaseModel.Collation);
             foreach (var table in tables)
             {
                 table.Database = databaseModel;
@@ -191,7 +184,7 @@ WHERE
 FROM
     `INFORMATION_SCHEMA`.`TABLES` as `t`
 LEFT JOIN
-	`INFORMATION_SCHEMA`.`COLLATION_CHARACTER_SET_APPLICABILITY` as `ccsa` ON `ccsa`.`COLLATION_NAME` = `t`.`TABLE_COLLATION`
+	`INFORMATION_SCHEMA`.`COLLATION_CHARACTER_SET_APPLICABILITY` as `ccsa` ON `ccsa`.`{0}` = `t`.`TABLE_COLLATION`
 WHERE
     `TABLE_SCHEMA` = SCHEMA()
 AND
@@ -205,8 +198,12 @@ AND
         {
             using (var command = connection.CreateCommand())
             {
+                var collationColumnName = _options.ServerVersion.Supports.CollationCharacterSetApplicabilityWithFullCollationNameColumn
+                    ? "FULL_COLLATION_NAME"
+                    : "COLLATION_NAME";
+
                 var tables = new List<DatabaseTable>();
-                command.CommandText = GetTablesQuery;
+                command.CommandText = string.Format(GetTablesQuery, collationColumnName);
                 using (var reader = command.ExecuteReader())
                 {
                     while (reader.Read())
@@ -225,11 +222,11 @@ AND
                         table.Name = name;
                         table.Comment = string.IsNullOrEmpty(comment) ? null : comment;
                         table[SingleStoreAnnotationNames.CharSet] = Settings.CharSet &&
-                                                              charset != defaultCharSet
+                                                                    !string.Equals(charset, defaultCharSet, StringComparison.OrdinalIgnoreCase)
                             ? charset
                             : null;
                         table[RelationalAnnotationNames.Collation] = Settings.Collation &&
-                                                                     collation != defaultCollation
+                                                                     !string.Equals(collation, defaultCollation, StringComparison.OrdinalIgnoreCase)
                             ? collation
                             : null;
 
@@ -240,6 +237,42 @@ AND
                             isValidBySettings)
                         {
                             tables.Add(table);
+                        }
+                    }
+                }
+
+                foreach (var table in tables)
+                {
+                    if (table is DatabaseView)
+                    {
+                        continue;
+                    }
+
+                    if ((!Settings.CharSet || table[SingleStoreAnnotationNames.CharSet] != null) &&
+                        (!Settings.Collation || table[RelationalAnnotationNames.Collation] != null))
+                    {
+                        continue;
+                    }
+
+                    var createTableSql = GetCreateTableQuery(connection, table);
+
+                    if (Settings.CharSet && table[SingleStoreAnnotationNames.CharSet] == null)
+                    {
+                        var parsedCharSet = TryParseTableCharSet(createTableSql);
+                        if (parsedCharSet != null &&
+                            !string.Equals(parsedCharSet, defaultCharSet, StringComparison.OrdinalIgnoreCase))
+                        {
+                            table[SingleStoreAnnotationNames.CharSet] = parsedCharSet;
+                        }
+                    }
+
+                    if (Settings.Collation && table[RelationalAnnotationNames.Collation] == null)
+                    {
+                        var parsedCollation = TryParseTableCollation(createTableSql);
+                        if (parsedCollation != null &&
+                            !string.Equals(parsedCollation, defaultCollation, StringComparison.OrdinalIgnoreCase))
+                        {
+                            table[RelationalAnnotationNames.Collation] = parsedCollation;
                         }
                     }
                 }
@@ -279,11 +312,7 @@ AND
                 {
                     var name = reader.GetValueOrDefault<string>("TABLE_NAME");
 
-                    var sequence = new DatabaseSequence
-                    {
-                        Schema = null,
-                        Name = name,
-                    };
+                    var sequence = new DatabaseSequence { Schema = null, Name = name, };
 
                     sequences.Add(sequence);
                 }
@@ -291,7 +320,8 @@ AND
 
             foreach (var sequence in sequences)
             {
-                command.CommandText = $"SELECT `START_VALUE`, `MINIMUM_VALUE`, `MAXIMUM_VALUE`, `INCREMENT`, `CYCLE_OPTION` FROM `{sequence.Name}`";
+                command.CommandText =
+                    $"SELECT `START_VALUE`, `MINIMUM_VALUE`, `MAXIMUM_VALUE`, `INCREMENT`, `CYCLE_OPTION` FROM `{sequence.Name}`";
 
                 using var reader = command.ExecuteReader();
                 while (reader.Read())
@@ -346,6 +376,7 @@ ORDER BY
             foreach (var table in tables)
             {
                 var columnTypeOverrides = GetColumnTypeOverrides(connection, table);
+                var createTableQuery = GetCreateTableQuery(connection, table);
 
                 using (var command = connection.CreateCommand())
                 {
@@ -361,24 +392,67 @@ ORDER BY
                             var charset = reader.GetValueOrDefault<string>("CHARACTER_SET_NAME");
                             var collation = reader.GetValueOrDefault<string>("COLLATION_NAME");
                             var columnType = reader.GetValueOrDefault<string>("COLUMN_TYPE");
-                            var extra = reader.GetValueOrDefault<string>("EXTRA");
                             var comment = reader.GetValueOrDefault<string>("COLUMN_COMMENT");
+                            var extra = reader.GetValueOrDefault<string>("EXTRA");
 
-                            // Generated colums are not supported on every MySQL/MariaDB version.
+                            // Generated columns are not supported on every MySQL/MariaDB version.
                             var generation = reader.HasName("GENERATION_EXPRESSION")
                                 ? reader.GetValueOrDefault<string>("GENERATION_EXPRESSION").NullIfEmpty()
                                 : null;
 
-                            // MariaDB does not support SRID column restrictions.
                             var srid = reader.HasName("SRS_ID")
                                 ? reader.GetValueOrDefault<uint?>("SRS_ID")
                                 : null;
 
-                            var isStored = generation != null
-                                ? (bool?)extra.Contains("stored generated", StringComparison.OrdinalIgnoreCase)
-                                : null;
+                            var createTableColumnDefinition = TryGetColumnDefinitionFromCreateTable(createTableQuery, name);
 
-                            generation = extra.Contains("computed") ? columnType : null;
+                            var isSingleStoreComputed =
+                                extra.Contains("computed", StringComparison.OrdinalIgnoreCase) ||
+                                extra.Contains("generated", StringComparison.OrdinalIgnoreCase) ||
+                                (!string.IsNullOrEmpty(createTableColumnDefinition) &&
+                                 createTableColumnDefinition.Contains("PERSISTED", StringComparison.OrdinalIgnoreCase));
+
+                            var singleStoreComputedColumnTypeDefinition = columnType;
+
+                            // SingleStore 9.0 may omit CHARACTER_SET_NAME / COLLATION_NAME from INFORMATION_SCHEMA.COLUMNS
+                            // for regular string columns as well. Use SHOW CREATE TABLE only as a fallback source when
+                            // INFORMATION_SCHEMA is missing the value.
+                            if (!string.IsNullOrEmpty(createTableColumnDefinition))
+                            {
+                                var parsedCharSet = TryParseColumnCharacterSet(createTableColumnDefinition);
+                                var parsedCollation = TryParseColumnCollation(createTableColumnDefinition);
+
+                                if (parsedCharSet != null)
+                                {
+                                    charset = parsedCharSet;
+                                }
+
+                                if (parsedCollation != null)
+                                {
+                                    collation = parsedCollation;
+                                }
+
+                                if (isSingleStoreComputed)
+                                {
+                                    singleStoreComputedColumnTypeDefinition = createTableColumnDefinition;
+                                }
+                            }
+
+                            // SingleStore: generation expression may not be exposed via INFORMATION_SCHEMA,
+                            // but SHOW CREATE TABLE / COLUMN_TYPE contains "... AS <expr> PERSISTED ...".
+                            if (generation is null && isSingleStoreComputed)
+                            {
+                                generation = singleStoreComputedColumnTypeDefinition;
+                            }
+
+                            bool? isStored = generation is not null
+                                ? (bool?)(
+                                    // MySQL/MariaDB signal
+                                    extra.Contains("stored generated", StringComparison.OrdinalIgnoreCase)
+                                    // SingleStore signal
+                                    || singleStoreComputedColumnTypeDefinition.Contains("PERSISTED", StringComparison.OrdinalIgnoreCase)
+                                    || isSingleStoreComputed)
+                                : null;
 
                             // Cleanup the column type, because it might contain trailing C style comments on MariaDB, like the following,
                             // if an explicit cast is being done in the SELECT of a VIEW:
@@ -387,17 +461,12 @@ ORDER BY
 
                             // Override this column's type, if we detected earlier that this column should actually by added to the model
                             // with a different type than the one returned by INFORMATION_SCHEMA.COLUMNS.
-                            // This ensures, that e.g. the `json` alias for the `longtext` type for MariaDB databases will be added to the
-                            // model as `json` instead of as `longtext`.
                             columnType = columnTypeOverrides.TryGetValue(name, out var columnTypeOverride)
                                 ? columnTypeOverride((dataType: dataType, charset: charset, collation: collation))
                                 : columnType;
 
                             // MySQL enforces the `utf8mb4` charset and `utf8mb4_bin` collation for `json` columns and MariaDB will use them
                             // automatically for `json` columns as well.
-                            // Both will refuse explicit specifications of other charsets/collations, even though `json` is just an alias
-                            // for `longtext` for MariaDB and setting `longtext` to other charsets/collations works fine.
-                            // We therefore do not scaffold thouse charsets/collations in the first place, so that users don't get confused.
                             if (columnType == "json")
                             {
                                 charset = null;
@@ -406,13 +475,40 @@ ORDER BY
 
                             if (generation is not null)
                             {
-                                // SingleStore column type for computed columns looks like 'as (computed expression) PERSISTED' which might cause some issues with the provider
-                                columnType = dataType;
+                                if (isSingleStoreComputed)
+                                {
+                                    var match = Regex.Match(
+                                        singleStoreComputedColumnTypeDefinition,
+                                        @"\bAS\b\s*(?<expr>.+?)\s+\bPERSISTED\b",
+                                        RegexOptions.IgnoreCase | RegexOptions.Singleline);
 
-                                int parenthesisStart = generation.IndexOf("("),
-                                    parenthesisEnd = generation.IndexOf(")");
+                                    if (match.Success)
+                                    {
+                                        generation = match.Groups["expr"].Value.Trim();
+                                    }
+                                    else
+                                    {
+                                        var pStart = generation.IndexOf("(");
+                                        var pEnd = generation.LastIndexOf(")");
+                                        if (pStart >= 0 && pEnd > pStart)
+                                        {
+                                            generation = generation.Substring(pStart, pEnd - pStart + 1);
+                                        }
+                                    }
 
-                                generation = generation.Substring(parenthesisStart, parenthesisEnd - parenthesisStart + 1);
+                                    // For SingleStore, keep the store type as the base DATA_TYPE
+                                    // (e.g. longtext, int, bigint, ...)
+                                    columnType = dataType;
+                                }
+                                else
+                                {
+                                    var parenthesisStart = generation.IndexOf("(");
+                                    var parenthesisEnd = generation.IndexOf(")");
+                                    if (parenthesisStart >= 0 && parenthesisEnd > parenthesisStart)
+                                    {
+                                        generation = generation.Substring(parenthesisStart, parenthesisEnd - parenthesisStart + 1);
+                                    }
+                                }
 
                                 // MySQL saves the generation expression with enclosing parenthesis, while MariaDB doesn't.
                                 generation = _options.ServerVersion.Supports.ParenthesisEnclosedGeneratedColumnExpressions
@@ -474,25 +570,27 @@ ORDER BY
                                 valueGenerated = null;
                             }
 
+                            var tableCharSet = table[SingleStoreAnnotationNames.CharSet] as string ?? defaultCharSet;
+                            var tableCollation = table[RelationalAnnotationNames.Collation] as string ?? defaultCollation;
+
                             var column = new DatabaseColumn
                             {
                                 Table = table,
                                 Name = name,
                                 StoreType = columnType,
                                 IsNullable = nullable,
-                                DefaultValueSql = CreateDefaultValueString(defaultValue, dataType, isDefaultValueSqlFunction, isDefaultValueExpression),
+                                DefaultValueSql =
+                                    CreateDefaultValueString(defaultValue, dataType, isDefaultValueSqlFunction, isDefaultValueExpression),
                                 ComputedColumnSql = generation,
                                 IsStored = isStored,
                                 ValueGenerated = valueGenerated,
-                                Comment = string.IsNullOrEmpty(comment)
-                                    ? null
-                                    : comment,
+                                Comment = string.IsNullOrEmpty(comment) ? null : comment,
                                 [SingleStoreAnnotationNames.CharSet] = Settings.CharSet &&
-                                                                 charset != (table[SingleStoreAnnotationNames.CharSet] as string ?? defaultCharSet)
+                                                                       !string.Equals(charset, tableCharSet, StringComparison.OrdinalIgnoreCase)
                                     ? charset
                                     : null,
                                 Collation = Settings.Collation &&
-                                            collation != (table[RelationalAnnotationNames.Collation] as string ?? defaultCollation)
+                                            !string.Equals(collation, tableCollation, StringComparison.OrdinalIgnoreCase)
                                     ? collation
                                     : null,
                                 [SingleStoreAnnotationNames.SpatialReferenceSystemId] = srid.HasValue
@@ -541,7 +639,8 @@ ORDER BY
         /// See https://github.com/PomeloFoundation/EntityFrameworkCore.MySql/issues/994#issuecomment-568271740
         /// for tables with differences.
         /// </summary>
-        protected virtual string ConvertDefaultValueFromMariaDbToSingleStore([NotNull] string defaultValue, out bool isDefaultValueExpression)
+        protected virtual string ConvertDefaultValueFromMariaDbToSingleStore([NotNull] string defaultValue,
+            out bool isDefaultValueExpression)
         {
             isDefaultValueExpression = false;
 
@@ -567,6 +666,20 @@ ORDER BY
 
         private static bool IsSimpleNumericDefaultValue(string defaultValue)
             => Regex.IsMatch(defaultValue, @"^\d+(?:\.\d+)?$");
+
+        private static bool IsNumericDataType(string dataType)
+            => dataType != null
+               && (dataType.Equals("tinyint", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("smallint", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("mediumint", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("int", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("integer", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("bigint", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("decimal", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("numeric", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("float", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("double", StringComparison.OrdinalIgnoreCase)
+                   || dataType.Equals("real", StringComparison.OrdinalIgnoreCase));
 
         protected virtual string FilterClrDefaults(string dataTypeName, bool nullable, string defaultValue)
         {
@@ -628,6 +741,12 @@ ORDER BY
                 return defaultValue;
             }
 
+            // Numeric defaults should not be quoted.
+            if (IsSimpleNumericDefaultValue(defaultValue) && IsNumericDataType(dataType))
+            {
+                return defaultValue;
+            }
+
             return "'" + defaultValue.Replace(@"\", @"\\").Replace("'", "''") + "'";
         }
 
@@ -657,11 +776,7 @@ ORDER BY
                         {
                             try
                             {
-                                var key = new DatabasePrimaryKey
-                                {
-                                    Table = table,
-                                    Name = reader.GetValueOrDefault<string>("INDEX_NAME"),
-                                };
+                                var key = new DatabasePrimaryKey { Table = table, Name = reader.GetValueOrDefault<string>("INDEX_NAME"), };
 
                                 foreach (var column in reader.GetValueOrDefault<string>("COLUMNS").Split(','))
                                 {
@@ -673,8 +788,7 @@ ORDER BY
                                     .Select(int.Parse)
                                     .ToArray();
 
-                                if (prefixLengths.Length > 1 ||
-                                    prefixLengths.Length == 1 && prefixLengths[0] > 0)
+                                if (prefixLengths.Any(n => n > 0))
                                 {
                                     key[SingleStoreAnnotationNames.IndexPrefixLength] = prefixLengths;
                                 }
@@ -685,7 +799,8 @@ ORDER BY
                                     firstKeyColumn.ValueGenerated == null &&
                                     (firstKeyColumn.DefaultValueSql == null ||
                                      string.Equals(firstKeyColumn.DefaultValueSql, "uuid()", StringComparison.OrdinalIgnoreCase) ||
-                                     string.Equals(firstKeyColumn.DefaultValueSql, "uuid_to_bin(uuid())", StringComparison.OrdinalIgnoreCase)) &&
+                                     string.Equals(firstKeyColumn.DefaultValueSql, "uuid_to_bin(uuid())",
+                                         StringComparison.OrdinalIgnoreCase)) &&
                                     _typeMappingSource.FindMapping(firstKeyColumn.StoreType) is SingleStoreGuidTypeMapping)
                                 {
                                     firstKeyColumn.ValueGenerated = ValueGenerated.OnAdd;
@@ -714,6 +829,7 @@ ORDER BY
      WHERE `TABLE_SCHEMA` = '{0}'
      AND `TABLE_NAME` = '{1}'
      AND `INDEX_NAME` <> 'PRIMARY'
+     AND `INDEX_TYPE` <> 'SHARD'
      GROUP BY `INDEX_NAME`, `NON_UNIQUE`, `INDEX_TYPE`;";
 
         private const string GetCreateTableStatementQuery = @"SHOW CREATE TABLE `{0}`.`{1}`;";
@@ -735,20 +851,16 @@ ORDER BY
                         {
                             try
                             {
-                                var columns = reader.GetValueOrDefault<string>("COLUMNS").Split(',').Select(s => GetColumn(table, s)).ToList();
+                                var columns = reader.GetValueOrDefault<string>("COLUMNS").Split(',').Select(s => GetColumn(table, s))
+                                    .ToList();
 
                                 // Reuse an existing index over the same columns, to workaround an EF Core
                                 // bug (EF#11846 and #1189).
                                 // The columns could be in a different order.
-                                var index = table.Indexes.FirstOrDefault(
-                                                i => i.Columns
-                                                    .OrderBy(c => c.Name)
-                                                    .SequenceEqual(columns.OrderBy(c => c.Name))) ??
-                                            new DatabaseIndex
-                                            {
-                                                Table = table,
-                                                Name = reader.GetValueOrDefault<string>("INDEX_NAME"),
-                                            };
+                                var index = table.Indexes.FirstOrDefault(i => i.Columns
+                                                .OrderBy(c => c.Name)
+                                                .SequenceEqual(columns.OrderBy(c => c.Name))) ??
+                                            new DatabaseIndex { Table = table, Name = reader.GetValueOrDefault<string>("INDEX_NAME"), };
 
                                 index.IsUnique |= !reader.GetValueOrDefault<bool>("NON_UNIQUE");
 
@@ -776,10 +888,9 @@ ORDER BY
                                         // existing prefix lengths from a previous index with the same set of columns.
                                         var newPrefixLengths = index.Columns
                                             .Select(indexColumn => columns.IndexOf(indexColumn))
-                                            .Select(
-                                                i => i < prefixLengths.Length
-                                                    ? prefixLengths[i]
-                                                    : 0)
+                                            .Select(i => i < prefixLengths.Length
+                                                ? prefixLengths[i]
+                                                : 0)
                                             .Zip(
                                                 existingPrefixLengths, (l, r) => l == 0 || r == 0
                                                     ? 0
@@ -838,7 +949,7 @@ ORDER BY
                 //
 
                 var fullTextIndexes = table.Indexes
-                    .Where(i => ((bool?) i[SingleStoreAnnotationNames.FullTextIndex]).GetValueOrDefault())
+                    .Where(i => ((bool?)i[SingleStoreAnnotationNames.FullTextIndex]).GetValueOrDefault())
                     .ToList();
 
                 if (fullTextIndexes.Any())
@@ -917,11 +1028,19 @@ ORDER BY
                                 // different casing than the actual table name. (#1017)
                                 // In the unlikely event that there are multiple tables with the same spelling, differing only in casing,
                                 // we can't be certain which is the right match, so rather fail to be safe.
-                                referencedTable = tables.SingleOrDefault(t => string.Equals(t.Name, referencedTableName, StringComparison.OrdinalIgnoreCase));
+                                referencedTable = tables.SingleOrDefault(t =>
+                                    string.Equals(t.Name, referencedTableName, StringComparison.OrdinalIgnoreCase));
                             }
+
                             if (referencedTable != null)
                             {
-                                var fkInfo = new DatabaseForeignKey {Name = reader.GetString(0), OnDelete = ConvertToReferentialAction(reader.GetString(4)), Table = table, PrincipalTable = referencedTable};
+                                var fkInfo = new DatabaseForeignKey
+                                {
+                                    Name = reader.GetString(0),
+                                    OnDelete = ConvertToReferentialAction(reader.GetString(4)),
+                                    Table = table,
+                                    PrincipalTable = referencedTable
+                                };
                                 foreach (var pair in reader.GetString(3).Split(','))
                                 {
                                     fkInfo.Columns.Add(table.Columns.Single(y =>
@@ -1005,5 +1124,111 @@ WHERE `t`.`TABLE_SCHEMA` = '{0}' AND `t`.`CONSTRAINT_SCHEMA` = `t`.`TABLE_SCHEMA
         private DatabaseColumn FindColumn(DatabaseTable table, string columnName)
             => table.Columns.SingleOrDefault(c => string.Equals(c.Name, columnName, StringComparison.Ordinal)) ??
                table.Columns.SingleOrDefault(c => string.Equals(c.Name, columnName, StringComparison.OrdinalIgnoreCase));
+
+        private static string TryGetColumnDefinitionFromCreateTable(string createTableQuery, string columnName)
+        {
+            if (string.IsNullOrEmpty(createTableQuery) || string.IsNullOrEmpty(columnName))
+            {
+                return null;
+            }
+
+            var escapedColumnName = Regex.Escape(columnName);
+
+            var match = Regex.Match(
+                createTableQuery,
+                $@"^\s*`{escapedColumnName}`\s+(?<definition>.+?)(?:,)?\s*$",
+                RegexOptions.Multiline);
+
+            return match.Success
+                ? match.Groups["definition"].Value.Trim()
+                : null;
+        }
+
+        private static string TryParseColumnCharacterSet(string columnTypeDefinition)
+        {
+            if (string.IsNullOrEmpty(columnTypeDefinition))
+            {
+                return null;
+            }
+
+            var match = Regex.Match(
+                columnTypeDefinition,
+                @"\bCHARACTER\s+SET(?:\s*=\s*|\s+)`?(?<charset>[A-Za-z0-9_]+)`?\b",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            return match.Success
+                ? match.Groups["charset"].Value
+                : null;
+        }
+
+        private static string TryParseColumnCollation(string columnTypeDefinition)
+        {
+            if (string.IsNullOrEmpty(columnTypeDefinition))
+            {
+                return null;
+            }
+
+            var match = Regex.Match(
+                columnTypeDefinition,
+                @"\bCOLLATE(?:\s*=\s*|\s+)`?(?<collation>[A-Za-z0-9_]+)`?\b",
+                RegexOptions.IgnoreCase | RegexOptions.Singleline);
+
+            return match.Success
+                ? match.Groups["collation"].Value
+                : null;
+        }
+
+        private static string TryGetCreateTableOptions(string createTableQuery)
+        {
+            if (string.IsNullOrEmpty(createTableQuery))
+            {
+                return null;
+            }
+
+            // Take everything after the final closing parenthesis of the CREATE TABLE body.
+            var lastClosingParen = createTableQuery.LastIndexOf(')');
+            if (lastClosingParen < 0 || lastClosingParen >= createTableQuery.Length - 1)
+            {
+                return null;
+            }
+
+            return createTableQuery[(lastClosingParen + 1)..].Trim();
+        }
+
+        private static string TryParseTableCharSet(string createTableQuery)
+        {
+            var options = TryGetCreateTableOptions(createTableQuery);
+            if (string.IsNullOrEmpty(options))
+            {
+                return null;
+            }
+
+            var match = Regex.Match(
+                options,
+                @"\b(?:CHARACTER\s+SET|CHARSET)(?:\s*=\s*|\s+)`?(?<value>[A-Za-z0-9_]+)`?\b",
+                RegexOptions.IgnoreCase);
+
+            return match.Success
+                ? match.Groups["value"].Value
+                : null;
+        }
+
+        private static string TryParseTableCollation(string createTableQuery)
+        {
+            var options = TryGetCreateTableOptions(createTableQuery);
+            if (string.IsNullOrEmpty(options))
+            {
+                return null;
+            }
+
+            var match = Regex.Match(
+                options,
+                @"\bCOLLATE(?:\s*=\s*|\s+)`?(?<value>[A-Za-z0-9_]+)`?\b",
+                RegexOptions.IgnoreCase);
+
+            return match.Success
+                ? match.Groups["value"].Value
+                : null;
+        }
     }
 }

@@ -4,14 +4,19 @@ using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore;
+using SingleStoreConnector;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
-public class NonSharedModelBulkUpdatesSingleStoreTest : NonSharedModelBulkUpdatesTestBase
+public class NonSharedModelBulkUpdatesSingleStoreTest : NonSharedModelBulkUpdatesRelationalTestBase
 {
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
+
+    [ConditionalFact]
+    public virtual void Check_all_tests_overridden()
+        => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
     public override async Task Delete_aggregate_root_when_eager_loaded_owned_collection(bool async)
     {
@@ -97,7 +102,7 @@ SET `o`.`Title` = CONCAT(COALESCE(`o`.`Title`, ''), '_Suffix')
 """
 UPDATE `Owner` AS `o`
 SET `o`.`OwnedReference_Number` = CHAR_LENGTH(`o`.`Title`),
-    `o`.`Title` = CAST(`o`.`OwnedReference_Number` AS char)
+    `o`.`Title` = COALESCE(CAST(`o`.`OwnedReference_Number` AS char), '')
 """);
     }
 
@@ -123,10 +128,10 @@ SET `o`.`OwnedReference_Number` = CHAR_LENGTH(`o`.`Title`),
                 mb.Entity<Post>(b =>
                     b.Property(p => p.Id).HasColumnType("bigint"));
             },
-            seed: context =>
+            seed: async context =>
             {
                 context.Set<Blog>().Add(new Blog { Title = "SomeBlog" });
-                context.SaveChanges();
+                await context.SaveChangesAsync();
             });
 
         await AssertUpdate(
@@ -143,6 +148,7 @@ SET `b`.`CreationTimestamp` = '2020-01-01 00:00:00'
 """);
     }
 
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
     public override async Task Update_non_main_table_in_entity_with_entity_splitting(bool async)
     {
         var contextFactory = await InitializeAsync<DbContext>(
@@ -165,10 +171,10 @@ SET `b`.`CreationTimestamp` = '2020-01-01 00:00:00'
                 mb.Entity<Post>(b =>
                     b.Property(p => p.Id).HasColumnType("bigint"));
             },
-            seed: context =>
+            seed: async context =>
             {
                 context.Set<Blog>().Add(new Blog { Title = "SomeBlog" });
-                context.SaveChanges();
+                await context.SaveChangesAsync();
             });
 
         await AssertUpdate(
@@ -182,7 +188,8 @@ SET `b`.`CreationTimestamp` = '2020-01-01 00:00:00'
 
         AssertSql(
 """
-UPDATE `BlogsPart1` AS `b0`
+UPDATE `Blogs` AS `b`
+INNER JOIN `BlogsPart1` AS `b0` ON `b`.`Id` = `b0`.`Id`
 SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
     `b0`.`Title` = CAST(`b0`.`Rating` AS char)
 """);
@@ -192,6 +199,50 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
     public override async Task Update_with_alias_uniquification_in_setter_subquery(bool async)
     {
         await base.Update_with_alias_uniquification_in_setter_subquery(async);
+    }
+
+    public override async Task Update_non_owned_property_on_entity_with_owned_in_join(bool async)
+    {
+        await base.Update_non_owned_property_on_entity_with_owned_in_join(async);
+
+        AssertSql(
+            """
+            UPDATE `Owner` AS `o`
+            INNER JOIN `Owner` AS `o0` ON `o`.`Id` = `o0`.`Id`
+            SET `o`.`Title` = 'NewValue'
+            """);
+    }
+
+    [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
+    public override async Task Replace_ColumnExpression_in_column_setter(bool async)
+    {
+        await base.Replace_ColumnExpression_in_column_setter(async);
+
+        AssertSql(
+            """
+            UPDATE `Owner` AS `o`
+            INNER JOIN `OwnedCollection` AS `o0` ON `o`.`Id` = `o0`.`OwnerId`
+            SET `o0`.`Value` = 'SomeValue'
+            """);
+    }
+
+    public override async Task Delete_with_owned_collection_and_non_natively_translatable_query(bool async)
+    {
+        await base.Delete_with_owned_collection_and_non_natively_translatable_query(async);
+
+        AssertSql(
+            """
+        @__p_0='1'
+
+        DELETE `o`
+        FROM `Owner` AS `o`
+        WHERE `o`.`Id` IN (
+            SELECT `o0`.`Id`
+            FROM `Owner` AS `o0`
+            ORDER BY `o0`.`Title`
+            LIMIT 18446744073709551610 OFFSET @__p_0
+        )
+        """);
     }
 
     private void AssertSql(params string[] expected)

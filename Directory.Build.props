@@ -18,6 +18,7 @@
     <Copyright>Copyright 2017-2022 © Pomelo Foundation. Copyright $([System.DateTime]::Now.Year) © SingleStore Inc.</Copyright>
     <PackageIcon>singlestore_logo.png</PackageIcon>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <LangVersion>latest</LangVersion>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -32,9 +33,9 @@
 
   <PropertyGroup>
     <SingleStoreTargetFramework>net8.0</SingleStoreTargetFramework>
-    <SingleStoreTestTargetFramework>net8.0</SingleStoreTestTargetFramework>
+    <SingleStoreTestTargetFramework>net9.0</SingleStoreTestTargetFramework>
     <EfCoreTargetFramework>net8.0</EfCoreTargetFramework>
-    <EfCoreTestTargetFramework>net8.0</EfCoreTestTargetFramework>
+    <EfCoreTestTargetFramework>net9.0</EfCoreTestTargetFramework>
     <SingleStoreConnectorTargetFramework>net8.0</SingleStoreConnectorTargetFramework>
   </PropertyGroup>
 

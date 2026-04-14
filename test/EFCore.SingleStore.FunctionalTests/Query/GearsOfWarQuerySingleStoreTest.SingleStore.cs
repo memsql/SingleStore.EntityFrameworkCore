@@ -208,7 +208,7 @@ WHERE `w`.`IsAutomatic` = TRUE"), keys); // Breaking change in 5.0 due to bool e
 
             AssertSql(
                 """
-                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
+                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
                 FROM `Missions` AS `m`
                 WHERE `m`.`Timeline` = `m`.`Timeline`
                 """);
@@ -225,7 +225,7 @@ WHERE `w`.`IsAutomatic` = TRUE"), keys); // Breaking change in 5.0 due to bool e
 
             AssertSql(
                 """
-                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
+                SELECT `m`.`Id`, `m`.`CodeName`, `m`.`Date`, `m`.`Difficulty`, `m`.`Duration`, `m`.`Rating`, `m`.`Time`, `m`.`Timeline`
                 FROM `Missions` AS `m`
                 WHERE `m`.`Timeline` = `m`.`Timeline`
                 """);

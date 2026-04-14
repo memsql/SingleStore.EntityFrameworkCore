@@ -412,7 +412,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             }
 
             throw new InvalidOperationException(
-                RelationalStrings.ExecuteOperationWithUnsupportedOperatorInSqlGeneration(nameof(RelationalQueryableExtensions.ExecuteDelete)));
+                RelationalStrings.ExecuteOperationWithUnsupportedOperatorInSqlGeneration(nameof(EntityFrameworkQueryableExtensions.ExecuteDelete)));
         }
 
         protected override Expression VisitUpdate(UpdateExpression updateExpression)
@@ -480,7 +480,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             }
 
             throw new InvalidOperationException(
-                RelationalStrings.ExecuteOperationWithUnsupportedOperatorInSqlGeneration(nameof(RelationalQueryableExtensions.ExecuteUpdate)));
+                RelationalStrings.ExecuteOperationWithUnsupportedOperatorInSqlGeneration(nameof(EntityFrameworkQueryableExtensions.ExecuteUpdate)));
         }
 
                 protected override Expression VisitJsonScalar(JsonScalarExpression jsonScalarExpression)
@@ -548,6 +548,11 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
 
         protected override void GenerateValues(ValuesExpression valuesExpression)
         {
+            if (valuesExpression.RowValues is null)
+            {
+                throw new UnreachableException();
+            }
+
             if (_options.ServerVersion.Supports.Values ||
                 _options.ServerVersion.Supports.ValuesWithRows)
             {
@@ -718,33 +723,24 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
                 !castMapping.Equals(sqlUnaryExpression.Operand.TypeMapping.StoreType, StringComparison.OrdinalIgnoreCase) &&
                 !sameInnerCastStoreType)
             {
-                var useDecimalToDoubleWorkaround = false;
-
-                if (castMapping.StartsWith("double") &&
-                    !_options.ServerVersion.Supports.DoubleCast)
-                {
-                    useDecimalToDoubleWorkaround = true;
-                    castMapping = "decimal(65,30)";
-                }
-
-                if (useDecimalToDoubleWorkaround)
+                // SingleStore does not support CAST(.. AS double) (CAST/CONVERT target types are limited),
+                // but it does support the cast operator ":>" for DOUBLE/FLOAT.
+                if (castMapping.StartsWith("double", StringComparison.OrdinalIgnoreCase) &&
+                                         !_options.ServerVersion.Supports.DoubleCast)
                 {
                     Sql.Append("(");
+                    Visit(sqlUnaryExpression.Operand);
+                    Sql.Append(" :> ");
+                    Sql.Append("double");
+                    Sql.Append(")");
                 }
-
-                Sql.Append("CAST(");
-                Visit(sqlUnaryExpression.Operand);
-                Sql.Append(" AS ");
-                Sql.Append(castMapping);
-                Sql.Append(")");
-
-                // FLOAT and DOUBLE are supported by CAST() as of MySQL 8.0.17.
-                // For server versions before that, a workaround is applied, that casts to a DECIMAL,
-                // that is then added to 0e0, which results in a DOUBLE.
-                // REF: https://dev.mysql.com/doc/refman/8.0/en/number-literals.html
-                if (useDecimalToDoubleWorkaround)
+                else
                 {
-                    Sql.Append(" + 0e0)");
+                    Sql.Append("CAST(");
+                    Visit(sqlUnaryExpression.Operand);
+                    Sql.Append(" AS ");
+                    Sql.Append(castMapping);
+                    Sql.Append(")");
                 }
             }
             else
@@ -824,11 +820,29 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
         {
             Check.NotNull(mySqlCollateExpression, nameof(mySqlCollateExpression));
 
-            Sql.Append("CONVERT(");
+            // SingleStore doesn't support CONVERT(... USING charset) syntax
+            // Instead, we'll use the cast operator `:>` with collation
 
+            Sql.Append("(");
             Visit(mySqlCollateExpression.ValueExpression);
+            Sql.Append(" :> ");
 
-            Sql.Append($" USING {mySqlCollateExpression.Charset}) COLLATE {mySqlCollateExpression.Collation}");
+            var typeMapping = mySqlCollateExpression.ValueExpression.TypeMapping ?? mySqlCollateExpression.TypeMapping;
+            var storeType = typeMapping?.StoreType?.ToLower();
+            var varcharType = "VARCHAR(255)"; // Default
+
+            if (!string.IsNullOrEmpty(storeType) &&
+                (storeType.StartsWith("varchar") || storeType.StartsWith("char")))
+            {
+                var sizeStart = storeType.IndexOf('(');
+                if (sizeStart >= 0)
+                {
+                    varcharType = $"VARCHAR{storeType.Substring(sizeStart)}";
+                }
+            }
+
+            Sql.Append(varcharType);
+            Sql.Append($" COLLATE {mySqlCollateExpression.Collation})");
 
             return mySqlCollateExpression;
         }

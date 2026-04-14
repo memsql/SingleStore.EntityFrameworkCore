@@ -26,8 +26,10 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
             => facade.UseTransaction(transaction.GetDbTransaction());
 
-        public class ManyToManyTrackingSingleStoreFixtureBase : ManyToManyTrackingRelationalFixture
+        public class ManyToManyTrackingSingleStoreFixtureBase : ManyToManyTrackingRelationalFixture, ITestSqlLoggerFactory
         {
+            public TestSqlLoggerFactory TestSqlLoggerFactory => (TestSqlLoggerFactory)ListLoggerFactory;
+
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
 
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)

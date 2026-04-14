@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.TestModels.ConferencePlanner;
 using Microsoft.Extensions.DependencyInjection;
+using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Infrastructure.Internal;
 using EntityFrameworkCore.SingleStore.Internal;
@@ -216,28 +218,113 @@ namespace EntityFrameworkCore.SingleStore
             Assert.Equal("singlestore", mySqlOptions.ServerVersion.TypeIdentifier);
         }
 
-        [ConditionalFact(Skip="ServerVersion parameter isn't needed anymore to call UseSingleStore()")]
-        public void UseSingleStore_with_ServerVersion_AutoDetect()
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UseSingleStore_with_ServerVersion_AutoDetect_connection_string(bool async)
         {
             var builder = new DbContextOptionsBuilder();
-            var serverVersion = ServerVersion.AutoDetect(AppConfig.ConnectionString);
+            var serverVersion = async
+                ? await ServerVersion.AutoDetectAsync(AppConfig.ConnectionString)
+                : ServerVersion.AutoDetect(AppConfig.ConnectionString);
 
-            builder.UseSingleStore(
-                "Server=foo");
+            builder.UseSingleStore("Server=foo");
 
             var mySqlOptions = new SingleStoreOptions();
             mySqlOptions.Initialize(builder.Options);
 
-            Assert.Equal(serverVersion.Version, mySqlOptions.ServerVersion.Version);
-            Assert.Equal(serverVersion.Type, mySqlOptions.ServerVersion.Type);
-            Assert.Equal(serverVersion.TypeIdentifier, mySqlOptions.ServerVersion.TypeIdentifier);
+            // Use the autodetected value so the call is still validated
+            Assert.True(serverVersion.Version.Major > 0);
+
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.Version, mySqlOptions.ServerVersion.Version);
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.Type, mySqlOptions.ServerVersion.Type);
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.TypeIdentifier, mySqlOptions.ServerVersion.TypeIdentifier);
+        }
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UseSingleStore_with_ServerVersion_AutoDetect_connection_closed(bool async)
+        {
+            var builder = new DbContextOptionsBuilder();
+            await using var connection = new SingleStoreConnection(AppConfig.ConnectionString);
+            var serverVersion = async
+                ? await ServerVersion.AutoDetectAsync(connection)
+                : ServerVersion.AutoDetect(connection);
+
+            builder.UseSingleStore("Server=foo");
+
+            var mySqlOptions = new SingleStoreOptions();
+            mySqlOptions.Initialize(builder.Options);
+
+            Assert.True(serverVersion.Version.Major > 0);
+
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.Version, mySqlOptions.ServerVersion.Version);
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.Type, mySqlOptions.ServerVersion.Type);
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.TypeIdentifier, mySqlOptions.ServerVersion.TypeIdentifier);
+        }
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UseSingleStore_with_ServerVersion_AutoDetect_connection_opened(bool async)
+        {
+            var builder = new DbContextOptionsBuilder();
+
+            await using var connection = new SingleStoreConnection(AppConfig.ConnectionString);
+            if (async)
+            {
+                await connection.OpenAsync();
+            }
+            else
+            {
+                connection.Open();
+            }
+
+            var serverVersion = async
+                ? await ServerVersion.AutoDetectAsync(connection)
+                : ServerVersion.AutoDetect(connection);
+
+            builder.UseSingleStore("Server=foo");
+
+            var mySqlOptions = new SingleStoreOptions();
+            mySqlOptions.Initialize(builder.Options);
+
+            Assert.True(serverVersion.Version.Major > 0);
+
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.Version, mySqlOptions.ServerVersion.Version);
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.Type, mySqlOptions.ServerVersion.Type);
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.TypeIdentifier, mySqlOptions.ServerVersion.TypeIdentifier);
+        }
+
+        [ConditionalTheory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task UseSingleStore_with_ServerVersion_AutoDetect_datasource(bool async)
+        {
+            var builder = new DbContextOptionsBuilder();
+            await using var dataSource = new SingleStoreDataSource(AppConfig.ConnectionString);
+            var serverVersion = async
+                ? await ServerVersion.AutoDetectAsync(dataSource)
+                : ServerVersion.AutoDetect(dataSource);
+
+            builder.UseSingleStore("Server=foo");
+
+            var mySqlOptions = new SingleStoreOptions();
+            mySqlOptions.Initialize(builder.Options);
+
+            Assert.True(serverVersion.Version.Major > 0);
+
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.Version, mySqlOptions.ServerVersion.Version);
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.Type, mySqlOptions.ServerVersion.Type);
+            Assert.Equal(SingleStoreServerVersion.LatestSupportedServerVersion.TypeIdentifier, mySqlOptions.ServerVersion.TypeIdentifier);
         }
 
         [ConditionalFact(Skip="Connection string/connection is a mandatory parameter for UseSingleStore() call")]
         public void UseSingleStore_without_connection_string()
         {
             var builder = new DbContextOptionsBuilder();
-            var serverVersion = ServerVersion.AutoDetect(AppConfig.ConnectionString);
+            var serverVersion = SingleStoreServerVersion.LatestSupportedServerVersion;
 
             builder.UseSingleStore();
 

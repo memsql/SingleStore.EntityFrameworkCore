@@ -1,6 +1,8 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Threading.Tasks;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore.Query;
+using Microsoft.EntityFrameworkCore.TestModels.FunkyDataModel;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -175,21 +177,17 @@ FROM `FunkyCustomers` AS `f`
 """);
     }
 
-    public override async Task String_Contains_and_StartsWith_with_same_parameter(bool async)
+    public override Task String_Contains_and_StartsWith_with_same_parameter(bool async)
     {
-        await base.String_Contains_and_StartsWith_with_same_parameter(async);
+        var s = "B";
 
-        AssertSql(
-            """
-            @__s_0_contains='%B%' (Size = 4000)
-            @__s_0_startswith='B%' (Size = 4000)
-
-            SELECT `f`.`Id`, `f`.`FirstName`, `f`.`LastName`, `f`.`NullableBool`
-            FROM `FunkyCustomers` AS `f`
-            WHERE (`f`.`FirstName` LIKE @__s_0_contains) OR (`f`.`LastName` LIKE @__s_0_startswith)
-            """);
+        return AssertQuery(
+            async,
+            ss => ss.Set<FunkyCustomer>().Where(
+                c => c.FirstName.Contains(s) || c.LastName.StartsWith(s)),
+            ss => ss.Set<FunkyCustomer>().Where(
+                c => c.FirstName.MaybeScalar(f => f.Contains(s)) == true || c.LastName.MaybeScalar(l => l.StartsWith(s)) == true));
     }
-
 
     protected override void ClearLog()
         => Fixture.TestSqlLoggerFactory.Clear();
@@ -197,7 +195,7 @@ FROM `FunkyCustomers` AS `f`
     private void AssertSql(params string[] expected)
         => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 
-    public class FunkyDataQuerySingleStoreFixture : FunkyDataQueryFixtureBase
+    public class FunkyDataQuerySingleStoreFixture : FunkyDataQueryFixtureBase, ITestSqlLoggerFactory
     {
         public TestSqlLoggerFactory TestSqlLoggerFactory
             => (TestSqlLoggerFactory)ServiceProvider.GetRequiredService<ILoggerFactory>();

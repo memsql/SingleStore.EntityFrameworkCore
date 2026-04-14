@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq.Expressions;
+using System.Reflection;
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -16,6 +17,8 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
     /// </summary>
     public class SingleStoreColumnAliasReferenceExpression : SqlExpression, IEquatable<SingleStoreColumnAliasReferenceExpression>
     {
+        private static ConstructorInfo _quotingConstructor;
+
         [NotNull]
         public virtual string Alias { get; }
 
@@ -35,6 +38,15 @@ namespace EntityFrameworkCore.SingleStore.Query.Expressions.Internal
 
         protected override Expression VisitChildren(ExpressionVisitor visitor)
             => this;
+
+        public override Expression Quote()
+            => New(
+                _quotingConstructor ??= typeof(SingleStoreColumnAliasReferenceExpression).GetConstructor(
+                    [typeof(string), typeof(SqlExpression), typeof(Type), typeof(RelationalTypeMapping)])!,
+                Constant(Alias),
+                Expression,
+                Constant(Type),
+                RelationalExpressionQuotingUtilities.QuoteTypeMapping(TypeMapping));
 
         public virtual SingleStoreColumnAliasReferenceExpression Update(
             [NotNull] string alias,

@@ -25,6 +25,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Xunit
             // Prime the cache with our own discoverers, so they get used over the original ones from EF Core.
             DiscovererTypeCache.Add(typeof(ConditionalFactAttribute), typeof(SingleStoreConditionalFactDiscoverer));
             DiscovererTypeCache.Add(typeof(ConditionalTheoryAttribute), typeof(SingleStoreConditionalTheoryDiscoverer));
+
+            DiscovererTypeCache.Add(typeof(SkippableFactAttribute), typeof(SkippableFactDiscoverer));
+            DiscovererTypeCache.Add(typeof(SkippableTheoryAttribute), typeof(SkippableTheoryDiscoverer));
         }
 
         protected override bool IsValidTestClass(ITypeInfo type)

@@ -322,8 +322,57 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             CreateTableCheckConstraints(operation, model, builder);
             CreateTableForeignKeys(operation, model, builder);*/
         }
+
         protected override void Generate(AlterTableOperation operation, IModel model, MigrationCommandListBuilder builder)
         {
+            var oldCharSet = operation.OldTable[SingleStoreAnnotationNames.CharSet] as string;
+            var newCharSet = operation[SingleStoreAnnotationNames.CharSet] as string;
+
+            var oldCollation = operation.OldTable[RelationalAnnotationNames.Collation] as string;
+            var newCollation = operation[RelationalAnnotationNames.Collation] as string;
+
+            if (newCollation != oldCollation && newCollation != null)
+            {
+                // A new collation has been set. It takes precedence over any defined charset.
+                // if charset also changed, emit it in the same ALTER TABLE.
+                builder.Append("ALTER TABLE ").Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema));
+
+                if (newCharSet != oldCharSet && newCharSet != null)
+                {
+                    builder.Append(" CHARACTER SET ").Append(newCharSet).Append(", ");
+                }
+                else
+                {
+                    builder.Append(" ");
+                }
+
+                builder
+                    .Append("COLLATE ")
+                    .Append(newCollation)
+                    .AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+
+                EndStatement(builder);
+            }
+            else if (newCharSet != oldCharSet ||
+                     newCollation != oldCollation && newCollation == null)
+            {
+                if (newCharSet != null)
+                {
+                    builder
+                        .Append("ALTER TABLE ")
+                        .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name, operation.Schema))
+                        .Append(" CHARACTER SET ")
+                        .Append(newCharSet)
+                        .AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+
+                    EndStatement(builder);
+                }
+                else
+                {
+                    // Do not emit a table-level "reset to database defaults" statement here.
+                }
+            }
+
             if (operation.Comment != operation.OldTable.Comment)
             {
                 builder.Append("ALTER TABLE ")
@@ -375,6 +424,79 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             Check.NotNull(operation, nameof(operation));
             Check.NotNull(builder, nameof(builder));
 
+            // SingleStore does not support MODIFY COLUMN for computed columns.
+            // Computed columns must be dropped and re-added.
+            if (operation.ComputedColumnSql != null || operation.OldColumn?.ComputedColumnSql != null)
+            {
+                // If the target is no longer computed, we can’t "modify away" the computed definition either.
+                if (operation.ComputedColumnSql == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Altering computed column '{operation.Table}.{operation.Name}' to a non-computed column isn't supported by SingleStore. " +
+                        "Drop and re-add the column explicitly.");
+                }
+
+                var dependentIndexes = model?
+                    .GetRelationalModel()
+                    .FindTable(operation.Table, operation.Schema)?
+                    .Indexes
+                    .Where(i => i.Name != null &&
+                                i.Columns.Any(c => string.Equals(c.Name, operation.Name, StringComparison.Ordinal)))
+                    .ToList();
+
+                if (dependentIndexes != null)
+                {
+                    foreach (var index in dependentIndexes)
+                    {
+                        Generate(
+                            new DropIndexOperation
+                            {
+                                Name = index.Name,
+                                Schema = operation.Schema,
+                                Table = operation.Table,
+                            },
+                            model,
+                            builder);
+                    }
+                }
+
+                builder
+                    .Append("ALTER TABLE ")
+                    .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
+                    .Append(" DROP COLUMN ")
+                    .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Name))
+                    .AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+
+                builder.EndCommand();
+
+                builder
+                    .Append("ALTER TABLE ")
+                    .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
+                    .Append(" ADD ");
+
+                ColumnDefinition(
+                    operation.Schema,
+                    operation.Table,
+                    operation.Name,
+                    operation,
+                    model,
+                    builder);
+
+                builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
+                builder.EndCommand();
+
+                if (dependentIndexes != null)
+                {
+                    foreach (var index in dependentIndexes)
+                    {
+                        var createIndexOperation = CreateIndexOperationRuntimeSafe(index);
+                        Generate(createIndexOperation, model, builder);
+                    }
+                }
+
+                return;
+            }
+
             builder
                 .Append("ALTER TABLE ")
                 .Append(Dependencies.SqlGenerationHelper.DelimitIdentifier(operation.Table, operation.Schema))
@@ -390,6 +512,64 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
             builder.AppendLine(Dependencies.SqlGenerationHelper.StatementTerminator);
             builder.EndCommand();
+        }
+
+        private static T TryGetRuntimeSafe<T>(Func<T> getter, T fallback = default)
+        {
+            try
+            {
+                return getter();
+            }
+            catch (InvalidOperationException)
+            {
+                return fallback;
+            }
+        }
+
+        private static CreateIndexOperation CreateIndexOperationRuntimeSafe(ITableIndex index)
+        {
+            var operation = new CreateIndexOperation
+            {
+                Name = index.Name,
+                Table = index.Table.Name,
+                Schema = index.Table.Schema,
+                Columns = index.Columns.Select(c => c.Name).ToArray(),
+                IsUnique = index.IsUnique,
+            };
+
+            var isDescending = TryGetRuntimeSafe(() => index.IsDescending);
+            if (isDescending != null)
+            {
+                operation.IsDescending = isDescending.ToArray();
+            }
+
+            var filter = TryGetRuntimeSafe(() => index.Filter);
+            if (filter != null)
+            {
+                operation.Filter = filter;
+            }
+
+            if (index.FindAnnotation(SingleStoreAnnotationNames.IndexPrefixLength)?.Value is int[] prefixLengths)
+            {
+                operation[SingleStoreAnnotationNames.IndexPrefixLength] = prefixLengths;
+            }
+
+            if (index.FindAnnotation(SingleStoreAnnotationNames.SpatialIndex)?.Value is bool spatial)
+            {
+                operation[SingleStoreAnnotationNames.SpatialIndex] = spatial;
+            }
+
+            if (index.FindAnnotation(SingleStoreAnnotationNames.FullTextIndex)?.Value is bool fullText)
+            {
+                operation[SingleStoreAnnotationNames.FullTextIndex] = fullText;
+            }
+
+            if (index.FindAnnotation(SingleStoreAnnotationNames.FullTextParser)?.Value is string parser)
+            {
+                operation[SingleStoreAnnotationNames.FullTextParser] = parser;
+            }
+
+            return operation;
         }
 
         /// <summary>
@@ -941,7 +1121,8 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
             if (operation.ComputedColumnSql == null)
             {
-                ColumnDefinitionWithCharSet(schema, table, name, operation, model, builder);
+                // AUTO_INCREMENT columns don't support DEFAULT values.
+                ColumnDefinitionWithCharSet(schema, table, name, operation, model, builder, withDefaultValue: !autoIncrement);
 
                 GenerateComment(operation.Comment, builder);
 
@@ -1033,7 +1214,14 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 .Append(SingleStoreStringTypeMapping.EscapeSqlLiteralWithLineBreaks(comment, !_options.NoBackslashEscapes, false));
         }
 
-        private void ColumnDefinitionWithCharSet(string schema, string table, string name, ColumnOperation operation, IModel model, MigrationCommandListBuilder builder)
+        private void ColumnDefinitionWithCharSet(
+            string schema,
+            string table,
+            string name,
+            ColumnOperation operation,
+            IModel model,
+            MigrationCommandListBuilder builder,
+            bool withDefaultValue)
         {
             if (operation.ComputedColumnSql != null)
             {
@@ -1050,7 +1238,10 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
             builder.Append(operation.IsNullable ? " NULL" : " NOT NULL");
 
-            DefaultValue(operation.DefaultValue, operation.DefaultValueSql, columnType, builder);
+            if (withDefaultValue)
+            {
+                DefaultValue(operation.DefaultValue, operation.DefaultValueSql, columnType, builder);
+            }
 
             var srid = operation[SingleStoreAnnotationNames.SpatialReferenceSystemId];
             if (srid is int &&
@@ -1109,10 +1300,10 @@ namespace EntityFrameworkCore.SingleStore.Migrations
         }
 
         protected override void DefaultValue(
-            object defaultValue,
-            string defaultValueSql,
-            string columnType,
-            MigrationCommandListBuilder builder)
+        object defaultValue,
+        string defaultValueSql,
+        string columnType,
+        MigrationCommandListBuilder builder)
         {
             Check.NotNull(builder, nameof(builder));
 
@@ -1126,14 +1317,18 @@ namespace EntityFrameworkCore.SingleStore.Migrations
                 }
                 else
                 {
-                    Dependencies.MigrationsLogger.DefaultValueNotSupportedWarning(defaultValueSql, _options.ServerVersion, columnType);
+                    Dependencies.MigrationsLogger.DefaultValueNotSupportedWarning(
+                        defaultValueSql,
+                        _options.ServerVersion,
+                        columnType);
                 }
             }
             else if (defaultValue is not null)
             {
-                var isDefaultValueSupported = IsDefaultValueSupported(columnType);
-                var supportsDefaultExpressionSyntax = _options.ServerVersion.Supports.DefaultExpression ||
-                                                      _options.ServerVersion.Supports.AlternativeDefaultExpression;
+                var isLiteralDefaultValueSupported = IsLiteralDefaultValueSupported(columnType);
+                var supportsDefaultExpressionSyntax =
+                    _options.ServerVersion.Supports.DefaultExpression ||
+                    _options.ServerVersion.Supports.AlternativeDefaultExpression;
 
                 var typeMapping = Dependencies.TypeMappingSource.GetMappingForValue(defaultValue);
 
@@ -1144,10 +1339,9 @@ namespace EntityFrameworkCore.SingleStore.Migrations
 
                 var sqlLiteralDefaultValue = typeMapping.GenerateSqlLiteral(defaultValue);
 
-                if (isDefaultValueSupported ||
-                    supportsDefaultExpressionSyntax)
+                if (isLiteralDefaultValueSupported || supportsDefaultExpressionSyntax)
                 {
-                    var useDefaultExpressionSyntax = !isDefaultValueSupported;
+                    var useDefaultExpressionSyntax = !isLiteralDefaultValueSupported;
 
                     builder.Append(" DEFAULT ");
 
@@ -1173,9 +1367,27 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             }
         }
 
+        private bool IsLiteralDefaultValueSupported(string columnType)
+        {
+            if (IsSpatialStoreType(columnType))
+            {
+                return false;
+            }
+
+            if (columnType.Contains("blob", StringComparison.OrdinalIgnoreCase) ||
+                columnType.Contains("text", StringComparison.OrdinalIgnoreCase) ||
+                columnType.Contains("json", StringComparison.OrdinalIgnoreCase))
+            {
+                // SingleStore supports defaults for BLOB/TEXT/JSON starting with 8.1.12.
+                return _options.ServerVersion.Version >= new Version(8, 1, 12);
+            }
+
+            return true;
+        }
+
         private bool IsDefaultValueSqlSupported(string defaultValueSql, string columnType)
         {
-            if (IsDefaultValueSupported(columnType))
+            if (IsLiteralDefaultValueSupported(columnType))
             {
                 return true;
             }
@@ -1212,47 +1424,16 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             [CanBeNull] IModel model,
             [NotNull] MigrationCommandListBuilder builder)
         {
-            Check.NotNull(operation, nameof(operation));
-            Check.NotNull(builder, nameof(builder));
+            // We used to move an AUTO_INCREMENT column to the first position in a primary key, if the PK was a compound key and the column
+            // was not in the first position. We did this to satisfy InnoDB.
+            // However, this is technically an inaccuracy, and leads to incompatible FK -> PK mappings in MySQL 8.4.
+            // We will therefore reverse that behavior to leaving the key order unchanged again.
+            // This will lead to two issues:
+            //     - Migrations that upgrade vom Pomelo < 9.0 to Pomelo 9.0 will not include this change automatically, because the model
+            //       never changed (we only made the change (before and now) here in SingleStoreMigrationsSqlGenerator).
+            //     - There now needs to be an index for those cases, that contains the AUTO_INCREMENT column as its first column.
 
-            var primaryKey = operation.PrimaryKey;
-            if (primaryKey != null)
-            {
-                builder.AppendLine(",");
-
-                // MySQL InnoDB has the requirement, that an AUTO_INCREMENT column has to be the first
-                // column participating in an index.
-
-                var sortedColumnNames = primaryKey.Columns.Length > 1
-                    ? primaryKey.Columns
-                        .Select(columnName => operation.Columns.First(co => co.Name == columnName))
-                        .OrderBy(co => co[SingleStoreAnnotationNames.ValueGenerationStrategy] is SingleStoreValueGenerationStrategy generationStrategy
-                                       && generationStrategy == SingleStoreValueGenerationStrategy.IdentityColumn
-                            ? 0
-                            : 1)
-                        .Select(co => co.Name)
-                        .ToArray()
-                    : primaryKey.Columns;
-
-                var sortedPrimaryKey = new AddPrimaryKeyOperation()
-                {
-                    Schema = primaryKey.Schema,
-                    Table = primaryKey.Table,
-                    Name = primaryKey.Name,
-                    Columns = sortedColumnNames,
-                    IsDestructiveChange = primaryKey.IsDestructiveChange,
-                };
-
-                foreach (var annotation in primaryKey.GetAnnotations())
-                {
-                    sortedPrimaryKey[annotation.Name] = annotation.Value;
-                }
-
-                PrimaryKeyConstraint(
-                    sortedPrimaryKey,
-                    model,
-                    builder);
-            }
+            base.CreateTablePrimaryKeyConstraint(operation, model, builder);
         }
 
         protected override void Generate(
@@ -1415,7 +1596,7 @@ namespace EntityFrameworkCore.SingleStore.Migrations
             }
         }
 
-        protected override void IndexOptions(CreateIndexOperation operation, IModel model, MigrationCommandListBuilder builder)
+        protected override void IndexOptions(MigrationOperation operation, IModel model, MigrationCommandListBuilder builder)
         {
             // The base implementation supports index filters in form of a WHERE clause.
             // This is not supported by MySQL, so we don't call it here.

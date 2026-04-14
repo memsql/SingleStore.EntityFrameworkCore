@@ -18,6 +18,9 @@ namespace Microsoft.EntityFrameworkCore
         public static readonly string MariaDbTypeIdentifier = nameof(ServerType.MariaDb).ToLowerInvariant();
         public static readonly ServerVersion LatestSupportedServerVersion = new MariaDbServerVersion(new Version(10, 9, 4));
 
+        public override string DefaultUtf8CsCollation => Supports.DefaultCharSetUtf8Mb4 ? "utf8mb4_bin" : "utf8_bin";
+        public override string DefaultUtf8CiCollation => Supports.DefaultCharSetUtf8Mb4 ? "utf8mb4_general_ci" : "utf8_general_ci";
+
         public override ServerVersionSupport Supports { get; }
 
         public MariaDbServerVersion(Version version)

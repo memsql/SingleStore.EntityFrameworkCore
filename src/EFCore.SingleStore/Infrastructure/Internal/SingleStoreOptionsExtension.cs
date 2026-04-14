@@ -19,6 +19,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
     public class SingleStoreOptionsExtension : RelationalOptionsExtension
     {
         private DbContextOptionsExtensionInfo _info;
+        public static readonly TimeSpan DefaultMigrationLockTimeout = TimeSpan.FromDays(3);
 
         public SingleStoreOptionsExtension()
         {
@@ -28,6 +29,12 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
             IndexOptimizedBooleanColumns = false;
 
             LimitKeyedOrIndexedStringColumnLength = true;
+
+            // Use a very large default because migration duration is not bounded in advance and most
+            // applications prefer waiting for another migrator to finish over failing during startup.
+            // This timeout applies only while acquiring the lock. Once acquired, the lock is held until
+            // the dedicated lock transaction/connection is disposed.
+            MigrationLockTimeout = DefaultMigrationLockTimeout;
         }
 
         public SingleStoreOptionsExtension([NotNull] SingleStoreOptionsExtension copyFrom)
@@ -44,6 +51,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
             IndexOptimizedBooleanColumns = copyFrom.IndexOptimizedBooleanColumns;
             LimitKeyedOrIndexedStringColumnLength = copyFrom.LimitKeyedOrIndexedStringColumnLength;
             StringComparisonTranslations = copyFrom.StringComparisonTranslations;
+            MigrationLockTimeout = copyFrom.MigrationLockTimeout;
         }
 
         /// <summary>
@@ -93,6 +101,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
         public virtual bool StringComparisonTranslations { get; private set; }
         public virtual bool PrimitiveCollectionsSupport { get; private set; }
         public virtual string SessionTimeZone { get; private set; }
+        public virtual TimeSpan MigrationLockTimeout { get; private set; }
 
         /// <summary>
         ///     Creates a new instance with all options the same as for this instance, but with the given option changed.
@@ -224,6 +233,29 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
             return clone;
         }
 
+        public virtual SingleStoreOptionsExtension WithMigrationLockTimeout(TimeSpan timeout)
+        {
+            if (timeout <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(timeout),
+                    timeout,
+                    "The migration lock timeout must be greater than zero.");
+            }
+
+            if (timeout.TotalSeconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(timeout),
+                    timeout,
+                    $"The migration lock timeout must be less than or equal to {TimeSpan.FromSeconds(int.MaxValue)}.");
+            }
+
+            var clone = (SingleStoreOptionsExtension)Clone();
+            clone.MigrationLockTimeout = timeout;
+            return clone;
+        }
+
         /// <summary>
         ///     This is an internal API that supports the Entity Framework Core infrastructure and not subject to
         ///     the same compatibility standards as public APIs. It may be changed or removed without notice in
@@ -290,6 +322,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
                     hashCode.Add(Extension.LimitKeyedOrIndexedStringColumnLength);
                     hashCode.Add(Extension.StringComparisonTranslations);
                     hashCode.Add(Extension.PrimitiveCollectionsSupport);
+                    hashCode.Add(Extension.MigrationLockTimeout);
 
                     _serviceProviderHash = hashCode.ToHashCode();
                 }
@@ -311,7 +344,8 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
                    Extension.IndexOptimizedBooleanColumns == otherInfo.Extension.IndexOptimizedBooleanColumns &&
                    Extension.LimitKeyedOrIndexedStringColumnLength == otherInfo.Extension.LimitKeyedOrIndexedStringColumnLength &&
                    Extension.StringComparisonTranslations == otherInfo.Extension.StringComparisonTranslations &&
-                   Extension.PrimitiveCollectionsSupport == otherInfo.Extension.PrimitiveCollectionsSupport;
+                   Extension.PrimitiveCollectionsSupport == otherInfo.Extension.PrimitiveCollectionsSupport &&
+                   Extension.MigrationLockTimeout == otherInfo.Extension.MigrationLockTimeout;
 
             public override void PopulateDebugInfo(IDictionary<string, string> debugInfo)
             {
@@ -326,6 +360,7 @@ namespace EntityFrameworkCore.SingleStore.Infrastructure.Internal
                 debugInfo["EntityFrameworkCore.SingleStore:" + nameof(SingleStoreDbContextOptionsBuilder.LimitKeyedOrIndexedStringColumnLength)] = HashCode.Combine(Extension.LimitKeyedOrIndexedStringColumnLength).ToString(CultureInfo.InvariantCulture);
                 debugInfo["EntityFrameworkCore.SingleStore:" + nameof(SingleStoreDbContextOptionsBuilder.EnableStringComparisonTranslations)] = HashCode.Combine(Extension.StringComparisonTranslations).ToString(CultureInfo.InvariantCulture);
                 debugInfo["EntityFrameworkCore.SingleStore:" + nameof(SingleStoreDbContextOptionsBuilder.EnablePrimitiveCollectionsSupport)] = HashCode.Combine(Extension.PrimitiveCollectionsSupport).ToString(CultureInfo.InvariantCulture);
+                debugInfo["EntityFrameworkCore.SingleStore:" + nameof(SingleStoreDbContextOptionsBuilder.MigrationLockTimeout)] = HashCode.Combine(Extension.MigrationLockTimeout).ToString(CultureInfo.InvariantCulture);
             }
         }
     }

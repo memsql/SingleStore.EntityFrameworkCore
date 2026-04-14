@@ -35,7 +35,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             => SingleStoreTestStore.GetOrCreate(storeName, noBackslashEscapes: NoBackslashEscapes, databaseCollation: DatabaseCollation, guidFormat: GuidFormat);
 
         public override IServiceCollection AddProviderServices(IServiceCollection serviceCollection)
-            => serviceCollection.AddEntityFrameworkSingleStore();
-
+            => serviceCollection
+                .AddEntityFrameworkSingleStore()
+                .AddEntityFrameworkSingleStoreNetTopologySuite();
     }
 }

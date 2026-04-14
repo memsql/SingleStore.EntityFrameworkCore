@@ -6,6 +6,7 @@
 
 Milestone | Status               | Release Date
 ----------|----------------------|-------------
+9.0.0| released             | April 2026
 8.0.3| released             | February 2026
 8.0.0| released             | July 2025
 7.0.1| released             | March 2025
@@ -18,7 +19,7 @@ Milestone | Status               | Release Date
 Ensure that your `.csproj` file contains the following reference:
 
 ```xml
-<PackageReference Include="EntityFrameworkCore.SingleStore" Version="8.0.0" />
+<PackageReference Include="EntityFrameworkCore.SingleStore" Version="9.0.0" />
 ```
 
 ### 2. Services Configuration
@@ -76,6 +77,17 @@ optionsBuilder.UseSingleStore(cs, o => o.SessionTimeZone("-08:00"));
 ```
 If not configured, the provider defaults to `+00:00` (UTC).
 
+## Migration lock timeout
+When applying EF Core migrations, the provider uses a migrations lock so that only one migrator proceeds at a time. You can configure how long commands involved in **acquiring** that lock are allowed to wait. The **default** is **three days**. This timeout applies while creating the lock table and while waiting to acquire the lock row. It does **not** limit how long the migration itself can run after the lock has been acquired.
+
+Configure it through the SingleStore options builder:
+```c#
+optionsBuilder.UseSingleStore(
+    connectionString,
+    o => o.MigrationLockTimeout(TimeSpan.FromMinutes(10)));
+```
+
+The configured timeout must be greater than zero and cannot exceed `TimeSpan.FromSeconds(int.MaxValue)`. Internally, this option is stored through `WithMigrationLockTimeout(...)`, while the public configuration API is `MigrationLockTimeout(TimeSpan timeout)`.
 ## License
 
 [MIT](https://github.com/memsql/SingleStore.EntityFrameworkCore/blob/master/LICENSE)

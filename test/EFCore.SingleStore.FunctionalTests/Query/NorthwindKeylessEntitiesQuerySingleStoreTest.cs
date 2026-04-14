@@ -16,9 +16,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        protected override bool CanExecuteQueryString
-            => true;
-
         public override async Task KeylessEntity_with_nav_defining_query(bool async)
         {
             // FromSql mapping. Issue #21627.

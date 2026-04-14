@@ -1,28 +1,22 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using Microsoft.Extensions.DependencyInjection;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
-using EntityFrameworkCore.SingleStore.Storage.Internal;
 using EntityFrameworkCore.SingleStore.Tests;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests;
 
-public class MaterializationInterceptionSingleStoreTest :
-    MaterializationInterceptionTestBase<MaterializationInterceptionSingleStoreTest.SingleStoreLibraryContext>,
-    IClassFixture<MaterializationInterceptionSingleStoreTest.MaterializationInterceptionSingleStoreFixture>
+public class MaterializationInterceptionSingleStoreTest : MaterializationInterceptionTestBase<MaterializationInterceptionSingleStoreTest.SingleStoreLibraryContext>
 {
-    public MaterializationInterceptionSingleStoreTest(MaterializationInterceptionSingleStoreFixture fixture)
-        : base(fixture)
-    {
-    }
+    private int _id = 1;
 
     [ConditionalTheory]
-    public override async Task Intercept_query_materialization_with_owned_types_projecting_collection(bool async)
+    public override async Task Intercept_query_materialization_with_owned_types_projecting_collection(bool async, bool usePooling)
     {
         // We're skipping this test when we're running tests on Managed Service due to the specifics of
         // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
@@ -31,7 +25,93 @@ public class MaterializationInterceptionSingleStoreTest :
             return;
         }
 
-        await base.Intercept_query_materialization_with_owned_types_projecting_collection(async);
+        var creatingInstanceCounts = new Dictionary<Type, int>();
+        var createdInstanceCounts = new Dictionary<Type, int>();
+        var initializingInstanceCounts = new Dictionary<Type, int>();
+        var initializedInstanceCounts = new Dictionary<Type, int>();
+        LibraryContext context = null;
+
+        var interceptors = new[]
+        {
+            new ValidatingMaterializationInterceptor(
+                (data, instance, method) =>
+                {
+                    Assert.Same(context, data.Context);
+                    Assert.Equal(QueryTrackingBehavior.NoTracking, data.QueryTrackingBehavior);
+
+                    int count;
+                    var clrType = data.EntityType.ClrType;
+                    switch (method)
+                    {
+                        case nameof(IMaterializationInterceptor.CreatingInstance):
+                            count = creatingInstanceCounts.GetOrAddNew(clrType);
+                            creatingInstanceCounts[clrType] = count + 1;
+                            Assert.Null(instance);
+                            break;
+                        case nameof(IMaterializationInterceptor.CreatedInstance):
+                            count = createdInstanceCounts.GetOrAddNew(clrType);
+                            createdInstanceCounts[clrType] = count + 1;
+                            Assert.Same(clrType, instance!.GetType());
+                            break;
+                        case nameof(IMaterializationInterceptor.InitializingInstance):
+                            count = initializingInstanceCounts.GetOrAddNew(clrType);
+                            initializingInstanceCounts[clrType] = count + 1;
+                            Assert.Same(clrType, instance!.GetType());
+                            break;
+                        case nameof(IMaterializationInterceptor.InitializedInstance):
+                            count = initializedInstanceCounts.GetOrAddNew(clrType);
+                            initializedInstanceCounts[clrType] = count + 1;
+                            Assert.Same(clrType, instance!.GetType());
+                            break;
+                    }
+                })
+        };
+
+        using (context = await CreateContext(interceptors, inject: true, usePooling))
+        {
+            context.Add(
+                new TestEntity30244
+                {
+                    Id = _id++,
+                    Title = "TestIssue",
+                    Settings = { new KeyValueSetting30244("Value1", "1"), new KeyValueSetting30244("Value2", "9") }
+                });
+
+            _ = async
+                ? await context.SaveChangesAsync()
+                : context.SaveChanges();
+
+            context.ChangeTracker.Clear();
+
+            var query = context.Set<TestEntity30244>()
+                .AsNoTracking()
+                .OrderBy(e => e.Id)
+                .Select(x => x.Settings
+                    .Where(s => s.Key != "Foo")
+                    .OrderBy(s => s.Key)
+                    .ToList());
+
+            var collection = async
+                ? await query.FirstOrDefaultAsync()
+                : query.FirstOrDefault();
+
+            Assert.NotNull(collection);
+            Assert.Equal("Value1", collection[0].Key);
+            Assert.Equal("1", collection[0].Value);
+            Assert.Contains(("Value2", "9"), collection.Select(x => (x.Key, x.Value)));
+
+            Assert.Equal(1, creatingInstanceCounts.Count);
+            Assert.Equal(2, creatingInstanceCounts[typeof(KeyValueSetting30244)]);
+
+            Assert.Equal(1, createdInstanceCounts.Count);
+            Assert.Equal(2, createdInstanceCounts[typeof(KeyValueSetting30244)]);
+
+            Assert.Equal(1, initializingInstanceCounts.Count);
+            Assert.Equal(2, initializingInstanceCounts[typeof(KeyValueSetting30244)]);
+
+            Assert.Equal(1, initializedInstanceCounts.Count);
+            Assert.Equal(2, initializedInstanceCounts[typeof(KeyValueSetting30244)]);
+        }
     }
 
     public class SingleStoreLibraryContext : LibraryContext
@@ -64,27 +144,24 @@ public class MaterializationInterceptionSingleStoreTest :
         }
     }
 
-    public override LibraryContext CreateContext(IEnumerable<ISingletonInterceptor> interceptors, bool inject)
-        => new SingleStoreLibraryContext(Fixture.CreateOptions(interceptors, inject));
+    protected override ITestStoreFactory TestStoreFactory
+        => SingleStoreTestStoreFactory.Instance;
+}
 
-    public class MaterializationInterceptionSingleStoreFixture : SingletonInterceptorsFixtureBase
+internal static class DictionaryExtensions
+{
+    public static TValue GetOrAddNew<TKey, TValue>(
+        this IDictionary<TKey, TValue> dictionary,
+        TKey key)
+        where TKey : notnull
+        where TValue : new()
     {
-        protected override string StoreName
-            => "MaterializationInterception";
-
-        protected override ITestStoreFactory TestStoreFactory
-            => SingleStoreTestStoreFactory.Instance;
-
-        protected override IServiceCollection InjectInterceptors(
-            IServiceCollection serviceCollection,
-            IEnumerable<ISingletonInterceptor> injectedInterceptors)
-            => base.InjectInterceptors(serviceCollection.AddEntityFrameworkSingleStore(), injectedInterceptors);
-
-        public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
+        if (!dictionary.TryGetValue(key, out var value))
         {
-            new SingleStoreDbContextOptionsBuilder(base.AddOptions(builder))
-                .ExecutionStrategy(d => new SingleStoreExecutionStrategy(d));
-            return builder;
+            value = new TValue();
+            dictionary[key] = value;
         }
+
+        return value;
     }
 }

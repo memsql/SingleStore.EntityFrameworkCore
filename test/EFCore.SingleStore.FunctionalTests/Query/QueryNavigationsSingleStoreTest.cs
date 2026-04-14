@@ -20,9 +20,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             //Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
         }
 
-        protected override bool CanExecuteQueryString
-            => true;
-
         [ConditionalTheory(Skip = "SingleStore does not support this type of query: correlated subselect in ORDER BY")]
         public override Task Collection_orderby_nav_prop_count(bool async)
         {

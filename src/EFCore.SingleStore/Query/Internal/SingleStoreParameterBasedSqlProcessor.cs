@@ -20,9 +20,9 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
 
         public SingleStoreParameterBasedSqlProcessor(
             RelationalParameterBasedSqlProcessorDependencies dependencies,
-            bool useRelationalNulls,
+            RelationalParameterBasedSqlProcessorParameters parameters,
             ISingleStoreOptions options)
-            : base(dependencies, useRelationalNulls)
+            : base(dependencies, parameters)
         {
             _options = options;
         }
@@ -47,8 +47,6 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                 queryExpression = new SingleStoreBoolOptimizingExpressionVisitor(Dependencies.SqlExpressionFactory).Visit(queryExpression);
             }
 
-            queryExpression = new SingleStoreHavingExpressionVisitor((SingleStoreSqlExpressionFactory)Dependencies.SqlExpressionFactory).Visit(queryExpression);
-
             queryExpression = new SingleStoreParameterInliningExpressionVisitor(
                 Dependencies.TypeMappingSource,
                 Dependencies.SqlExpressionFactory,
@@ -71,7 +69,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
             Check.NotNull(queryExpression, nameof(queryExpression));
             Check.NotNull(parametersValues, nameof(parametersValues));
 
-            queryExpression = new SingleStoreSqlNullabilityProcessor(Dependencies, UseRelationalNulls)
+            queryExpression = new SingleStoreSqlNullabilityProcessor(Dependencies, Parameters)
                 .Process(queryExpression, parametersValues, out canCache);
 
             return queryExpression;
