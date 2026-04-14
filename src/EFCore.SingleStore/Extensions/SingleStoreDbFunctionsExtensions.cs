@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 // ReSharper disable once CheckNamespace
 namespace Microsoft.EntityFrameworkCore
 {
-    // TODO: Change method return types for units of `SECOND` and smaller from `int` to `long`.
 
     /// <summary>
     ///     Provides CLR methods that get translated to database functions when used in LINQ to Entities queries.
@@ -795,7 +794,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of second boundaries crossed between the dates.</returns>
-        public static int DateDiffSecond(
+        public static long DateDiffSecond(
             [CanBeNull] this DbFunctions _,
             DateTime startDate,
             DateTime endDate)
@@ -809,7 +808,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of second boundaries crossed between the dates.</returns>
-        public static int? DateDiffSecond(
+        public static long? DateDiffSecond(
             [CanBeNull] this DbFunctions _,
             DateTime? startDate,
             DateTime? endDate)
@@ -823,7 +822,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of second boundaries crossed between the dates.</returns>
-        public static int DateDiffSecond(
+        public static long DateDiffSecond(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset startDate,
             DateTimeOffset endDate)
@@ -837,7 +836,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of second boundaries crossed between the dates.</returns>
-        public static int? DateDiffSecond(
+        public static long? DateDiffSecond(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset? startDate,
             DateTimeOffset? endDate)
@@ -851,7 +850,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of second boundaries crossed between the dates.</returns>
-        public static int DateDiffSecond(
+        public static long DateDiffSecond(
             [CanBeNull] this DbFunctions _,
             DateOnly startDate,
             DateOnly endDate)
@@ -865,7 +864,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of second boundaries crossed between the dates.</returns>
-        public static int? DateDiffSecond(
+        public static long? DateDiffSecond(
             [CanBeNull] this DbFunctions _,
             DateOnly? startDate,
             DateOnly? endDate)
@@ -883,7 +882,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of millisecond boundaries crossed between the dates.</returns>
-        public static int DateDiffMillisecond(
+        public static long DateDiffMillisecond(
             [CanBeNull] this DbFunctions _,
             DateTime startDate,
             DateTime endDate)
@@ -897,7 +896,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of millisecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffMillisecond(
+        public static long? DateDiffMillisecond(
             [CanBeNull] this DbFunctions _,
             DateTime? startDate,
             DateTime? endDate)
@@ -911,7 +910,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of millisecond boundaries crossed between the dates.</returns>
-        public static int DateDiffMillisecond(
+        public static long DateDiffMillisecond(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset startDate,
             DateTimeOffset endDate)
@@ -925,7 +924,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of millisecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffMillisecond(
+        public static long? DateDiffMillisecond(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset? startDate,
             DateTimeOffset? endDate)
@@ -939,7 +938,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of millisecond boundaries crossed between the dates.</returns>
-        public static int DateDiffMillisecond(
+        public static long DateDiffMillisecond(
             [CanBeNull] this DbFunctions _,
             DateOnly startDate,
             DateOnly endDate)
@@ -953,7 +952,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of millisecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffMillisecond(
+        public static long? DateDiffMillisecond(
             [CanBeNull] this DbFunctions _,
             DateOnly? startDate,
             DateOnly? endDate)
@@ -971,7 +970,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of microsecond boundaries crossed between the dates.</returns>
-        public static int DateDiffMicrosecond(
+        public static long DateDiffMicrosecond(
             [CanBeNull] this DbFunctions _,
             DateTime startDate,
             DateTime endDate)
@@ -985,7 +984,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of microsecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffMicrosecond(
+        public static long? DateDiffMicrosecond(
             [CanBeNull] this DbFunctions _,
             DateTime? startDate,
             DateTime? endDate)
@@ -999,7 +998,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of microsecond boundaries crossed between the dates.</returns>
-        public static int DateDiffMicrosecond(
+        public static long DateDiffMicrosecond(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset startDate,
             DateTimeOffset endDate)
@@ -1013,7 +1012,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of microsecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffMicrosecond(
+        public static long? DateDiffMicrosecond(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset? startDate,
             DateTimeOffset? endDate)
@@ -1027,7 +1026,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of microsecond boundaries crossed between the dates.</returns>
-        public static int DateDiffMicrosecond(
+        public static long DateDiffMicrosecond(
             [CanBeNull] this DbFunctions _,
             DateOnly startDate,
             DateOnly endDate)
@@ -1041,7 +1040,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of microsecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffMicrosecond(
+        public static long? DateDiffMicrosecond(
             [CanBeNull] this DbFunctions _,
             DateOnly? startDate,
             DateOnly? endDate)
@@ -1059,7 +1058,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of tick boundaries crossed between the dates.</returns>
-        public static int DateDiffTick(
+        public static long DateDiffTick(
             [CanBeNull] this DbFunctions _,
             DateTime startDate,
             DateTime endDate)
@@ -1073,7 +1072,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of tick boundaries crossed between the dates.</returns>
-        public static int? DateDiffTick(
+        public static long? DateDiffTick(
             [CanBeNull] this DbFunctions _,
             DateTime? startDate,
             DateTime? endDate)
@@ -1087,7 +1086,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of tick boundaries crossed between the dates.</returns>
-        public static int DateDiffTick(
+        public static long DateDiffTick(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset startDate,
             DateTimeOffset endDate)
@@ -1101,7 +1100,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of tick boundaries crossed between the dates.</returns>
-        public static int? DateDiffTick(
+        public static long? DateDiffTick(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset? startDate,
             DateTimeOffset? endDate)
@@ -1115,7 +1114,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of tick boundaries crossed between the dates.</returns>
-        public static int DateDiffTick(
+        public static long DateDiffTick(
             [CanBeNull] this DbFunctions _,
             DateOnly startDate,
             DateOnly endDate)
@@ -1129,7 +1128,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of tick boundaries crossed between the dates.</returns>
-        public static int? DateDiffTick(
+        public static long? DateDiffTick(
             [CanBeNull] this DbFunctions _,
             DateOnly? startDate,
             DateOnly? endDate)
@@ -1147,7 +1146,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of nanosecond boundaries crossed between the dates.</returns>
-        public static int DateDiffNanosecond(
+        public static long DateDiffNanosecond(
             [CanBeNull] this DbFunctions _,
             DateTime startDate,
             DateTime endDate)
@@ -1161,7 +1160,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of nanosecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffNanosecond(
+        public static long? DateDiffNanosecond(
             [CanBeNull] this DbFunctions _,
             DateTime? startDate,
             DateTime? endDate)
@@ -1175,7 +1174,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of nanosecond boundaries crossed between the dates.</returns>
-        public static int DateDiffNanosecond(
+        public static long DateDiffNanosecond(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset startDate,
             DateTimeOffset endDate)
@@ -1189,7 +1188,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of nanosecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffNanosecond(
+        public static long? DateDiffNanosecond(
             [CanBeNull] this DbFunctions _,
             DateTimeOffset? startDate,
             DateTimeOffset? endDate)
@@ -1203,7 +1202,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of nanosecond boundaries crossed between the dates.</returns>
-        public static int DateDiffNanosecond(
+        public static long DateDiffNanosecond(
             [CanBeNull] this DbFunctions _,
             DateOnly startDate,
             DateOnly endDate)
@@ -1217,7 +1216,7 @@ namespace Microsoft.EntityFrameworkCore
         /// <param name="startDate">Starting date for the calculation.</param>
         /// <param name="endDate">Ending date for the calculation.</param>
         /// <returns>Number of nanosecond boundaries crossed between the dates.</returns>
-        public static int? DateDiffNanosecond(
+        public static long? DateDiffNanosecond(
             [CanBeNull] this DbFunctions _,
             DateOnly? startDate,
             DateOnly? endDate)

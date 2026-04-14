@@ -134,6 +134,12 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                     ? "MICROSECOND"
                     : datePart;
 
+                // Use typeof(long) for SECOND and smaller units to prevent overflow
+                // (SECOND can overflow after 68 years, MICROSECOND after 35 minutes, etc.)
+                var resultType = datePart is "SECOND" or "MILLISECOND" or "MICROSECOND" or "TICK" or "NANOSECOND"
+                    ? typeof(long)
+                    : typeof(int);
+
                 var timeStampDiffExpression = _sqlExpressionFactory.NullableFunction(
                     "TIMESTAMPDIFF",
                     new[]
@@ -142,7 +148,7 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                         startDate,
                         endDate
                     },
-                    typeof(int),
+                    resultType,
                     typeMapping: null,
                     onlyNullWhenAnyNullPropagatingArgumentIsNull: true,
                     argumentsPropagateNullability: new[] { false, true, true });
