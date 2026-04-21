@@ -4,7 +4,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
   push:
-    branches: [main]
+    branches: [master]
+    tags:
+      - 'v*'
   workflow_call:
   workflow_dispatch:
 
@@ -184,6 +186,7 @@ jobs:
 
   publish:
     runs-on: windows-latest
+    needs: [test-ubuntu, test-windows]
     if: startsWith(github.ref, 'refs/tags/')
     steps:
       - uses: actions/checkout@v4
