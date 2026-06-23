@@ -186,26 +186,41 @@ jobs:
 
   publish:
     runs-on: windows-latest
-    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+    needs: [test-ubuntu, test-windows]
+    if: startsWith(github.ref, 'refs/tags/')
     permissions:
       id-token: write
 
     steps:
+      - uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Build
+        run: dotnet build .\src\EFCore.SingleStore\EFCore.SingleStore.csproj -c Release
+
+      - name: Pack NuGet
+        run: dotnet pack .\src\EFCore.SingleStore\EFCore.SingleStore.csproj -c Release -o efcore_provider
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: efcore-provider
+          path: efcore_provider/
+
+      # Get a short-lived NuGet API key
       - name: NuGet login (OIDC → temp API key)
         uses: NuGet/login@v1
         id: login
         with:
           user: ${{ secrets.NUGET_USER }}
 
-      - name: Confirm NuGet login worked
-        shell: bash
-        env:
-          NUGET_API_KEY: ${{ steps.login.outputs.NUGET_API_KEY }}
-        run: |
-          if [ -z "$NUGET_API_KEY" ]; then
-            echo "NuGet login did not return a temporary API key."
-            exit 1
-          fi
-
-          echo "NuGet Trusted Publishing login succeeded."
-          echo "Temporary API key was returned, but it was not printed."
+      # Push the package
+      - name: NuGet push
+        run: >
+          dotnet nuget push "efcore_provider/*.nupkg"
+          --api-key ${{steps.login.outputs.NUGET_API_KEY}}
+          --source https://api.nuget.org/v3/index.json
