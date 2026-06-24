@@ -88,6 +88,11 @@ optionsBuilder.UseSingleStore(
 ```
 
 The configured timeout must be greater than zero and cannot exceed `TimeSpan.FromSeconds(int.MaxValue)`. Internally, this option is stored through `WithMigrationLockTimeout(...)`, while the public configuration API is `MigrationLockTimeout(TimeSpan timeout)`.
+
+## Release process
+
+The `EntityFrameworkCore.SingleStore` release process is automated through GitHub Actions. See [Release Instructions](RELEASE.md) for instructions on publishing a new release.
+
 ## License
 
 [MIT](https://github.com/memsql/SingleStore.EntityFrameworkCore/blob/master/LICENSE)
