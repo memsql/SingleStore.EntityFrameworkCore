@@ -2,7 +2,7 @@
 
 `EntityFrameworkCore.SingleStore` releases are automated through GitHub Actions. A new NuGet package is built and published automatically when a new version tag is pushed to the GitHub repository.
 
-GitHub Releases are created manually after the package is published, because the release notes must be reviewed and added manually.
+A draft GitHub Release is also created automatically. The release remains a draft because the release notes must be reviewed and completed manually before publishing.
 
 ### Prerequisites
 
@@ -12,7 +12,7 @@ Before creating a release tag:
 * Make sure CI is passing.
 * Update `Version.props` with the new package version.
 * Make sure the version tag matches the version in `Version.props`.
-* The version tag should use the `vX.Y.Z` format.
+* The version tag must use the `vX.Y.Z` format.
 
 For example, if `Version.props` contains version `9.0.1`, the release tag should be `v9.0.1`.
 
@@ -35,6 +35,7 @@ After the tag is pushed, GitHub Actions will automatically:
 2. Build the EF Core provider package.
 3. Pack the NuGet package.
 4. Publish the `.nupkg` package to NuGet.
+5. Create a draft GitHub Release for the pushed tag.
 
 ### Verifying the NuGet release
 
@@ -48,16 +49,16 @@ After the release workflow finishes successfully:
 dotnet add package EntityFrameworkCore.SingleStore --version X.Y.Z
 ```
 
-### Creating the GitHub Release
+### Publishing the GitHub Release
 
-After the NuGet package is published, create the GitHub Release manually:
+After the workflow creates the draft GitHub Release:
 
-1. Open the repository's **Releases** page.
-2. Create a new release for the pushed tag, for example `vX.Y.Z`.
-3. Add the release title and release notes.
+1. Open the repository's Releases page.
+2. Open the draft release for the pushed tag, for example `vX.Y.Z`.
+3. Review and complete the release notes.
 4. Publish the GitHub Release.
 
-The GitHub Release is intentionally manual because it requires complete release notes.
+The GitHub Release is intentionally kept as a draft because it requires complete release notes before publishing.
 
 ### Failed releases
 
