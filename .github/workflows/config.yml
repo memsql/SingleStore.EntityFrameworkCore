@@ -204,12 +204,6 @@ jobs:
       - name: Pack NuGet
         run: dotnet pack .\src\EFCore.SingleStore\EFCore.SingleStore.csproj -c Release -o efcore_provider
 
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: efcore-provider
-          path: efcore_provider/
-
       # Authenticate to Azure via OIDC (using your App Registration)
       - name: Azure Login
         uses: azure/login@v2
@@ -239,3 +233,8 @@ jobs:
             --timestamp-url "http://timestamp.acs.microsoft.com" `
             "efcore_provider/*.nupkg"
 
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: efcore-provider
+          path: efcore_provider/
