@@ -65,3 +65,16 @@ The GitHub Release is intentionally kept as a draft because it requires complete
 If the release workflow fails before publishing to NuGet, fix the issue and rerun the workflow or recreate the tag as needed.
 
 If the package was already published to NuGet, do not reuse the same version number. NuGet package versions are immutable, so a fix must be released with a new version.
+
+## Driver-Server Version Compatibility Matrix
+
+After each release, add a row for the new version rather than copying an older row's engine list. Tags through `v8.0.0` used a pinned engine matrix in CircleCI (through `v7.0.1`) and then GitHub Actions (`v8.0.0`). From `v8.0.3`, CI has no pinned engine matrix (dev image plus Helios); take the list from the [EOL policy](https://docs.singlestore.com/db/v9.1/support/singlestore-software-end-of-life-eol-policy/) as of the new tag's date, plus any engine RC that existed by that date.
+
+| Driver Version | Release date | Supported engine versions |
+| -------------- | ------------ | ------------------------- |
+| 9.0.0          | 2026-04-21   | 8.7, 8.9, 9.0, 9.1 RC     |
+| 8.0.3          | 2026-02-02   | 8.7, 8.9, 9.0             |
+| 8.0.0          | 2025-07-22   | 8.5, 8.7                  |
+| 7.0.1          | 2025-03-11   | 8.1, 8.5, 8.7             |
+| 7.0.0          | 2024-11-18   | 8.1, 8.5, 8.7             |
+| 6.0.2          | 2024-04-18   | 8.1, 8.5                  |
