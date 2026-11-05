@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -11,6 +12,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
 public class NonSharedModelBulkUpdatesSingleStoreTest : NonSharedModelBulkUpdatesRelationalTestBase
 {
+    public NonSharedModelBulkUpdatesSingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 
@@ -78,8 +84,10 @@ WHERE `b`.`Title` LIKE 'Arthur%'
 
         AssertSql(
 """
+@p='SomeValue' (Size = 4000)
+
 UPDATE `Owner` AS `o`
-SET `o`.`Title` = 'SomeValue'
+SET `o`.`Title` = @p
 """);
     }
 
@@ -101,8 +109,8 @@ SET `o`.`Title` = CONCAT(COALESCE(`o`.`Title`, ''), '_Suffix')
         AssertSql(
 """
 UPDATE `Owner` AS `o`
-SET `o`.`OwnedReference_Number` = CHAR_LENGTH(`o`.`Title`),
-    `o`.`Title` = COALESCE(CAST(`o`.`OwnedReference_Number` AS char), '')
+SET `o`.`Title` = COALESCE(CAST(`o`.`OwnedReference_Number` AS char), ''),
+    `o`.`OwnedReference_Number` = CHAR_LENGTH(`o`.`Title`)
 """);
     }
 
@@ -206,11 +214,13 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
         await base.Update_non_owned_property_on_entity_with_owned_in_join(async);
 
         AssertSql(
-            """
-            UPDATE `Owner` AS `o`
-            INNER JOIN `Owner` AS `o0` ON `o`.`Id` = `o0`.`Id`
-            SET `o`.`Title` = 'NewValue'
-            """);
+"""
+@p='NewValue' (Size = 4000)
+
+UPDATE `Owner` AS `o`
+INNER JOIN `Owner` AS `o0` ON `o`.`Id` = `o0`.`Id`
+SET `o`.`Title` = @p
+""");
     }
 
     [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
