@@ -3,7 +3,6 @@
 // Licensed under the MIT. See LICENSE in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.Query.SqlExpressions;
@@ -24,8 +23,7 @@ public class SingleStoreParameterInliningExpressionVisitor : ExpressionVisitor
     private readonly ISqlExpressionFactory _sqlExpressionFactory;
     private readonly ISingleStoreOptions _options;
 
-    private IReadOnlyDictionary<string, object> _parametersValues;
-    private bool _canCache;
+    private ParametersCacheDecorator _parametersDecorator;
 
     private bool _shouldInlineParameters;
 
@@ -39,19 +37,14 @@ public class SingleStoreParameterInliningExpressionVisitor : ExpressionVisitor
         _options = options;
     }
 
-    public virtual Expression Process(Expression expression, IReadOnlyDictionary<string, object> parametersValues, out bool canCache)
+    public virtual Expression Process(Expression expression, ParametersCacheDecorator parametersDecorator)
     {
         Check.NotNull(expression, nameof(expression));
 
-        _parametersValues = parametersValues;
-        _canCache = true;
+        _parametersDecorator = parametersDecorator;
         _shouldInlineParameters = false;
 
-        var result = Visit(expression);
-
-        canCache = _canCache;
-
-        return result;
+        return Visit(expression);
     }
 
     protected override Expression VisitExtension(Expression extensionExpression)
@@ -104,12 +97,12 @@ public class SingleStoreParameterInliningExpressionVisitor : ExpressionVisitor
             return sqlParameterExpression;
         }
 
-        _canCache = false;
+        var parametersValues = _parametersDecorator.GetAndDisableCaching();
 
         return new SingleStoreInlinedParameterExpression(
             sqlParameterExpression,
             (SqlConstantExpression)_sqlExpressionFactory.Constant(
-                _parametersValues[sqlParameterExpression.Name],
+                parametersValues[sqlParameterExpression.Name],
                 sqlParameterExpression.TypeMapping));
     }
 
