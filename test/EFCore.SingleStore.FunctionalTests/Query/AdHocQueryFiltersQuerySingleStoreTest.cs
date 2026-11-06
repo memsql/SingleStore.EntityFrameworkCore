@@ -13,6 +13,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelationalTestBase
 {
+    public AdHocQueryFiltersQuerySingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     [ConditionalFact]
     public override async Task Query_filter_with_contains_evaluates_correctly()
     {

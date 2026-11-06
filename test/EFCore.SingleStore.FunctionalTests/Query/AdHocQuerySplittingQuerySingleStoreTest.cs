@@ -16,6 +16,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocQuerySplittingQuerySingleStoreTest : AdHocQuerySplittingQueryTestBase
 {
+    public AdHocQuerySplittingQuerySingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     [ConditionalFact]
     public override async Task Can_configure_SingleQuery_at_context_level()
     {

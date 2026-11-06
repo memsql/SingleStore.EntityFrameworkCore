@@ -24,6 +24,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             {
                 AssertSql(
                     @"@p0='Back\slash's Garden Party' (Nullable = false) (Size = 4000)
+
 SET AUTOCOMMIT = 1;
 INSERT INTO `Artists` (`Name`)
 VALUES (@p0)
@@ -67,11 +68,13 @@ WHERE `a`.`Name` = 'Back\\slasher''s'");
             await base.Where_query_escapes_parameter(async);
 
             AssertSql(
-                @"@__artistName_0='Back\slasher's' (Size = 4000)
+"""
+@artistName='Back\slasher's' (Size = 4000)
 
 SELECT `a`.`ArtistId`, `a`.`Name`
 FROM `Artists` AS `a`
-WHERE `a`.`Name` = @__artistName_0");
+WHERE `a`.`Name` = @artistName
+""");
         }
 
         [ConditionalTheory]
@@ -82,26 +85,29 @@ WHERE `a`.`Name` = @__artistName_0");
             if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
             {
                 AssertSql(
-                    """
-                    SELECT `a`.`ArtistId`, `a`.`Name`
-                    FROM `Artists` AS `a`
-                    WHERE `a`.`Name` IN (
-                        SELECT `a0`.`value`
-                        FROM JSON_TABLE('["Back\\\\slasher\\u0027s","John\\u0027s Chill Box"]', '$[*]' COLUMNS (
-                            `key` FOR ORDINALITY,
-                            `value` longtext PATH '$[0]'
-                        )) AS `a0`
-                    )
-                    """);
+"""
+SELECT `a`.`ArtistId`, `a`.`Name`
+FROM `Artists` AS `a`
+WHERE `a`.`Name` IN (
+    SELECT `a0`.`value`
+    FROM JSON_TABLE('["Back\\\\slasher\\u0027s","John\\u0027s Chill Box"]', '$[*]' COLUMNS (
+        `key` FOR ORDINALITY,
+        `value` longtext PATH '$[0]'
+    )) AS `a0`
+)
+""");
             }
             else
             {
-                AssertSql(
-                    """
-                    SELECT `a`.`ArtistId`, `a`.`Name`
-                    FROM `Artists` AS `a`
-                    WHERE `a`.`Name` IN ('Back\\slasher''s', 'John''s Chill Box')
-                    """);
+                 AssertSql(
+"""
+@artistNames1='Back\slasher's' (Size = 4000)
+@artistNames2='John's Chill Box' (Size = 4000)
+
+SELECT `a`.`ArtistId`, `a`.`Name`
+FROM `Artists` AS `a`
+WHERE `a`.`Name` IN (@artistNames1, @artistNames2)
+""");
             }
         }
 

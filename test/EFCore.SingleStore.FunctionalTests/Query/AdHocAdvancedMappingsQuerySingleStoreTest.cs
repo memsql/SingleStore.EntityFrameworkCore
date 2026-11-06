@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -13,6 +14,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocAdvancedMappingsQuerySingleStoreTest : AdHocAdvancedMappingsQueryRelationalTestBase
 {
+    public AdHocAdvancedMappingsQuerySingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 
