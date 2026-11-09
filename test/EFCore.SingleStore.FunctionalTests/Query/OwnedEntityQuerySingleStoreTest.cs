@@ -12,6 +12,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
     public class OwnedEntityQuerySingleStoreTest : OwnedEntityQueryRelationalTestBase
     {
+        public OwnedEntityQuerySingleStoreTest(NonSharedFixture fixture)
+            : base(fixture)
+        {
+        }
+
         protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
 
         public override async Task Multiple_single_result_in_projection_containing_owned_types(bool async)

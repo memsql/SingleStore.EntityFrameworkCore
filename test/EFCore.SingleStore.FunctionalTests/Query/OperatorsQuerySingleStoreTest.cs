@@ -1,6 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Operators;
 using Microsoft.EntityFrameworkCore.TestUtilities;
@@ -11,6 +13,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class OperatorsQuerySingleStoreTest : OperatorsQueryTestBase
 {
+    public OperatorsQuerySingleStoreTest([NotNull] NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 

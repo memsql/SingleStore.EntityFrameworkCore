@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -16,6 +17,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 {
     public class SharedTypeQuerySingleStoreTest : SharedTypeQueryRelationalTestBase
     {
+        public SharedTypeQuerySingleStoreTest(NonSharedFixture fixture)
+            : base(fixture)
+        {
+        }
+
         protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
 
         public override async Task Can_use_shared_type_entity_type_in_query_filter(bool async)
