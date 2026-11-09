@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.Northwind;
 using Microsoft.EntityFrameworkCore.TestUtilities;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
 using Xunit;
 using Xunit.Abstractions;
@@ -39,195 +40,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
         public override Task FirstOrDefault_over_scalar_projection_compared_to_null(bool async)
         {
             return base.FirstOrDefault_over_scalar_projection_compared_to_null(async);
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_now(bool async)
-        {
-            await base.Where_datetime_now(async);
-
-            AssertSql(
-                @"@__myDatetime_0='2015-04-10T00:00:00.0000000' (DbType = DateTime)
-
-SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-FROM `Customers` AS `c`
-WHERE CURRENT_TIMESTAMP(6) <> @__myDatetime_0");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_utcnow(bool async)
-        {
-            await base.Where_datetime_utcnow(async);
-
-            AssertSql(
-                @"@__myDatetime_0='2015-04-10T00:00:00.0000000' (DbType = DateTime)
-
-SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-FROM `Customers` AS `c`
-WHERE UTC_TIMESTAMP(6) <> @__myDatetime_0");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_today(bool async)
-        {
-            await base.Where_datetime_today(async);
-
-            AssertSql(
-                @"SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
-FROM `Employees` AS `e`
-WHERE CONVERT(CURRENT_TIMESTAMP(6), date) = CURDATE()");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_date_component(bool async)
-        {
-            await base.Where_datetime_date_component(async);
-
-            AssertSql(
-                @"@__myDatetime_0='1998-05-04T00:00:00.0000000' (DbType = DateTime)
-
-SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE CONVERT(`o`.`OrderDate`, date) = @__myDatetime_0");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_year_component(bool async)
-        {
-            await base.Where_datetime_year_component(async);
-
-            AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE EXTRACT(year FROM `o`.`OrderDate`) = 1998");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_month_component(bool async)
-        {
-            await base.Where_datetime_month_component(async);
-
-            AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE EXTRACT(month FROM `o`.`OrderDate`) = 4");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_dayOfYear_component(bool async)
-        {
-            await base.Where_datetime_dayOfYear_component(async);
-
-            AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE DAYOFYEAR(`o`.`OrderDate`) = 68");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_day_component(bool async)
-        {
-            await base.Where_datetime_day_component(async);
-
-            AssertSql(
-                @"SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE EXTRACT(day FROM `o`.`OrderDate`) = 4");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_hour_component(bool async)
-        {
-            await base.Where_datetime_hour_component(async);
-
-            AssertSql(
-"""
-SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE EXTRACT(hour FROM `o`.`OrderDate`) = 0
-""");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_minute_component(bool async)
-        {
-            await base.Where_datetime_minute_component(async);
-
-            AssertSql(
-"""
-SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE EXTRACT(minute FROM `o`.`OrderDate`) = 0
-""");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_second_component(bool async)
-        {
-            await base.Where_datetime_second_component(async);
-
-            AssertSql(
-"""
-SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE EXTRACT(second FROM `o`.`OrderDate`) = 0
-""");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_datetime_millisecond_component(bool async)
-        {
-            await base.Where_datetime_millisecond_component(async);
-
-            AssertSql(
-"""
-SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
-FROM `Orders` AS `o`
-WHERE (EXTRACT(microsecond FROM `o`.`OrderDate`)) DIV (1000) = 0
-""");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_string_length(bool async)
-        {
-            await base.Where_string_length(async);
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-FROM `Customers` AS `c`
-WHERE CHAR_LENGTH(`c`.`City`) = 6");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_string_indexof(bool async)
-        {
-            await base.Where_string_indexof(async);
-
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-FROM `Customers` AS `c`
-WHERE ((LOCATE('Sea', `c`.`City`) - 1) <> -1) OR `c`.`City` IS NULL");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_string_replace(bool async)
-        {
-            await base.Where_string_replace(async);
-
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-FROM `Customers` AS `c`
-WHERE REPLACE(`c`.`City`, 'Sea', 'Rea') = 'Reattle'");
-        }
-
-        [ConditionalTheory]
-        public override async Task Where_string_substring(bool async)
-        {
-            await base.Where_string_substring(async);
-
-            AssertSql(
-                @"SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-FROM `Customers` AS `c`
-WHERE SUBSTRING(`c`.`City`, 1 + 1, 2) = 'ea'");
         }
 
         [ConditionalTheory(Skip = "issue #573")]
@@ -288,41 +100,12 @@ WHERE CONCAT(SUBSTRING(`c`.`City`, 1, 3), SUBSTRING(`c`.`City`, (3 + 1) + 1, CHA
                 assertEmpty: true);
 
             AssertSql(
-                @"@__guidParameter_0='4d68fe70-ddb0-47d7-b6db-437684fa3e1f'
+"""
+@guidParameter='4d68fe70-ddb0-47d7-b6db-437684fa3e1f'
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE @__guidParameter_0 = UUID()");
-        }
-
-        public override async Task Where_string_concat_method_comparison_2(bool async)
-        {
-            await base.Where_string_concat_method_comparison_2(async);
-
-            AssertSql(
-"""
-@__i_0='A' (Size = 4000)
-@__j_1='B' (Size = 4000)
-
-SELECT `c`.`CustomerID`
-FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, @__j_1, `c`.`CustomerID`) = 'ABANATR'
-""");
-        }
-
-        public override async Task Where_string_concat_method_comparison_3(bool async)
-        {
-            await base.Where_string_concat_method_comparison_3(async);
-
-            AssertSql(
-"""
-@__i_0='A' (Size = 4000)
-@__j_1='B' (Size = 4000)
-@__k_2='C' (Size = 4000)
-
-SELECT `c`.`CustomerID`
-FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = 'ABCANTON'
+WHERE @guidParameter = UUID()
 """);
         }
 
@@ -339,11 +122,11 @@ WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = 'ABCANTON'
 
             AssertSql(
 """
-@__Concat_0='1' (Size = 40)
+@Concat='1' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -359,11 +142,13 @@ WHERE @__Concat_0 = `c`.`CompanyName`
                 assertEmpty: true);
 
             AssertSql(
-                @"@__i_0='1' (Size = 4000)
+"""
+@i='1' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, `c`.`CustomerID`) = `c`.`CompanyName`");
+WHERE CONCAT(@i, `c`.`CustomerID`) = `c`.`CompanyName`
+""");
         }
 
         [ConditionalTheory]
@@ -379,12 +164,12 @@ WHERE CONCAT(@__i_0, `c`.`CustomerID`) = `c`.`CompanyName`");
                 assertEmpty: true);
 
             AssertSql(
-                @"@__i_0='1' (Size = 4000)
-@__j_1='2' (Size = 4000)
+                @"@i='1' (Size = 4000)
+@j='2' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, @__j_1, `c`.`CustomerID`) = `c`.`CompanyName`");
+WHERE CONCAT(@i, @j, `c`.`CustomerID`) = `c`.`CompanyName`");
         }
 
         [ConditionalTheory]
@@ -402,13 +187,13 @@ WHERE CONCAT(@__i_0, @__j_1, `c`.`CustomerID`) = `c`.`CompanyName`");
 
             AssertSql(
 """
-@__i_0='1' (Size = 4000)
-@__j_1='2' (Size = 4000)
-@__k_2='3' (Size = 4000)
+@i='1' (Size = 4000)
+@j='2' (Size = 4000)
+@k='3' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = `c`.`CompanyName`
+WHERE CONCAT(@i, @j, @k, `c`.`CustomerID`) = `c`.`CompanyName`
 """);
         }
 
@@ -428,14 +213,14 @@ WHERE CONCAT(@__i_0, @__j_1, @__k_2, `c`.`CustomerID`) = `c`.`CompanyName`
 
             AssertSql(
 """
-@__i_0='A' (Size = 4000)
-@__j_1='B' (Size = 4000)
-@__k_2='C' (Size = 4000)
-@__m_3='D' (Size = 4000)
+@i='A' (Size = 4000)
+@j='B' (Size = 4000)
+@k='C' (Size = 4000)
+@m='D' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyName`
+WHERE CONCAT(@i, @j, @k, @m, `c`.`CustomerID`) = `c`.`CompanyName`
 """);
         }
 
@@ -452,11 +237,11 @@ WHERE CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyNam
 
             AssertSql(
 """
-@__Concat_0='ABCD' (Size = 40)
+@Concat='ABCD' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -473,11 +258,11 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             AssertSql(
 """
-@__Concat_0='A' (Size = 40)
+@Concat='A' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -497,14 +282,14 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             AssertSql(
 """
-@__i_0='1' (Size = 4000)
-@__j_1='2' (Size = 4000)
-@__k_2='3' (Size = 4000)
-@__m_3='4' (Size = 4000)
+@i='1' (Size = 4000)
+@j='2' (Size = 4000)
+@k='3' (Size = 4000)
+@m='4' (Size = 4000)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyName`
+WHERE CONCAT(@i, @j, @k, @m, `c`.`CustomerID`) = `c`.`CompanyName`
 """);
         }
 
@@ -521,11 +306,11 @@ WHERE CONCAT(@__i_0, @__j_1, @__k_2, @__m_3, `c`.`CustomerID`) = `c`.`CompanyNam
 
             AssertSql(
 """
-@__Concat_0='1234' (Size = 40)
+@Concat='1234' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -542,11 +327,11 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             AssertSql(
 """
-@__Concat_0='1' (Size = 40)
+@Concat='1' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -563,11 +348,11 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             AssertSql(
 """
-@__Concat_0='ABCD' (Size = 40)
+@Concat='ABCD' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -584,11 +369,11 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             AssertSql(
 """
-@__Concat_0='A' (Size = 40)
+@Concat='A' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -605,11 +390,11 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             AssertSql(
 """
-@__Concat_0='1234' (Size = 40)
+@Concat='1234' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -626,11 +411,11 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             AssertSql(
 """
-@__Concat_0='1' (Size = 40)
+@Concat='1' (Size = 40)
 
 SELECT `c`.`CustomerID`
 FROM `Customers` AS `c`
-WHERE @__Concat_0 = `c`.`CompanyName`
+WHERE @Concat = `c`.`CompanyName`
 """);
         }
 
@@ -658,18 +443,6 @@ WHERE @__Concat_0 = `c`.`CompanyName`
         public override Task ElementAtOrDefault_over_custom_projection_compared_to_null(bool async)
         {
             return base.ElementAtOrDefault_over_custom_projection_compared_to_null(async);
-        }
-
-        public override async Task Where_bitwise_xor(bool async)
-        {
-            await base.Where_bitwise_xor(async);
-
-            AssertSql(
-                """
-                SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
-                FROM `Customers` AS `c`
-                WHERE (`c`.`CustomerID` = 'ALFKI') ^ TRUE
-                """);
         }
 
         public override async Task Where_compare_constructed_equal(bool async)
@@ -743,6 +516,10 @@ WHERE @__Concat_0 = `c`.`CompanyName`
 
             AssertSql();
         }
+
+        [ConditionalFact]
+        public virtual void Check_all_tests_overridden()
+            => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
         private void AssertSql(params string[] expected)
             => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
