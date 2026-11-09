@@ -14,8 +14,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
     [SupportedServerVersionCondition(nameof(ServerVersionSupport.GeneratedColumns))]
     public class TableSplittingSingleStoreTest : TableSplittingTestBase
     {
-        public TableSplittingSingleStoreTest(ITestOutputHelper testOutputHelper)
-            : base(testOutputHelper)
+        public TableSplittingSingleStoreTest(NonSharedFixture fixture, ITestOutputHelper testOutputHelper)
+            : base(fixture, testOutputHelper)
         {
         }
 

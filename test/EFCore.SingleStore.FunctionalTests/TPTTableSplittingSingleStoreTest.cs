@@ -10,8 +10,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
     public class TPTTableSplittingSingleStoreTest : TPTTableSplittingTestBase
     {
-        public TPTTableSplittingSingleStoreTest(ITestOutputHelper testOutputHelper)
-            : base(testOutputHelper)
+        public TPTTableSplittingSingleStoreTest(NonSharedFixture fixture, ITestOutputHelper testOutputHelper)
+            : base(FixtureBase, testOutputHelper)
         {
         }
 

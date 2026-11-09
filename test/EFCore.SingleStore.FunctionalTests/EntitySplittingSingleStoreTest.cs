@@ -15,8 +15,8 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests;
 
 public class EntitySplittingSingleStoreTest : EntitySplittingTestBase
 {
-    public EntitySplittingSingleStoreTest(ITestOutputHelper testOutputHelper)
-        : base(testOutputHelper)
+    public EntitySplittingSingleStoreTest(NonSharedFixture fixture, ITestOutputHelper testOutputHelper)
+        : base(fixture, testOutputHelper)
     {
     }
 

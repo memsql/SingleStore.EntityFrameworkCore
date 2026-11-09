@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using Microsoft.EntityFrameworkCore.Update;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -9,6 +11,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Update;
 // Made internal to skip all tests.
 internal class NonSharedModelUpdatesSingleStoreTest : NonSharedModelUpdatesTestBase
 {
+    public NonSharedModelUpdatesSingleStoreTest([NotNull] NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     public override async Task Principal_and_dependent_roundtrips_with_cycle_breaking(bool async)
     {
         await base.Principal_and_dependent_roundtrips_with_cycle_breaking(async);

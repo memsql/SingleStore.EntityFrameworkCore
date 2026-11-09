@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -13,6 +14,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests;
 
 public class MaterializationInterceptionSingleStoreTest : MaterializationInterceptionTestBase<MaterializationInterceptionSingleStoreTest.SingleStoreLibraryContext>
 {
+    public MaterializationInterceptionSingleStoreTest([NotNull] NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     private int _id = 1;
 
     [ConditionalTheory]

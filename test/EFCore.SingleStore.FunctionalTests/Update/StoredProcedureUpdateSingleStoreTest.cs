@@ -18,6 +18,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Update;
 
 public class StoredProcedureUpdateSingleStoreTest : StoredProcedureUpdateTestBase
 {
+    public StoredProcedureUpdateSingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     public override async Task Insert_with_output_parameter(bool async)
     {
         var exception =

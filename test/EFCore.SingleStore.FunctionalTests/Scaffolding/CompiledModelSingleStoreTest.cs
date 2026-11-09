@@ -33,6 +33,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Scaffolding;
 // TODO: Add more Pomelo specific cases.
 public class CompiledModelSingleStoreTest : CompiledModelRelationalTestBase
 {
+    public CompiledModelSingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     protected override void BuildBigModel(ModelBuilder modelBuilder, bool jsonColumns)
     {
         base.BuildBigModel(modelBuilder, jsonColumns);

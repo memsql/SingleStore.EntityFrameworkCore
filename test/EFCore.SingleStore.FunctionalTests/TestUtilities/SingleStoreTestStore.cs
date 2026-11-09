@@ -112,7 +112,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             return builder
                 // Our UseSingleStore() methods explicitly set TranslateParameterizedCollectionsToConstants() as the default, which is not the
                 // default that the EF Core tests expect.
-                .TranslateParameterizedCollectionsToParameters()
+                .UseParameterizedCollectionMode(ParameterTranslationMode.MultipleParameters)
                 .UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery)
                 .CommandTimeout(GetCommandTimeout())
                 .ExecutionStrategy(d => new TestSingleStoreRetryingExecutionStrategy(d));

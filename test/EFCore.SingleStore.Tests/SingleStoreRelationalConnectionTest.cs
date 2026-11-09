@@ -303,6 +303,7 @@ public class SingleStoreRelationalConnectionTest
         var singletonOptions = new SingleStoreOptions();
         singletonOptions.Initialize(options);
 
+        var exceptionDetector = new ExceptionDetector();
         return new SingleStoreRelationalConnection(
             new RelationalConnectionDependencies(
                 options,
@@ -331,7 +332,9 @@ public class SingleStoreRelationalConnectionTest
                             TestServiceFactory.Instance.Create<TypeMappingSourceDependencies>(),
                             TestServiceFactory.Instance.Create<RelationalTypeMappingSourceDependencies>(),
                             singletonOptions),
-                        new ExceptionDetector()))),
+                        exceptionDetector,
+                        new LoggingOptions())),
+                exceptionDetector),
             new SingleStoreConnectionStringOptionsValidator(),
             singletonOptions);
     }
