@@ -525,7 +525,7 @@ WHERE FALSE
         }
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_ints_Contains()
     {
         await base.Column_collection_of_ints_Contains();
@@ -544,7 +544,7 @@ WHERE 10 IN (
 """);
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_nullable_ints_Contains()
     {
         await base.Column_collection_of_nullable_ints_Contains();
@@ -563,7 +563,7 @@ WHERE 10 IN (
 """);
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_nullable_ints_Contains_null()
     {
         await base.Column_collection_of_nullable_ints_Contains_null();
@@ -588,7 +588,7 @@ WHERE FALSE
 """);
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_nullable_strings_contains_null()
     {
         await base.Column_collection_of_nullable_strings_contains_null();
@@ -601,7 +601,7 @@ WHERE array_position(p."NullableStrings", NULL) IS NOT NULL
 """);
     }
 
-    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutSingleStoreBugs))]
+    [SupportedServerVersionCondition(nameof(ServerVersionSupport.JsonTableImplementationWithoutMySqlBugs))]
     public override async Task Column_collection_of_bools_Contains()
     {
         await base.Column_collection_of_bools_Contains();

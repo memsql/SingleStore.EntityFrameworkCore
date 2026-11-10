@@ -195,31 +195,31 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             return true;
         }
 
-        public override void Dispose()
+        // EF Core 10 removed the synchronous TestStore.Dispose(); TestStore is now only IAsyncDisposable.
+        public override async ValueTask DisposeAsync()
         {
-            DeleteDatabase();
-            ChangeTableType();
+            await DeleteDatabaseAsync();
+            await ChangeTableTypeAsync();
+            await base.DisposeAsync();
         }
 
-        private void DeleteDatabase()
+        private async Task DeleteDatabaseAsync()
         {
             // TODO: PLAT-6404 (Investigate how to drop the databases that aren't created by SingleStoreTestStore)
             string[] databases = {"TwoDatabasesOne", "TwoDatabasesIntercept", "TwoDatabasesOneB",
                 "TwoDatabasesTwo", "TwoDatabasesTwoB", "ConnectionTest", "ConnectionSettings", "SeedsA", "SeedsS", $"{Name}"};
 
-            using (var master = new SingleStoreConnection(CreateAdminConnectionString()))
+            await using var master = new SingleStoreConnection(CreateAdminConnectionString());
+            foreach (var db in databases)
             {
-                foreach (var db in databases)
-                {
-                    ExecuteNonQuery(master, $@"DROP DATABASE IF EXISTS `{db}`;");
-                }
+                await ExecuteNonQueryAsync(master, $@"DROP DATABASE IF EXISTS `{db}`;");
             }
         }
 
-        private void ChangeTableType()
+        private async Task ChangeTableTypeAsync()
         {
-            using var master = new SingleStoreConnection(CreateAdminConnectionString());
-            ExecuteNonQuery(master, "set global default_table_type = columnstore;");
+            await using var master = new SingleStoreConnection(CreateAdminConnectionString());
+            await ExecuteNonQueryAsync(master, "set global default_table_type = columnstore;");
         }
 
         private static string GetCreateDatabaseStatement(string name, string charset = null, string collation = null)

@@ -16,7 +16,7 @@ namespace EntityFrameworkCore.SingleStore.IntegrationTests
             if (args.Length == 0 ||
                 args.Any(arg => string.Equals(arg, "--applicationName", StringComparison.OrdinalIgnoreCase)))
             {
-	            BuildWebApplication(args)
+                BuildWebApplication(args)
                     .Run();
             }
             else
@@ -50,7 +50,7 @@ namespace EntityFrameworkCore.SingleStore.IntegrationTests
             }
         }
 
-        private static WebApplication buildWebApplication(string[] args)
+        private static WebApplication BuildWebApplication(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
             builder.WebHost

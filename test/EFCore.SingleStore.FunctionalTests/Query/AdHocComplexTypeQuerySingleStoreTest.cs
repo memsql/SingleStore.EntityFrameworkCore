@@ -10,6 +10,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocComplexTypeQuerySingleStoreTest : AdHocComplexTypeQueryTestBase
 {
+    public AdHocComplexTypeQuerySingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     [ConditionalTheory(Skip =
         "SingleStore: disabled due to distributed-table identity constraints for int keys. " +
         "With explicit mapping to BIGINT or sequence-based identity (AUTO_INCREMENT AS SEQUENCE), this passes.")]

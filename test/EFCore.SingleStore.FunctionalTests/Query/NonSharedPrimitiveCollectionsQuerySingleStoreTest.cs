@@ -4,12 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using SingleStoreEntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
-using SingleStoreEntityFrameworkCore.SingleStore.Internal;
-using SingleStoreEntityFrameworkCore.SingleStore.Tests;
+using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
+using EntityFrameworkCore.SingleStore.Internal;
+using EntityFrameworkCore.SingleStore.Tests;
 using Xunit;
 
-namespace SingleStoreEntityFrameworkCore.SingleStore.FunctionalTests.Query;
+namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class NonSharedPrimitiveCollectionsQuerySingleStoreTest : NonSharedPrimitiveCollectionsQueryRelationalTestBase
 {

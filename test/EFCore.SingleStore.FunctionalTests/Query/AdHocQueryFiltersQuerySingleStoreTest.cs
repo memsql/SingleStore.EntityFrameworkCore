@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -153,62 +153,6 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
         var query2 = context.Entities.ToList();
         Assert.True(query2.All(x => x.TenantId == 2));
     }
-
-    [ConditionalFact]
-    public override async Task GroupJoin_SelectMany_gets_flattened()
-    {
-        // We're skipping this test when we're running tests on Managed Service due to the specifics of
-        // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
-        if (AppConfig.ManagedService)
-        {
-            return;
-        }
-
-        var contextFactory = await InitializeAsync<Context19708>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
-        {
-            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
-            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
-            modelBuilder.Entity<Context19708.Customer19708>()
-                .Property(e => e.Id)
-                .HasColumnType("bigint");
-            modelBuilder.Entity<Context19708.CustomerMembership19708>()
-                .Property(e => e.Id)
-                .HasColumnType("bigint");
-        });
-        using (var context = contextFactory.CreateContext())
-        {
-            var query = context.CustomerFilters.ToList();
-        }
-
-        using (var context = contextFactory.CreateContext())
-        {
-            var query = context.Set<Context19708.CustomerView19708>()
-                .OrderBy(e => e.Id)
-                .ThenBy(e => e.CustomerMembershipId)
-                .ToList();
-
-            Assert.Collection(
-                query,
-                t => AssertCustomerView(t, 1, "First", 1, "FirstChild"),
-                t => AssertCustomerView(t, 2, "Second", 2, "SecondChild1"),
-                t => AssertCustomerView(t, 2, "Second", 3, "SecondChild2"),
-                t => AssertCustomerView(t, 3, "Third", null, ""));
-
-            static void AssertCustomerView(
-                Context19708.CustomerView19708 actual,
-                int id,
-                string name,
-                int? customerMembershipId,
-                string customerMembershipName)
-            {
-                Assert.Equal(id, actual.Id);
-                Assert.Equal(name, actual.Name);
-                Assert.Equal(customerMembershipId, actual.CustomerMembershipId);
-                Assert.Equal(customerMembershipName, actual.CustomerMembershipName);
-            }
-        }
-    }
-
 
     [ConditionalTheory]
     [MemberData(nameof(IsAsyncData))]
@@ -373,4 +317,3 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 }
-
