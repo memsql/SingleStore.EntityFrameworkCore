@@ -52,6 +52,110 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
     protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()
         => new SingleStoreQueryableMethodTranslatingExpressionVisitor(this);
 
+    #region Prevent LIMIT LEAST(...)
+
+    // EF Core 10 combines a new row limit with an already existing one into a single `LIMIT LEAST(oldLimit, newLimit)`
+    // (e.g. for `Take(x).Take(y)` or `Take(x).First()`). SingleStore (like MySQL) only accepts non-negative integer constants
+    // (or parameters, which SingleStoreConnector substitutes client-side) in the LIMIT clause, not expressions.
+    // So whenever EF Core would generate LEAST() for the limit, we push the existing limit down into a subquery instead, which
+    // is what EF Core did up to version 9.
+    //
+    // EF Core applies the limit in a private ApplyLimit() method, that is called by TranslateTake(), TranslateFirstOrDefault(),
+    // TranslateSingleOrDefault(), TranslateLastOrDefault() and TranslateElementAtOrDefault(). The last two always push down an
+    // existing limit themselves before calling ApplyLimit() (via ReverseOrderings() and ApplyOffset()), so only the first three
+    // need to be handled here.
+
+    protected override ShapedQueryExpression TranslateTake(ShapedQueryExpression source, Expression count)
+    {
+        var selectExpression = (SelectExpression)source.QueryExpression;
+
+        if (selectExpression.Limit is not null)
+        {
+            var newLimit = TranslateExpression(count);
+            if (newLimit is null)
+            {
+                return null;
+            }
+
+            PushdownLimitIfLeastWouldBeGenerated(selectExpression, newLimit);
+        }
+
+        return base.TranslateTake(source, count);
+    }
+
+    protected override ShapedQueryExpression TranslateFirstOrDefault(
+        ShapedQueryExpression source,
+        LambdaExpression predicate,
+        Type returnType,
+        bool returnDefault)
+    {
+        // The base implementation translates the predicate before applying the limit (which pushes down an existing limit, unless
+        // the predicate is constant TRUE). We do the same here, so we can inspect the final state before the limit gets applied.
+        if (predicate is not null)
+        {
+            source = TranslateWhere(source, predicate);
+            if (source is null)
+            {
+                return null;
+            }
+        }
+
+        // FirstOrDefault() always applies a limit of 1.
+        PushdownLimitIfLeastWouldBeGenerated(
+            (SelectExpression)source.QueryExpression,
+            TranslateExpression(Expression.Constant(1)));
+
+        return base.TranslateFirstOrDefault(source, predicate: null, returnType, returnDefault);
+    }
+
+    protected override ShapedQueryExpression TranslateSingleOrDefault(
+        ShapedQueryExpression source,
+        LambdaExpression predicate,
+        Type returnType,
+        bool returnDefault)
+    {
+        if (predicate is not null)
+        {
+            source = TranslateWhere(source, predicate);
+            if (source is null)
+            {
+                return null;
+            }
+        }
+
+        // SingleOrDefault() applies a constant limit of 2 (or 1 in subqueries). Since only the fact that the new limit is a constant
+        // matters for the decision, we can use 2 here.
+        PushdownLimitIfLeastWouldBeGenerated(
+            (SelectExpression)source.QueryExpression,
+            TranslateExpression(Expression.Constant(2)));
+
+        return base.TranslateSingleOrDefault(source, predicate: null, returnType, returnDefault);
+    }
+
+    /// <summary>
+    ///     Mirrors the decision of EF Core's private <c>RelationalQueryableMethodTranslatingExpressionVisitor.ApplyLimit()</c>:
+    ///     If there is an existing limit that EF Core would combine with the new one using LEAST(), push it down into a subquery
+    ///     first, so EF Core can just set the new limit on the outer query.
+    /// </summary>
+    protected virtual void PushdownLimitIfLeastWouldBeGenerated(SelectExpression selectExpression, SqlExpression newLimit)
+    {
+        if (selectExpression.Limit is not { } oldLimit)
+        {
+            return;
+        }
+
+        // EF Core does not use LEAST() if both limits are constants (it picks the smaller one), or if both limits are identical.
+        var bothConstants = oldLimit is SqlConstantExpression { Value: int } &&
+                            newLimit is SqlConstantExpression { Value: int };
+
+        if (!bothConstants && !oldLimit.Equals(newLimit))
+        {
+            selectExpression.PushdownIntoSubquery();
+        }
+    }
+
+    #endregion
+
     protected override bool IsNaturallyOrdered(SelectExpression selectExpression)
     {
         return selectExpression is

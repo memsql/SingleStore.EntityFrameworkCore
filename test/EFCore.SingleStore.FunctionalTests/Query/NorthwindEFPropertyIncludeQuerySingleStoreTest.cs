@@ -826,7 +826,7 @@ ORDER BY `c`.`City`, `c`.`CustomerID`, `o`.`OrderID`
 
         AssertSql(
 """
-@__p_0='1'
+@p='1'
 
 SELECT `c1`.`CustomerID`, `s`.`OrderID`, `s`.`CustomerID`, `s`.`EmployeeID`, `s`.`OrderDate`, `s`.`OrderID0`, `s`.`ProductID`, `s`.`Discount`, `s`.`Quantity`, `s`.`UnitPrice`
 FROM (
@@ -836,7 +836,7 @@ FROM (
         FROM `Customers` AS `c`
         WHERE `c`.`CustomerID` LIKE 'A%'
         ORDER BY `c`.`CustomerID`
-        LIMIT @__p_0
+        LIMIT @p
     ) AS `c0`
     ORDER BY `c0`.`CustomerID`
     LIMIT 1
@@ -1011,7 +1011,7 @@ ORDER BY `o1`.`OrderID`, `s`.`OrderID`, `s`.`ProductID`
 
         AssertSql(
 """
-@__p_0='1'
+@p='1'
 
 SELECT `c1`.`CustomerID`, `s`.`OrderID`, `s`.`CustomerID`, `s`.`EmployeeID`, `s`.`OrderDate`, `s`.`OrderID0`, `s`.`ProductID`, `s`.`Discount`, `s`.`Quantity`, `s`.`UnitPrice`
 FROM (
@@ -1021,7 +1021,7 @@ FROM (
         FROM `Customers` AS `c`
         WHERE `c`.`CustomerID` LIKE 'A%'
         ORDER BY `c`.`CustomerID`
-        LIMIT @__p_0 OFFSET @__p_0
+        LIMIT @p OFFSET @p
     ) AS `c0`
     ORDER BY `c0`.`CustomerID`
     LIMIT 1
