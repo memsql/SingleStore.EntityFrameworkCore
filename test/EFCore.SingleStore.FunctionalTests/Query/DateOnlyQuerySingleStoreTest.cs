@@ -82,7 +82,7 @@ LIMIT 2
 
 SELECT `i`.`IceCreamId`, `i`.`BestServedBefore`, `i`.`Name`
 FROM `IceCream` AS `i`
-WHERE ADDTIME(CAST(`i`.`BestServedBefore` AS datetime(6)), TIME '12:21:42') = @matchExpireDateTime
+WHERE ADDTIME(CAST(`i`.`BestServedBefore` AS datetime(6)), '12:21:42') = @matchExpireDateTime
 LIMIT 2
 """);
     }

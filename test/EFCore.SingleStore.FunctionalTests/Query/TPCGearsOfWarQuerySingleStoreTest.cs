@@ -7703,7 +7703,7 @@ ORDER BY `u`.`Nickname`, `m`.`Id`
 
         AssertSql(
 """
-SELECT AVG(CAST(`u`.`SquadId` AS double))
+SELECT AVG((`u`.`SquadId` :> double))
 FROM (
     SELECT `g`.`SquadId`, `g`.`Rank`
     FROM `Gears` AS `g`
@@ -11261,7 +11261,7 @@ SELECT `u`.`Nickname`, COALESCE((
     FROM `Tags` AS `t1`
     WHERE `t1`.`GearNickName` = `u`.`FullName`
     ORDER BY `t1`.`Id`
-    LIMIT 1), TIMESTAMP '0001-01-01 00:00:00') AS `invalidTagIssueDate`
+    LIMIT 1), '0001-01-01 00:00:00') AS `invalidTagIssueDate`
 FROM (
     SELECT `g`.`Nickname`, `g`.`SquadId`, `g`.`FullName`
     FROM `Gears` AS `g`
@@ -11275,7 +11275,7 @@ WHERE `t`.`IssueDate` > COALESCE((
     FROM `Tags` AS `t0`
     WHERE `t0`.`GearNickName` = `u`.`FullName`
     ORDER BY `t0`.`Id`
-    LIMIT 1), TIMESTAMP '0001-01-01 00:00:00')
+    LIMIT 1), '0001-01-01 00:00:00')
 """);
     }
 
@@ -12279,6 +12279,7 @@ WHERE NOT EXISTS (
 """);
     }
 
+    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore Distributed")]
     public override async Task Nav_expansion_inside_Contains_argument(bool async)
     {
         await base.Nav_expansion_inside_Contains_argument(async);
@@ -12358,7 +12359,7 @@ LEFT JOIN (
     ) AS `w0`
     WHERE `w0`.`row` <= COALESCE((
         SELECT `n`.`Value`
-        FROM (SELECT @numbers1 AS `Value` UNION ALL VALUES ROW(@numbers2), ROW(@numbers3)) AS `n`
+        FROM (SELECT @numbers1 AS `Value` UNION ALL SELECT @numbers2 UNION ALL SELECT @numbers3) AS `n`
         ORDER BY `n`.`Value`
         LIMIT 1 OFFSET 1), 0)
 ) AS `w1` ON `u`.`FullName` = `w1`.`OwnerFullName`

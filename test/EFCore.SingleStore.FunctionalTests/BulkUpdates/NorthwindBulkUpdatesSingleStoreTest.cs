@@ -1526,7 +1526,7 @@ SELECT `o`.`OrderID`, `o`.`ProductID`, `o`.`Discount`, `o`.`Quantity`, `o`.`Unit
 FROM `Order Details` AS `o`
 INNER JOIN `Products` AS `p` ON `o`.`ProductID` = `p`.`ProductID`
 INNER JOIN `Orders` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
-WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > TIMESTAMP '1990-01-01 00:00:00')
+WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > '1990-01-01 00:00:00')
 """,
                 //
                 """
@@ -1536,7 +1536,7 @@ UPDATE `Order Details` AS `o`
 INNER JOIN `Products` AS `p` ON `o`.`ProductID` = `p`.`ProductID`
 INNER JOIN `Orders` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
 SET `o`.`Quantity` = CAST(@p AS signed)
-WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > TIMESTAMP '1990-01-01 00:00:00')
+WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > '1990-01-01 00:00:00')
 """,
                 //
                 """
@@ -1544,7 +1544,7 @@ SELECT `o`.`OrderID`, `o`.`ProductID`, `o`.`Discount`, `o`.`Quantity`, `o`.`Unit
 FROM `Order Details` AS `o`
 INNER JOIN `Products` AS `p` ON `o`.`ProductID` = `p`.`ProductID`
 INNER JOIN `Orders` AS `o0` ON `o`.`OrderID` = `o0`.`OrderID`
-WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > TIMESTAMP '1990-01-01 00:00:00')
+WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > '1990-01-01 00:00:00')
 """);
     }
 

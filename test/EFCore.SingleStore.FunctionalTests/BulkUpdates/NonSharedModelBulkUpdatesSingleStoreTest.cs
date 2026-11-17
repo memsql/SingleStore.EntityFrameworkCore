@@ -241,7 +241,7 @@ SET `o`.`Title` = @p
 
         AssertSql(
             """
-        @__p_0='1'
+        @p='1'
 
         DELETE `o`
         FROM `Owner` AS `o`
@@ -249,7 +249,7 @@ SET `o`.`Title` = @p
             SELECT `o0`.`Id`
             FROM `Owner` AS `o0`
             ORDER BY `o0`.`Title`
-            LIMIT 18446744073709551610 OFFSET @__p_0
+            LIMIT 18446744073709551610 OFFSET @p
         )
         """);
     }
