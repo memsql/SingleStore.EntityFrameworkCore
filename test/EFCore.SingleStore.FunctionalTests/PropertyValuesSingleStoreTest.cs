@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using EntityFrameworkCore.SingleStore.Tests;
+using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
@@ -27,6 +28,73 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
             await base.Values_can_be_reloaded_from_database_for_entity_in_any_state_with_inheritance(state, async);
         }
 
+        #region Complex collections mapped to JSON
+
+        // The `School` entity has a complex collection (`Departments`), that EF Core requires to be mapped to a JSON column.
+        // We ignore the entity in the fixture, so the following tests that work with it directly are being skipped.
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Using_complex_property_value_not_list_throws()
+            => base.Using_complex_property_value_not_list_throws();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override Task Complex_collection_current_values_can_be_accessed_as_a_property_dictionary()
+            => base.Complex_collection_current_values_can_be_accessed_as_a_property_dictionary();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override Task Complex_collection_original_values_can_be_accessed_as_a_property_dictionary()
+            => base.Complex_collection_original_values_can_be_accessed_as_a_property_dictionary();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Setting_complex_collection_values_from_object_works()
+            => base.Setting_complex_collection_values_from_object_works();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Setting_complex_collection_current_values_from_object_with_nulls_works()
+            => base.Setting_complex_collection_current_values_from_object_with_nulls_works();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Setting_complex_collection_original_values_from_object_with_nulls_works()
+            => base.Setting_complex_collection_original_values_from_object_with_nulls_works();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Setting_complex_collection_current_values_from_dictionary_works()
+            => base.Setting_complex_collection_current_values_from_dictionary_works();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Setting_complex_collection_values_from_DTO_with_nulls_works()
+            => base.Setting_complex_collection_values_from_DTO_with_nulls_works();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Setting_complex_collection_current_values_from_dictionary_with_nulls_works()
+            => base.Setting_complex_collection_current_values_from_dictionary_with_nulls_works();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Setting_complex_collection_original_values_from_dictionary_with_nulls_works()
+            => base.Setting_complex_collection_original_values_from_dictionary_with_nulls_works();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void Setting_complex_collection_current_values_from_DTO_with_complex_metadata_access_works()
+            => base.Setting_complex_collection_current_values_from_DTO_with_complex_metadata_access_works();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void SetValues_throws_for_complex_collection_with_non_list_value()
+            => base.SetValues_throws_for_complex_collection_with_non_list_value();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void SetValues_throws_for_complex_collection_with_non_dictionary_item()
+            => base.SetValues_throws_for_complex_collection_with_non_dictionary_item();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void SetValues_throws_for_nested_complex_collection_with_non_list_value()
+            => base.SetValues_throws_for_nested_complex_collection_with_non_list_value();
+
+        [ConditionalFact(Skip = "TODO: PLAT-6409 (requires JSON column support)")]
+        public override void SetValues_throws_for_nested_complex_collection_with_non_dictionary_item()
+            => base.SetValues_throws_for_nested_complex_collection_with_non_dictionary_item();
+
+        #endregion Complex collections mapped to JSON
+
         public class PropertyValuesSingleStoreFixture : PropertyValuesFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
@@ -43,6 +111,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                     .HasColumnType("bigint");
 
                 base.OnModelCreating(modelBuilder, context);
+
+                // `School` has a complex collection (`Departments`), that EF Core requires to be mapped to a JSON column (`ToJson()`),
+                // which is not supported by the SingleStore provider yet. Tests that only optionally use `School` check whether it
+                // exists in the model.
+                modelBuilder.Ignore<School>();
             }
         }
     }
