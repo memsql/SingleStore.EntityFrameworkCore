@@ -207,8 +207,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
 
             AssertSql(
                 """
+                @cities1='London' (Size = 15)
+                @cities2='Berlin' (Size = 15)
+
                 SELECT AVG(CASE
-                    WHEN `c`.`City` IN ('London', 'Berlin') THEN 1.0
+                    WHEN `c`.`City` IN (@cities1, @cities2) THEN 1.0
                     ELSE 0.0
                 END)
                 FROM `Customers` AS `c`
