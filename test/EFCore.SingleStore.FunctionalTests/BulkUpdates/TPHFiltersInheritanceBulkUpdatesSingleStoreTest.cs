@@ -88,6 +88,7 @@ WHERE (
         AssertSql();
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: subselect with DISTINCT")]
     public override async Task Delete_GroupBy_Where_Select_First_3(bool async)
     {
         await base.Delete_GroupBy_Where_Select_First_3(async);

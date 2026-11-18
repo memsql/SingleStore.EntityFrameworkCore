@@ -180,17 +180,16 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
                        && IsJsonEachKeyColumn(subquery, projectedColumn)));
     }
 
+    // SingleStore supports multi-table DELETE with any join type, but (like MySQL) not with ORDER BY or LIMIT.
     protected override bool IsValidSelectExpressionForExecuteDelete(SelectExpression selectExpression)
         => selectExpression is
            {
-               Orderings: [],
                Offset: null,
-               Limit: null,
                GroupBy: [],
                Having: null
            } &&
-           selectExpression.Tables[0] is TableExpression &&
-           selectExpression.Tables.Skip(1).All(t => t is InnerJoinExpression);
+           (selectExpression.Tables.Count == 1 || (selectExpression.Orderings.Count == 0 && selectExpression.Limit is null)) &&
+           selectExpression.Tables[0] is TableExpression;
 
     protected override bool IsValidSelectExpressionForExecuteUpdate(
         SelectExpression selectExpression,

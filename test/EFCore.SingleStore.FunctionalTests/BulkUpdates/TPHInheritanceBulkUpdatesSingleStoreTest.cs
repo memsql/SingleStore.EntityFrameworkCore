@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
@@ -92,19 +91,17 @@ WHERE (
         AssertSql();
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: subselect with DISTINCT")]
     public override async Task Delete_GroupBy_Where_Select_First_3(bool async)
     {
-        // Not supported by MySQL:
-        //     Error Code: 1093. You can't specify target table 'c' for update in FROM clause
-        await Assert.ThrowsAsync<SingleStoreException>(
-            () => base.Delete_GroupBy_Where_Select_First_3(async));
+        await base.Delete_GroupBy_Where_Select_First_3(async);
 
         AssertSql(
 """
 DELETE `a`
 FROM `Animals` AS `a`
 WHERE `a`.`Id` IN (
-SELECT (
+    SELECT (
         SELECT `a1`.`Id`
         FROM `Animals` AS `a1`
         WHERE `a0`.`CountryId` = `a1`.`CountryId`

@@ -188,17 +188,10 @@ WHERE EXISTS (
 """
 @p='100'
 
-DELETE `o`
-FROM `Order Details` AS `o`
-WHERE EXISTS (
-    SELECT 1
-    FROM (
-        SELECT `o0`.`OrderID`, `o0`.`ProductID`
-        FROM `Order Details` AS `o0`
-        WHERE `o0`.`OrderID` < 10300
-        LIMIT @p
-    ) AS `o1`
-    WHERE (`o1`.`OrderID` = `o`.`OrderID`) AND (`o1`.`ProductID` = `o`.`ProductID`))
+DELETE
+FROM `Order Details`
+WHERE `OrderID` < 10300
+LIMIT @p
 """);
     }
 
@@ -555,8 +548,8 @@ INNER JOIN (
 
         AssertSql(
 """
-@__p_1='100'
-@__p_0='0'
+@p0='100'
+@p='0'
 
 DELETE `o`
 FROM `Order Details` AS `o`
@@ -565,7 +558,7 @@ LEFT JOIN (
     FROM `Orders` AS `o0`
     WHERE `o0`.`OrderID` < 10300
     ORDER BY `o0`.`OrderID`
-    LIMIT @__p_1 OFFSET @__p_0
+    LIMIT @p0 OFFSET @p
 ) AS `o1` ON `o`.`OrderID` = `o1`.`OrderID`
 WHERE `o`.`OrderID` < 10276
 """);
@@ -793,7 +786,15 @@ LIMIT @p
 
     public override async Task Update_Where_Skip_Take_set_constant(bool async)
     {
-        await base.Update_Where_Skip_Take_set_constant(async);
+        // Same as the base test, but with `OrderBy`: `Skip`/`Take` without it selects arbitrary rows on a distributed SingleStore
+        // table, so re-running the query to check the result does not necessarily return the updated rows.
+        await AssertUpdate(
+            async,
+            ss => ss.Set<Customer>().Where(c => c.CustomerID.StartsWith("F")).OrderBy(c => c.CustomerID).Skip(2).Take(4),
+            e => e,
+            s => s.SetProperty(c => c.ContactName, "Updated"),
+            rowsAffectedCount: 4,
+            (b, a) => Assert.All(a, c => Assert.Equal("Updated", c.ContactName)));
 
         AssertExecuteUpdateSql(
 """
@@ -806,6 +807,7 @@ INNER JOIN (
     SELECT `c`.`CustomerID`
     FROM `Customers` AS `c`
     WHERE `c`.`CustomerID` LIKE 'F%'
+    ORDER BY `c`.`CustomerID`
     LIMIT @p0 OFFSET @p
 ) AS `c1` ON `c0`.`CustomerID` = `c1`.`CustomerID`
 SET `c0`.`ContactName` = @p1
@@ -1553,23 +1555,20 @@ WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > '1990-01-01 00:00:00')
         await base.Delete_with_LeftJoin_via_flattened_GroupJoin(async);
 
         AssertSql(
-            """
+"""
 @p0='100'
 @p='0'
 
 DELETE `o`
 FROM `Order Details` AS `o`
-WHERE EXISTS (
-    SELECT 1
-    FROM `Order Details` AS `o0`
-    LEFT JOIN (
-        SELECT `o2`.`OrderID`
-        FROM `Orders` AS `o2`
-        WHERE `o2`.`OrderID` < 10300
-        ORDER BY `o2`.`OrderID`
-        LIMIT @p0 OFFSET @p
-    ) AS `o1` ON `o0`.`OrderID` = `o1`.`OrderID`
-    WHERE (`o0`.`OrderID` < 10276) AND ((`o0`.`OrderID` = `o`.`OrderID`) AND (`o0`.`ProductID` = `o`.`ProductID`)))
+LEFT JOIN (
+    SELECT `o0`.`OrderID`
+    FROM `Orders` AS `o0`
+    WHERE `o0`.`OrderID` < 10300
+    ORDER BY `o0`.`OrderID`
+    LIMIT @p0 OFFSET @p
+) AS `o1` ON `o`.`OrderID` = `o1`.`OrderID`
+WHERE `o`.`OrderID` < 10276
 """);
     }
 
@@ -1578,23 +1577,20 @@ WHERE EXISTS (
         await base.Delete_with_RightJoin(async);
 
         AssertSql(
-            """
+"""
 @p0='100'
 @p='0'
 
 DELETE `o`
 FROM `Order Details` AS `o`
-WHERE EXISTS (
-    SELECT 1
-    FROM `Order Details` AS `o0`
-    RIGHT JOIN (
-        SELECT `o2`.`OrderID`
-        FROM `Orders` AS `o2`
-        WHERE `o2`.`OrderID` < 10300
-        ORDER BY `o2`.`OrderID`
-        LIMIT @p0 OFFSET @p
-    ) AS `o1` ON `o0`.`OrderID` = `o1`.`OrderID`
-    WHERE (`o0`.`OrderID` < 10276) AND ((`o0`.`OrderID` = `o`.`OrderID`) AND (`o0`.`ProductID` = `o`.`ProductID`)))
+RIGHT JOIN (
+    SELECT `o0`.`OrderID`
+    FROM `Orders` AS `o0`
+    WHERE `o0`.`OrderID` < 10300
+    ORDER BY `o0`.`OrderID`
+    LIMIT @p0 OFFSET @p
+) AS `o1` ON `o`.`OrderID` = `o1`.`OrderID`
+WHERE `o`.`OrderID` < 10276
 """);
     }
 
