@@ -775,6 +775,56 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
             }
         }
 
+        public override async Task Multiop_drop_table_and_create_the_same_table_in_one_migration()
+        {
+            await base.Multiop_drop_table_and_create_the_same_table_in_one_migration();
+
+            AssertSql(
+"""
+DROP TABLE `Customers`;
+""",
+                //
+                """
+CREATE TABLE `Customers` (
+    `Id` int NOT NULL,
+    `Name` longtext CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `PK_Customers` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+""");
+        }
+
+        public override async Task Multiop_create_table_and_drop_it_in_one_migration()
+        {
+            await base.Multiop_create_table_and_drop_it_in_one_migration();
+
+            AssertSql(
+"""
+CREATE TABLE `Customers` (
+    `Id` int NOT NULL,
+    `Name` longtext CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `PK_Customers` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+""",
+                //
+                """
+DROP TABLE `Customers`;
+""");
+        }
+
+        // Renaming the table renames its primary key constraint, which requires dropping and re-adding the primary key.
+        [ConditionalTheory(Skip = "SingleStore only supports online ALTER TABLE")]
+        public override Task Multiop_rename_table_and_drop()
+        {
+            return base.Multiop_rename_table_and_drop();
+        }
+
+        // Renaming the table renames its primary key constraint, which requires dropping and re-adding the primary key.
+        [ConditionalTheory(Skip = "SingleStore only supports online ALTER TABLE")]
+        public override Task Multiop_rename_table_and_create_new_table_with_the_old_name()
+        {
+            return base.Multiop_rename_table_and_create_new_table_with_the_old_name();
+        }
+
         [ConditionalTheory(Skip = "TODO")]
         public override Task Rename_table_with_primary_key()
         {
