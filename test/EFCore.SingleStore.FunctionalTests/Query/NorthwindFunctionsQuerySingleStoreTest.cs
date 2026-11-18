@@ -139,6 +139,18 @@ WHERE `o`.`OrderID` < 10300
         public virtual void Check_all_tests_overridden()
             => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
+        public override async Task Client_evaluation_of_uncorrelated_method_call(bool async)
+        {
+            await base.Client_evaluation_of_uncorrelated_method_call(async);
+
+            AssertSql(
+                """
+SELECT `o`.`OrderID`, `o`.`ProductID`, `o`.`Discount`, `o`.`Quantity`, `o`.`UnitPrice`
+FROM `Order Details` AS `o`
+WHERE (`o`.`UnitPrice` < 7.0) AND (10 < `o`.`ProductID`)
+""");
+        }
+
         private void AssertSql(params string[] expected)
             => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 

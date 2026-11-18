@@ -1548,6 +1548,162 @@ WHERE `p`.`Discontinued` AND (`o0`.`OrderDate` > '1990-01-01 00:00:00')
 """);
     }
 
+    public override async Task Delete_with_LeftJoin_via_flattened_GroupJoin(bool async)
+    {
+        await base.Delete_with_LeftJoin_via_flattened_GroupJoin(async);
+
+        AssertSql(
+            """
+@p0='100'
+@p='0'
+
+DELETE `o`
+FROM `Order Details` AS `o`
+WHERE EXISTS (
+    SELECT 1
+    FROM `Order Details` AS `o0`
+    LEFT JOIN (
+        SELECT `o2`.`OrderID`
+        FROM `Orders` AS `o2`
+        WHERE `o2`.`OrderID` < 10300
+        ORDER BY `o2`.`OrderID`
+        LIMIT @p0 OFFSET @p
+    ) AS `o1` ON `o0`.`OrderID` = `o1`.`OrderID`
+    WHERE (`o0`.`OrderID` < 10276) AND ((`o0`.`OrderID` = `o`.`OrderID`) AND (`o0`.`ProductID` = `o`.`ProductID`)))
+""");
+    }
+
+    public override async Task Delete_with_RightJoin(bool async)
+    {
+        await base.Delete_with_RightJoin(async);
+
+        AssertSql(
+            """
+@p0='100'
+@p='0'
+
+DELETE `o`
+FROM `Order Details` AS `o`
+WHERE EXISTS (
+    SELECT 1
+    FROM `Order Details` AS `o0`
+    RIGHT JOIN (
+        SELECT `o2`.`OrderID`
+        FROM `Orders` AS `o2`
+        WHERE `o2`.`OrderID` < 10300
+        ORDER BY `o2`.`OrderID`
+        LIMIT @p0 OFFSET @p
+    ) AS `o1` ON `o0`.`OrderID` = `o1`.`OrderID`
+    WHERE (`o0`.`OrderID` < 10276) AND ((`o0`.`OrderID` = `o`.`OrderID`) AND (`o0`.`ProductID` = `o`.`ProductID`)))
+""");
+    }
+
+    public override async Task Update_Where_set_constant_via_lambda(bool async)
+    {
+        await base.Update_Where_set_constant_via_lambda(async);
+
+        AssertSql(
+            """
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`CustomerID` LIKE 'F%'
+""",
+            //
+            """
+UPDATE `Customers` AS `c`
+SET `c`.`ContactName` = 'Updated'
+WHERE `c`.`CustomerID` LIKE 'F%'
+""",
+            //
+            """
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`CustomerID` LIKE 'F%'
+""");
+    }
+
+    public override async Task Update_with_LeftJoin_via_flattened_GroupJoin(bool async)
+    {
+        await base.Update_with_LeftJoin_via_flattened_GroupJoin(async);
+
+        AssertSql(
+            """
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+LEFT JOIN (
+    SELECT `o`.`CustomerID`
+    FROM `Orders` AS `o`
+    WHERE `o`.`OrderID` < 10300
+) AS `o0` ON `c`.`CustomerID` = `o0`.`CustomerID`
+WHERE `c`.`CustomerID` LIKE 'F%'
+""",
+            //
+            """
+@p='Updated' (Size = 30)
+
+UPDATE `Customers` AS `c`
+LEFT JOIN (
+    SELECT `o`.`CustomerID`
+    FROM `Orders` AS `o`
+    WHERE `o`.`OrderID` < 10300
+) AS `o0` ON `c`.`CustomerID` = `o0`.`CustomerID`
+SET `c`.`ContactName` = @p
+WHERE `c`.`CustomerID` LIKE 'F%'
+""",
+            //
+            """
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+LEFT JOIN (
+    SELECT `o`.`CustomerID`
+    FROM `Orders` AS `o`
+    WHERE `o`.`OrderID` < 10300
+) AS `o0` ON `c`.`CustomerID` = `o0`.`CustomerID`
+WHERE `c`.`CustomerID` LIKE 'F%'
+""");
+    }
+
+    public override async Task Update_with_RightJoin(bool async)
+    {
+        await base.Update_with_RightJoin(async);
+
+        AssertSql(
+            """
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+FROM `Orders` AS `o`
+RIGHT JOIN (
+    SELECT `c`.`CustomerID`
+    FROM `Customers` AS `c`
+    WHERE `c`.`CustomerID` LIKE 'F%'
+) AS `c0` ON `o`.`CustomerID` = `c0`.`CustomerID`
+WHERE `o`.`OrderID` < 10300
+""",
+            //
+            """
+@p='2020-01-01T00:00:00.0000000Z' (Nullable = true) (DbType = DateTime)
+
+UPDATE `Orders` AS `o`
+RIGHT JOIN (
+    SELECT `c`.`CustomerID`
+    FROM `Customers` AS `c`
+    WHERE `c`.`CustomerID` LIKE 'F%'
+) AS `c0` ON `o`.`CustomerID` = `c0`.`CustomerID`
+SET `o`.`OrderDate` = @p
+WHERE `o`.`OrderID` < 10300
+""",
+            //
+            """
+SELECT `o`.`OrderID`, `o`.`CustomerID`, `o`.`EmployeeID`, `o`.`OrderDate`
+FROM `Orders` AS `o`
+RIGHT JOIN (
+    SELECT `c`.`CustomerID`
+    FROM `Customers` AS `c`
+    WHERE `c`.`CustomerID` LIKE 'F%'
+) AS `c0` ON `o`.`CustomerID` = `c0`.`CustomerID`
+WHERE `o`.`OrderID` < 10300
+""");
+    }
+
     private void AssertSql(params string[] expected)
         => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 

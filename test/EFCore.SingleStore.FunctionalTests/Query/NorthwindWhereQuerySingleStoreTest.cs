@@ -521,6 +521,785 @@ WHERE @Concat = `c`.`CompanyName`
         public virtual void Check_all_tests_overridden()
             => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
+        public override async Task Where_bool_client_side_negated(bool async)
+        {
+            await base.Where_bool_client_side_negated(async);
+
+            AssertSql();
+        }
+
+        public override async Task EF_MultipleParameters_with_non_evaluatable_argument_throws(bool async)
+        {
+            await base.EF_MultipleParameters_with_non_evaluatable_argument_throws(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_simple(bool async)
+        {
+            await base.Where_simple(async);
+
+            AssertSql(
+                """
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = 'London'
+""");
+        }
+
+        public override async Task<string> Where_simple_closure(bool async)
+        {
+            var queryString = await base.Where_simple_closure(async);
+
+            AssertSql(
+                """
+@city='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city
+""");
+
+            return queryString;
+        }
+
+        public override async Task Where_indexer_closure(bool async)
+        {
+            await base.Where_indexer_closure(async);
+
+            AssertSql(
+                """
+@p='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @p
+""");
+        }
+
+        public override async Task Where_dictionary_key_access_closure(bool async)
+        {
+            await base.Where_dictionary_key_access_closure(async);
+
+            AssertSql(
+                """
+@get_Item='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @get_Item
+""");
+        }
+
+        public override async Task Where_tuple_item_closure(bool async)
+        {
+            await base.Where_tuple_item_closure(async);
+
+            AssertSql(
+                """
+@predicateTuple_Item2='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @predicateTuple_Item2
+""");
+        }
+
+        public override async Task Where_named_tuple_item_closure(bool async)
+        {
+            await base.Where_named_tuple_item_closure(async);
+
+            AssertSql(
+                """
+@predicateTuple_Item2='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @predicateTuple_Item2
+""");
+        }
+
+        public override async Task Where_simple_closure_constant(bool async)
+        {
+            await base.Where_simple_closure_constant(async);
+
+            AssertSql(
+                """
+@predicate='True'
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE @predicate
+""");
+        }
+
+        public override async Task Where_simple_closure_via_query_cache(bool async)
+        {
+            await base.Where_simple_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@city='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city
+""",
+                //
+                """
+@city='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city
+""");
+        }
+
+        public override async Task Where_method_call_nullable_type_closure_via_query_cache(bool async)
+        {
+            await base.Where_method_call_nullable_type_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@p='2' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE CAST(`e`.`ReportsTo` AS signed) = @p
+""",
+                //
+                """
+@p='5' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE CAST(`e`.`ReportsTo` AS signed) = @p
+""");
+        }
+
+        public override async Task Where_method_call_nullable_type_reverse_closure_via_query_cache(bool async)
+        {
+            await base.Where_method_call_nullable_type_reverse_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@p='1' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE CAST(`e`.`EmployeeID` AS signed) > @p
+""",
+                //
+                """
+@p='5' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE CAST(`e`.`EmployeeID` AS signed) > @p
+""");
+        }
+
+        public override async Task Where_method_call_closure_via_query_cache(bool async)
+        {
+            await base.Where_method_call_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@GetCity='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @GetCity
+""",
+                //
+                """
+@GetCity='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @GetCity
+""");
+        }
+
+        public override async Task Where_field_access_closure_via_query_cache(bool async)
+        {
+            await base.Where_field_access_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@city_InstanceFieldValue='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city_InstanceFieldValue
+""",
+                //
+                """
+@city_InstanceFieldValue='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city_InstanceFieldValue
+""");
+        }
+
+        public override async Task Where_property_access_closure_via_query_cache(bool async)
+        {
+            await base.Where_property_access_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@city_InstancePropertyValue='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city_InstancePropertyValue
+""",
+                //
+                """
+@city_InstancePropertyValue='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city_InstancePropertyValue
+""");
+        }
+
+        public override async Task Where_static_field_access_closure_via_query_cache(bool async)
+        {
+            await base.Where_static_field_access_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@StaticFieldValue='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @StaticFieldValue
+""",
+                //
+                """
+@StaticFieldValue='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @StaticFieldValue
+""");
+        }
+
+        public override async Task Where_static_property_access_closure_via_query_cache(bool async)
+        {
+            await base.Where_static_property_access_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@StaticPropertyValue='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @StaticPropertyValue
+""",
+                //
+                """
+@StaticPropertyValue='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @StaticPropertyValue
+""");
+        }
+
+        public override async Task Where_nested_field_access_closure_via_query_cache(bool async)
+        {
+            await base.Where_nested_field_access_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@city_Nested_InstanceFieldValue='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city_Nested_InstanceFieldValue
+""",
+                //
+                """
+@city_Nested_InstanceFieldValue='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city_Nested_InstanceFieldValue
+""");
+        }
+
+        public override async Task Where_nested_property_access_closure_via_query_cache(bool async)
+        {
+            await base.Where_nested_property_access_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@city_Nested_InstancePropertyValue='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city_Nested_InstancePropertyValue
+""",
+                //
+                """
+@city_Nested_InstancePropertyValue='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @city_Nested_InstancePropertyValue
+""");
+        }
+
+        public override async Task Where_nested_field_access_closure_via_query_cache_error_null(bool async)
+        {
+            await base.Where_nested_field_access_closure_via_query_cache_error_null(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_nested_field_access_closure_via_query_cache_error_method_null(bool async)
+        {
+            await base.Where_nested_field_access_closure_via_query_cache_error_method_null(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_new_instance_field_access_query_cache(bool async)
+        {
+            await base.Where_new_instance_field_access_query_cache(async);
+
+            AssertSql(
+                """
+@InstanceFieldValue='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @InstanceFieldValue
+""",
+                //
+                """
+@InstanceFieldValue='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @InstanceFieldValue
+""");
+        }
+
+        public override async Task Where_new_instance_field_access_closure_via_query_cache(bool async)
+        {
+            await base.Where_new_instance_field_access_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@InstanceFieldValue='London' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @InstanceFieldValue
+""",
+                //
+                """
+@InstanceFieldValue='Seattle' (Size = 15)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE `c`.`City` = @InstanceFieldValue
+""");
+        }
+
+        public override async Task Where_simple_closure_via_query_cache_nullable_type(bool async)
+        {
+            await base.Where_simple_closure_via_query_cache_nullable_type(async);
+
+            AssertSql(
+                """
+@p='2' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE CAST(`e`.`ReportsTo` AS signed) = @p
+""",
+                //
+                """
+@p='5' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE CAST(`e`.`ReportsTo` AS signed) = @p
+""",
+                //
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`ReportsTo` IS NULL
+""");
+        }
+
+        public override async Task Where_simple_closure_via_query_cache_nullable_type_reverse(bool async)
+        {
+            await base.Where_simple_closure_via_query_cache_nullable_type_reverse(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`ReportsTo` IS NULL
+""",
+                //
+                """
+@p='5' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE CAST(`e`.`ReportsTo` AS signed) = @p
+""",
+                //
+                """
+@p='2' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE CAST(`e`.`ReportsTo` AS signed) = @p
+""");
+        }
+
+        public override async Task Where_subquery_closure_via_query_cache(bool async)
+        {
+            await base.Where_subquery_closure_via_query_cache(async);
+
+            AssertSql(
+                """
+@customerID='ALFKI' (Size = 5) (DbType = StringFixedLength)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE EXISTS (
+    SELECT 1
+    FROM `Orders` AS `o`
+    WHERE (`o`.`CustomerID` = @customerID) AND (`o`.`CustomerID` = `c`.`CustomerID`))
+""",
+                //
+                """
+@customerID='ANATR' (Size = 5) (DbType = StringFixedLength)
+
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE EXISTS (
+    SELECT 1
+    FROM `Orders` AS `o`
+    WHERE (`o`.`CustomerID` = @customerID) AND (`o`.`CustomerID` = `c`.`CustomerID`))
+""");
+        }
+
+        public override async Task Where_simple_shadow(bool async)
+        {
+            await base.Where_simple_shadow(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`Title` = 'Sales Representative'
+""");
+        }
+
+        public override async Task Where_simple_shadow_projection(bool async)
+        {
+            await base.Where_simple_shadow_projection(async);
+
+            AssertSql(
+                """
+SELECT `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`Title` = 'Sales Representative'
+""");
+        }
+
+        public override async Task Where_simple_shadow_projection_mixed(bool async)
+        {
+            await base.Where_simple_shadow_projection_mixed(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`Title` = 'Sales Representative'
+""");
+        }
+
+        public override async Task Where_simple_shadow_subquery(bool async)
+        {
+            await base.Where_simple_shadow_subquery(async);
+
+            AssertSql(
+                """
+@p='5'
+
+SELECT `e0`.`EmployeeID`, `e0`.`City`, `e0`.`Country`, `e0`.`FirstName`, `e0`.`ReportsTo`, `e0`.`Title`
+FROM (
+    SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+    FROM `Employees` AS `e`
+    ORDER BY `e`.`EmployeeID`
+    LIMIT @p
+) AS `e0`
+WHERE `e0`.`Title` = 'Sales Representative'
+ORDER BY `e0`.`EmployeeID`
+""");
+        }
+
+        public override async Task Where_shadow_subquery_FirstOrDefault(bool async)
+        {
+            await base.Where_shadow_subquery_FirstOrDefault(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE (`e`.`Title` = (
+    SELECT `e0`.`Title`
+    FROM `Employees` AS `e0`
+    ORDER BY `e0`.`Title`
+    LIMIT 1)) OR (`e`.`Title` IS NULL AND ((
+    SELECT `e0`.`Title`
+    FROM `Employees` AS `e0`
+    ORDER BY `e0`.`Title`
+    LIMIT 1) IS NULL))
+""");
+        }
+
+        public override async Task Where_client(bool async)
+        {
+            await base.Where_client(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_subquery_correlated(bool async)
+        {
+            await base.Where_subquery_correlated(async);
+
+            AssertSql(
+                """
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE EXISTS (
+    SELECT 1
+    FROM `Customers` AS `c0`
+    WHERE `c`.`CustomerID` = `c0`.`CustomerID`)
+""");
+        }
+
+        public override async Task Where_subquery_correlated_client_eval(bool async)
+        {
+            await base.Where_subquery_correlated_client_eval(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_client_and_server_top_level(bool async)
+        {
+            await base.Where_client_and_server_top_level(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_client_or_server_top_level(bool async)
+        {
+            await base.Where_client_or_server_top_level(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_client_and_server_non_top_level(bool async)
+        {
+            await base.Where_client_and_server_non_top_level(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_client_deep_inside_predicate_and_server_top_level(bool async)
+        {
+            await base.Where_client_deep_inside_predicate_and_server_top_level(async);
+
+            AssertSql();
+        }
+
+        public override async Task Where_equals_method_int(bool async)
+        {
+            await base.Where_equals_method_int(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`EmployeeID` = 1
+""");
+        }
+
+        public override async Task Where_equals_using_object_overload_on_mismatched_types(bool async)
+        {
+            await base.Where_equals_using_object_overload_on_mismatched_types(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE FALSE
+""");
+        }
+
+        public override async Task Where_equals_using_int_overload_on_mismatched_types(bool async)
+        {
+            await base.Where_equals_using_int_overload_on_mismatched_types(async);
+
+            AssertSql(
+                """
+@p='1'
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`EmployeeID` = @p
+""");
+        }
+
+        public override async Task Where_equals_on_mismatched_types_nullable_int_long(bool async)
+        {
+            await base.Where_equals_on_mismatched_types_nullable_int_long(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE FALSE
+""",
+                //
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE FALSE
+""");
+        }
+
+        public override async Task Where_equals_on_mismatched_types_int_nullable_int(bool async)
+        {
+            await base.Where_equals_on_mismatched_types_int_nullable_int(async);
+
+            AssertSql(
+                """
+@intPrm='2'
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`ReportsTo` = @intPrm
+""",
+                //
+                """
+@intPrm='2'
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE @intPrm = `e`.`ReportsTo`
+""");
+        }
+
+        public override async Task Where_equals_on_mismatched_types_nullable_long_nullable_int(bool async)
+        {
+            await base.Where_equals_on_mismatched_types_nullable_long_nullable_int(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE FALSE
+""",
+                //
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE FALSE
+""");
+        }
+
+        public override async Task Where_equals_on_matched_nullable_int_types(bool async)
+        {
+            await base.Where_equals_on_matched_nullable_int_types(async);
+
+            AssertSql(
+                """
+@nullableIntPrm='2' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE @nullableIntPrm = `e`.`ReportsTo`
+""",
+                //
+                """
+@nullableIntPrm='2' (Nullable = true)
+
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`ReportsTo` = @nullableIntPrm
+""");
+        }
+
+        public override async Task Where_equals_on_null_nullable_int_types(bool async)
+        {
+            await base.Where_equals_on_null_nullable_int_types(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`ReportsTo` IS NULL
+""",
+                //
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`ReportsTo` IS NULL
+""");
+        }
+
+        public override async Task Where_comparison_nullable_type_not_null(bool async)
+        {
+            await base.Where_comparison_nullable_type_not_null(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`ReportsTo` = 2
+""");
+        }
+
+        public override async Task Where_comparison_nullable_type_null(bool async)
+        {
+            await base.Where_comparison_nullable_type_null(async);
+
+            AssertSql(
+                """
+SELECT `e`.`EmployeeID`, `e`.`City`, `e`.`Country`, `e`.`FirstName`, `e`.`ReportsTo`, `e`.`Title`
+FROM `Employees` AS `e`
+WHERE `e`.`ReportsTo` IS NULL
+""");
+        }
+
+        public override async Task Where_simple_reversed(bool async)
+        {
+            await base.Where_simple_reversed(async);
+
+            AssertSql(
+                """
+SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
+FROM `Customers` AS `c`
+WHERE 'London' = `c`.`City`
+""");
+        }
+
         private void AssertSql(params string[] expected)
             => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 

@@ -875,6 +875,13 @@ WHERE `m`.`ContactName` LIKE '%z%'
     public virtual void Check_all_tests_overridden()
         => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
+    public override async Task Multiple_occurrences_of_SqlQuery_with_db_parameter_adds_two_parameters(bool async)
+    {
+        await base.Multiple_occurrences_of_SqlQuery_with_db_parameter_adds_two_parameters(async);
+
+        AssertSql();
+    }
+
     private void AssertSql(params string[] expected)
         => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 }

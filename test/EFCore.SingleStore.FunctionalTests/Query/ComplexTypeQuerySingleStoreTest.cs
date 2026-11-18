@@ -1133,6 +1133,18 @@ LEFT JOIN (
     public virtual void Check_all_tests_overridden()
         => SingleStoreTestHelpers.AssertAllMethodsOverridden(GetType());
 
+    public override async Task Project_nullable_struct_complex_type_via_optional_navigation(bool async)
+    {
+        await base.Project_nullable_struct_complex_type_via_optional_navigation(async);
+
+        AssertSql(
+            """
+SELECT `v0`.`ShippingAddress_AddressLine1`, `v0`.`ShippingAddress_AddressLine2`, `v0`.`ShippingAddress_ZipCode`, `v0`.`ShippingAddress_Country_Code`, `v0`.`ShippingAddress_Country_FullName`
+FROM `ValuedCustomerGroup` AS `v`
+LEFT JOIN `ValuedCustomer` AS `v0` ON `v`.`OptionalCustomerId` = `v0`.`Id`
+""");
+    }
+
     private void AssertSql(params string[] expected)
         => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 
