@@ -1,5 +1,6 @@
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -98,6 +99,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
         public class PropertyValuesSingleStoreFixture : PropertyValuesFixtureBase
         {
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
+
+            // `School` is mapped by the base fixture and then ignored in `OnModelCreating` below.
+            public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
+                => base.AddOptions(builder)
+                    .ConfigureWarnings(w => w.Ignore(CoreEventId.MappedEntityTypeIgnoredWarning));
 
             protected override void OnModelCreating(ModelBuilder modelBuilder, DbContext context)
             {
