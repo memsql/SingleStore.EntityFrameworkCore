@@ -5,9 +5,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using Xunit;
@@ -15,17 +13,12 @@ using Xunit.Abstractions;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests;
 
-public class ComplexTypesTrackingSingleStoreTest : ComplexTypesTrackingTestBase<ComplexTypesTrackingSingleStoreTest.SingleStoreFixture>
+public class ComplexTypesTrackingSingleStoreTest : ComplexTypesTrackingRelationalTestBase<ComplexTypesTrackingSingleStoreTest.SingleStoreFixture>
 {
     public ComplexTypesTrackingSingleStoreTest(SingleStoreFixture fixture, ITestOutputHelper testOutputHelper)
-        : base(fixture)
+        : base(fixture, testOutputHelper)
     {
-        fixture.TestSqlLoggerFactory.Clear();
-        fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
     }
-
-    protected override void UseTransaction(DatabaseFacade facade, IDbContextTransaction transaction)
-        => facade.UseTransaction(transaction.GetDbTransaction());
 
     #region Complex collections mapped to JSON
 
@@ -170,13 +163,10 @@ public class ComplexTypesTrackingSingleStoreTest : ComplexTypesTrackingTestBase<
 
     #endregion Complex collections mapped to JSON
 
-    public class SingleStoreFixture : FixtureBase
+    public class SingleStoreFixture : RelationalFixtureBase
     {
         protected override ITestStoreFactory TestStoreFactory
             => SingleStoreTestStoreFactory.Instance;
-
-        public TestSqlLoggerFactory TestSqlLoggerFactory
-            => (TestSqlLoggerFactory)ListLoggerFactory;
 
         // The `Pub*Collections` entity types are mapped by the base fixture and then ignored in `OnModelCreating` below.
         public override DbContextOptionsBuilder AddOptions(DbContextOptionsBuilder builder)
@@ -366,7 +356,7 @@ public class ComplexTypesTrackingSingleStoreTest : ComplexTypesTrackingTestBase<
             //         b.ComplexProperty(e => e.FeaturedTeam, b => b.Ignore(e => e.Members));
             //     });
 
-            // // TODO: We currently don't support primitive collections yet.
+            // // TODO: PLAT-7535 (primitive collections support)
             // var entityTypes = modelBuilder.Model.GetEntityTypes().ToArray();
             // var unprocessedComplexProperties = new Queue<IMutableComplexProperty>(entityTypes.SelectMany(e => e.GetComplexProperties()));
             // var processedComplexProperties = new HashSet<IMutableComplexProperty>();

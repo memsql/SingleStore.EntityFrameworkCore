@@ -9,7 +9,7 @@ using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
-    public class PropertyValuesSingleStoreTest : PropertyValuesTestBase<PropertyValuesSingleStoreTest.PropertyValuesSingleStoreFixture>
+    public class PropertyValuesSingleStoreTest : PropertyValuesRelationalTestBase<PropertyValuesSingleStoreTest.PropertyValuesSingleStoreFixture>
     {
         public PropertyValuesSingleStoreTest(PropertyValuesSingleStoreFixture fixture)
             : base(fixture)
@@ -96,7 +96,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
         #endregion Complex collections mapped to JSON
 
-        public class PropertyValuesSingleStoreFixture : PropertyValuesFixtureBase
+        public class PropertyValuesSingleStoreFixture : PropertyValuesRelationalFixture
         {
             protected override ITestStoreFactory TestStoreFactory => SingleStoreTestStoreFactory.Instance;
 

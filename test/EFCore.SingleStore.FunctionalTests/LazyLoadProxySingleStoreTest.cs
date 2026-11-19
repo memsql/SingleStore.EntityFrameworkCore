@@ -5,7 +5,7 @@ using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests
 {
-    public class LazyLoadProxySingleStoreTest : LazyLoadProxyTestBase<LazyLoadProxySingleStoreTest.LoadSingleStoreFixture>
+    public class LazyLoadProxySingleStoreTest : LazyLoadProxyRelationalTestBase<LazyLoadProxySingleStoreTest.LoadSingleStoreFixture>
     {
         public LazyLoadProxySingleStoreTest(LoadSingleStoreFixture fixture)
             : base(fixture)
@@ -19,7 +19,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
 
             Assert.Equal(
 """
-SELECT `p`.`Id`, `p`.`AlternateId`, `p`.`Discriminator`, `p`.`Culture_Rating1`, `p`.`Culture_Species1`, `p`.`Culture_Subspecies1`, `p`.`Culture_Validation1`, `p`.`Culture_License_Charge`, `p`.`Culture_License_Title`, `p`.`Culture_License_Tag_Text`, `p`.`Culture_License_Tog_Text`, `p`.`Culture_Manufacturer_Name`, `p`.`Culture_Manufacturer_Rating`, `p`.`Culture_Manufacturer_Tag_Text`, `p`.`Culture_Manufacturer_Tog_Text`, `p`.`Milk_Rating1`, `p`.`Milk_Species1`, `p`.`Milk_Subspecies1`, `p`.`Milk_Validation1`, `p`.`Milk_License_Charge`, `p`.`Milk_License_Title`, `p`.`Milk_License_Tag_Text`, `p`.`Milk_License_Tog_Text`, `p`.`Milk_Manufacturer_Name`, `p`.`Milk_Manufacturer_Rating`, `p`.`Milk_Manufacturer_Tag_Text`, `p`.`Milk_Manufacturer_Tog_Text`, `p`.`Culture_Rating`, `p`.`Culture_Species`, `p`.`Culture_Subspecies`, `p`.`Culture_Validation`, `p`.`Milk_Rating`, `p`.`Milk_Species`, `p`.`Milk_Subspecies`, `p`.`Milk_Validation`
+SELECT `p`.`Id`, `p`.`AlternateId`, `p`.`Discriminator`, `p`.`Culture_Rating`, `p`.`Culture_Species`, `p`.`Culture_Subspecies`, `p`.`Culture_Validation`, `p`.`Culture_License_Charge`, `p`.`Culture_License_Title`, `p`.`Culture_License_Tag_Text`, `p`.`Culture_License_Tog_Text`, `p`.`Culture_Manufacturer_Name`, `p`.`Culture_Manufacturer_Rating`, `p`.`Culture_Manufacturer_Tag_Text`, `p`.`Culture_Manufacturer_Tog_Text`, `p`.`Milk_Rating`, `p`.`Milk_Species`, `p`.`Milk_Subspecies`, `p`.`Milk_Validation`, `p`.`Milk_License_Charge`, `p`.`Milk_License_Title`, `p`.`Milk_License_Tag_Text`, `p`.`Milk_License_Tog_Text`, `p`.`Milk_Manufacturer_Name`, `p`.`Milk_Manufacturer_Rating`, `p`.`Milk_Manufacturer_Tag_Text`, `p`.`Milk_Manufacturer_Tog_Text`
 FROM `Parent` AS `p`
 ORDER BY `p`.`Id`
 LIMIT 1
@@ -54,7 +54,7 @@ LIMIT 1
 
         #endregion Expected JSON override
 
-        public class LoadSingleStoreFixture : LoadFixtureBase
+        public class LoadSingleStoreFixture : LoadRelationalFixtureBase
         {
             public TestSqlLoggerFactory TestSqlLoggerFactory
                 => (TestSqlLoggerFactory)ListLoggerFactory;

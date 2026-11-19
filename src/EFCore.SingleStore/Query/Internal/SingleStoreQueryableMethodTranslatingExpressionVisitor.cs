@@ -330,6 +330,7 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
 
     protected override ShapedQueryExpression TranslatePrimitiveCollection(SqlExpression sqlExpression, IProperty property, string tableAlias)
     {
+        // TODO: PLAT-7535 (primitive collections support)
         if (!_options.PrimitiveCollectionsSupport)
         {
             throw new InvalidOperationException(

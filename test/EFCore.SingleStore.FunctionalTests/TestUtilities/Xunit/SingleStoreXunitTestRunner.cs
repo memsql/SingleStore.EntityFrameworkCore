@@ -149,6 +149,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities.Xunit
                             (innerException.Message.Contains("EXCEPT") || innerException.Message.Contains("INTERSECT")) ||
                             !supports.JsonTable && (innerException.Message.Contains("JSON_TABLE") ||
                                                     innerException.Message.Contains("JsonTable")) ||
+                            // TODO: PLAT-7535 (primitive collections support)
                             innerException.Message.Contains("Primitive collections support has not been enabled.") ||
                             innerException.Message.Contains("MySqlBipolarExpression");
                 }
