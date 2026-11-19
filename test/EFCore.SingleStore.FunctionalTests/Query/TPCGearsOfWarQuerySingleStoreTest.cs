@@ -1,6 +1,5 @@
 using System;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestModels.GearsOfWarModel;
@@ -12782,12 +12781,5 @@ FROM `Missions` AS `m`
         => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 
     private void AssertSqlIgnoringParameterValues(params string[] expected)
-        => Assert.Equal(
-            expected.Select(NormalizeSql),
-            Fixture.TestSqlLoggerFactory.SqlStatements.Select(sql => NormalizeSql(ParameterValuesRegex.Replace(sql, string.Empty))));
-
-    private static string NormalizeSql(string sql)
-        => sql.Replace("\r\n", "\n").Trim();
-
-    private static readonly Regex ParameterValuesRegex = new(@"^(@\w+='[^']*'.*\n)+\n", RegexOptions.Multiline);
+        => SingleStoreTestHelpers.AssertSqlIgnoringParameterValues(Fixture.TestSqlLoggerFactory, expected);
 }

@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using Microsoft.EntityFrameworkCore;
@@ -184,5 +185,20 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
                 methods.Count > 0,
                 "\r\n-- Missing test overrides --\r\n\r\n" + methodCalls);
         }
+
+        /// <summary>
+        /// Like `TestSqlLoggerFactory.AssertBaseline()`, but ignores the parameter values that are logged in front of each SQL statement.
+        /// Use it when the parameter values depend on the order of rows returned by an earlier unordered query, which is not
+        /// deterministic on a distributed SingleStore table.
+        /// </summary>
+        public static void AssertSqlIgnoringParameterValues(TestSqlLoggerFactory testSqlLoggerFactory, params string[] expected)
+            => Assert.Equal(
+                expected.Select(NormalizeSql),
+                testSqlLoggerFactory.SqlStatements.Select(sql => NormalizeSql(ParameterValuesRegex.Replace(sql, string.Empty))));
+
+        private static string NormalizeSql(string sql)
+            => sql.Replace("\r\n", "\n").Trim();
+
+        private static readonly Regex ParameterValuesRegex = new(@"^(@\w+='[^']*'.*\n)+\n", RegexOptions.Multiline);
     }
 }
