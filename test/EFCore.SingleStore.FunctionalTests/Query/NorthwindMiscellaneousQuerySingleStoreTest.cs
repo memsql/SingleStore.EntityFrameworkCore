@@ -1372,6 +1372,14 @@ LIMIT @p0 OFFSET @p
 """);
         }
 
+        [ConditionalTheory(Skip = "SingleStore does not support translating DateTime.Nanosecond and DateTime.Microsecond")]
+        public override async Task Where_nanosecond_and_microsecond_component(bool async)
+        {
+            await base.Where_nanosecond_and_microsecond_component(async);
+
+            AssertSql();
+        }
+
         private void AssertSql(params string[] expected)
             => Fixture.TestSqlLoggerFactory.AssertBaseline(expected);
 
