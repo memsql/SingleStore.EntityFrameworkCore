@@ -194,7 +194,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
         public static void AssertSqlIgnoringParameterValues(TestSqlLoggerFactory testSqlLoggerFactory, params string[] expected)
             => Assert.Equal(
                 expected.Select(NormalizeSql),
-                testSqlLoggerFactory.SqlStatements.Select(sql => NormalizeSql(ParameterValuesRegex.Replace(sql, string.Empty))));
+                testSqlLoggerFactory.SqlStatements.Select(sql => NormalizeSql(ParameterValuesRegex.Replace(NormalizeSql(sql), string.Empty))));
 
         private static string NormalizeSql(string sql)
             => sql.Replace("\r\n", "\n").Trim();

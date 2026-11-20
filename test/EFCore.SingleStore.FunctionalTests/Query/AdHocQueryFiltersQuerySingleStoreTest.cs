@@ -21,14 +21,22 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
     [ConditionalFact]
     public override async Task Query_filter_with_contains_evaluates_correctly()
     {
-        var contextFactory = await InitializeAsync<Context10295>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
-        {
-            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
-            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
-            modelBuilder.Entity<Context10295.MyEntity10295>()
-                .Property(e => e.Id)
-                .HasColumnType("bigint");
-        });
+        // The query filter excludes Id 1, so the base seed relies on AUTO_INCREMENT generating 1 and 2.
+        // On a distributed SingleStore cluster AUTO_INCREMENT values do not start at 1, so seed explicit keys.
+        var contextFactory = await InitializeAsync<Context10295>(
+            seed: async c =>
+            {
+                c.Entities.AddRange(
+                    new Context10295.MyEntity10295 { Id = 1, Name = "Name1" },
+                    new Context10295.MyEntity10295 { Id = 2, Name = "Name2" });
+                await c.SaveChangesAsync();
+            },
+            onModelCreating: modelBuilder =>
+            {
+                modelBuilder.Entity<Context10295.MyEntity10295>()
+                    .Property(e => e.Id)
+                    .ValueGeneratedNever();
+            });
         using var context = contextFactory.CreateContext();
         var result = context.Entities.ToList();
         Assert.Single(result);
