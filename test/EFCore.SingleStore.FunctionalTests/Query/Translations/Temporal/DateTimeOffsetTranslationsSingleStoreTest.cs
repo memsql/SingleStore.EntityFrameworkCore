@@ -16,9 +16,17 @@ public class DateTimeOffsetTranslationsSingleStoreTest : DateTimeOffsetTranslati
         Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
     }
 
-    // Not supported by design (DateTimeOffset with non-zero offset)
-    public override Task Now()
-        => Assert.ThrowsAsync<InvalidOperationException>(() => base.Now());
+    public override async Task Now()
+    {
+        await base.Now();
+
+        AssertSql(
+            """
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE `b`.`DateTimeOffset` <> UTC_TIMESTAMP(6)
+""");
+    }
 
     public override async Task UtcNow()
     {
@@ -32,10 +40,19 @@ WHERE `b`.`DateTimeOffset` <> UTC_TIMESTAMP(6)
 """);
     }
 
-    // The test compares with new DateTimeOffset().Date, which SingleStore sends as -infinity, causing a discrepancy with the client behavior
-    // which uses 1/1/1:0:0:0
-    public override Task Date()
-        => Assert.ThrowsAsync<EqualException>(() => base.Date());
+    public override async Task Date()
+    {
+        await base.Date();
+
+        AssertSql(
+            """
+@Date='0001-01-01T00:00:00.0000000' (DbType = DateTime)
+
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE CONVERT(`b`.`DateTimeOffset`, date) > @Date
+""");
+    }
 
     public override async Task Year()
     {
@@ -121,9 +138,17 @@ WHERE EXTRACT(second FROM `b`.`DateTimeOffset`) = 10
 """);
     }
 
-    // SQL translation not implemented, too annoying
-    public override Task Millisecond()
-        => AssertTranslationFailed(() => base.Millisecond());
+    public override async Task Millisecond()
+    {
+        await base.Millisecond();
+
+        AssertSql(
+            """
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE (EXTRACT(microsecond FROM `b`.`DateTimeOffset`)) DIV (1000) = 123
+""");
+    }
 
     // TODO: #3406
     public override Task Microsecond()
@@ -221,21 +246,43 @@ FROM `BasicTypesEntities` AS `b`
 """);
     }
 
-    public override Task ToUnixTimeMilliseconds()
-        => AssertTranslationFailed(() => base.ToUnixTimeMilliseconds());
+    public override async Task ToUnixTimeMilliseconds()
+    {
+        await base.ToUnixTimeMilliseconds();
 
-    public override Task ToUnixTimeSecond()
-        => AssertTranslationFailed(() => base.ToUnixTimeSecond());
+        AssertSql(
+            """
+@unixEpochMilliseconds='894295810000'
+
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE (TIMESTAMPDIFF(microsecond, '1970-01-01 00:00:00', `b`.`DateTimeOffset`)) DIV (1000) = @unixEpochMilliseconds
+""");
+    }
+
+    public override async Task ToUnixTimeSecond()
+    {
+        await base.ToUnixTimeSecond();
+
+        AssertSql(
+            """
+@unixEpochSeconds='894295810'
+
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE TIMESTAMPDIFF(second, '1970-01-01 00:00:00', `b`.`DateTimeOffset`) = @unixEpochSeconds
+""");
+    }
 
     public override async Task Milliseconds_parameter_and_constant()
     {
         await base.Milliseconds_parameter_and_constant();
 
         AssertSql(
-"""
+            """
 SELECT COUNT(*)
 FROM `BasicTypesEntities` AS `b`
-WHERE `b`.`DateTimeOffset` = TIMESTAMP '1902-01-02 08:30:00.123456'
+WHERE `b`.`DateTimeOffset` = '1902-01-02 08:30:00.123456'
 """);
     }
 

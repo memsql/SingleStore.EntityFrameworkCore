@@ -9,9 +9,8 @@ using Xunit.Abstractions;
 namespace Microsoft.EntityFrameworkCore.Query.Translations.Temporal;
 
 /// <remarks>
-///     Note that <see cref="BasicTypesEntity.DateTime" /> is mapped to PG <c>timestamp with time zone</c>, as is the provider default;
-///     this causes issues with various tests. See also <see cref="DateTimeTranslationsWithoutTimeZoneTest" />, which
-///     explicitly maps <see cref="BasicTypesEntity.DateTime" /> to <c>timestamp without time zone</c>.
+///     <see cref="BasicTypesQuerySingleStoreFixture" /> seeds <see cref="BasicTypesEntity.DateTime" /> values as
+///     <see cref="DateTimeKind.Utc" />, so some tests are overridden to compare against UTC values.
 /// </remarks>
 public class DateTimeTranslationsSingleStoreTest : DateTimeTranslationsTestBase<BasicTypesQuerySingleStoreFixture>
 {
@@ -38,7 +37,7 @@ WHERE CURRENT_TIMESTAMP(6) <> @myDatetime
 
     public override async Task UtcNow()
     {
-        // Overriding to set Kind=Utc for timestamptz
+        // Overriding to use Kind=Utc, like the fixture's seed data
         var myDatetime = DateTime.SpecifyKind(new DateTime(2015, 4, 10), DateTimeKind.Utc);
 
         await AssertQuery(
@@ -54,14 +53,21 @@ WHERE UTC_TIMESTAMP(6) <> @myDatetime
 """);
     }
 
-    // DateTime.Today returns a Local DateTime, which can't be compared with timestamptz
-    // (see TemporalTranslationsSingleStoreTimestampWithoutTimeZoneTest for a working version of this test)
-    public override Task Today()
-        => Assert.ThrowsAsync<NotSupportedException>(() => base.Today());
+    public override async Task Today()
+    {
+        await base.Today();
+
+        AssertSql(
+            """
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE `b`.`DateTime` = CURDATE()
+""");
+    }
 
     public override async Task Date()
     {
-        // Overriding to set Kind=Utc for timestamptz
+        // Overriding to use Kind=Utc, like the fixture's seed data
         var myDatetime = DateTime.SpecifyKind(new DateTime(1998, 5, 4), DateTimeKind.Utc);
 
         await AssertQuery(
@@ -173,67 +179,76 @@ WHERE EXTRACT(second FROM `b`.`DateTime`) = 10
 """);
     }
 
-    // SQL translation not implemented, too annoying
-    public override Task Millisecond()
-        => AssertTranslationFailed(() => base.Millisecond());
+    public override async Task Millisecond()
+    {
+        await base.Millisecond();
+
+        AssertSql(
+            """
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE (EXTRACT(microsecond FROM `b`.`DateTime`)) DIV (1000) = 123
+""");
+    }
 
     public override async Task TimeOfDay()
     {
         await base.TimeOfDay();
 
         AssertSql(
+            """
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE CAST(`b`.`DateTime` AS time(6)) = '00:00:00':>time(6)
+""");
+    }
+
+    public override Task subtract_and_TotalDays()
+        => AssertTranslationFailed(() => base.subtract_and_TotalDays());
+
+    public override async Task Parse_with_constant()
+    {
+        await base.Parse_with_constant();
+
+        AssertSql(
 """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE CAST(`b`.`DateTime` AS time(6)) = TIME '00:00:00'
+WHERE `b`.`DateTime` = '1998-05-04 15:30:10'
 """);
     }
 
-    public override async Task subtract_and_TotalDays()
+    public override async Task Parse_with_parameter()
     {
-        // Overriding to set Kind=Utc for timestamptz
-        var date = DateTime.SpecifyKind(new DateTime(1997, 1, 1), DateTimeKind.Utc);
-
-        await AssertQuery(
-            ss => ss.Set<BasicTypesEntity>().Where(o => (o.DateTime - date).TotalDays > 365));
+        await base.Parse_with_parameter();
 
         AssertSql(
-            """
-@date='1997-01-01T00:00:00.0000000Z' (DbType = DateTime)
+"""
+@Parse='1998-05-04T15:30:10.0000000' (DbType = DateTime)
 
-SELECT b."Id", b."Bool", b."Byte", b."ByteArray", b."DateOnly", b."DateTime", b."DateTimeOffset", b."Decimal", b."Double", b."Enum", b."FlagsEnum", b."Float", b."Guid", b."Int", b."Long", b."Short", b."String", b."TimeOnly", b."TimeSpan"
-FROM "BasicTypesEntities" AS b
-WHERE date_part('epoch', b."DateTime" - @date) / 86400.0 > 365.0
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE `b`.`DateTime` = @Parse
 """);
     }
-
-    // DateTime.Parse() returns either a Local or Unspecified DateTime, which can't be compared with timestamptz
-    // (see TemporalTranslationsSingleStoreTimestampWithoutTimeZoneTest for a working version of this test)
-    public override Task Parse_with_constant()
-        => Assert.ThrowsAsync<ArgumentException>(() => base.Parse_with_constant());
-
-    // DateTime.Parse() returns either a Local or Unspecified DateTime, which can't be compared with timestamptz
-    // (see TemporalTranslationsSingleStoreTimestampWithoutTimeZoneTest for a working version of this test)
-    public override Task Parse_with_parameter()
-        => Assert.ThrowsAsync<ArgumentException>(() => base.Parse_with_parameter());
 
     public override async Task New_with_constant()
     {
-        // Overriding to set Kind=Utc for timestamptz
+        // Overriding to use Kind=Utc, like the fixture's seed data
         await AssertQuery(
             ss => ss.Set<BasicTypesEntity>().Where(o => o.DateTime == new DateTime(1998, 5, 4, 15, 30, 10, DateTimeKind.Utc)));
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE `b`.`DateTime` = TIMESTAMP '1998-05-04 15:30:10'
+WHERE `b`.`DateTime` = '1998-05-04 15:30:10'
 """);
     }
 
     public override async Task New_with_parameters()
     {
-        // Overriding to set Kind=Utc for timestamptz
+        // Overriding to use Kind=Utc, like the fixture's seed data
         var year = 1998;
         var month = 5;
         var date = 4;

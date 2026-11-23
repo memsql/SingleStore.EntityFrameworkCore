@@ -44,6 +44,40 @@ dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.N
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindFunctionsQuerySingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ArithmeticOperatorTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.BitwiseOperatorTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ByteArrayTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ComparisonOperatorTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.DateOnlyTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.DateTimeOffsetTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.DateTimeTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.EnumTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.GuidTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.LogicalOperatorTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.MathTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.MiscellaneousOperatorTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.MiscellaneousTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.StringTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.TimeOnlyTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.TimeSpanTranslationsSingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
+dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.MathQuerySingleStoreTest.'
+$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindEFPropertyIncludeQuerySingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.NorthwindKeylessEntitiesQuerySingleStoreTest.'

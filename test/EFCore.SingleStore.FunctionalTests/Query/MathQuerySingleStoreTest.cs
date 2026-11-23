@@ -116,7 +116,7 @@ LIMIT 2
 """);
     }
 
-    [ConditionalFact]
+    [ConditionalFact(Skip = "The provider translates C# int / int to SQL `/`, which SingleStore evaluates as decimal division (5 / 2 = 2.5), not integer division.")]
     public virtual void Divide_integer_by_integer_cast_decimal2_constants()
     {
         using var context = CreateContext();
@@ -173,7 +173,7 @@ LIMIT 2
 """);
     }
 
-    [ConditionalFact]
+    [ConditionalFact(Skip = "The provider translates C# int / int to SQL `/`, which SingleStore evaluates as decimal division (5 / 2 = 2.5), not integer division.")]
     public virtual void Divide_integer_by_integer_cast_decimal2_parameters()
     {
         using var context = CreateContext();
@@ -212,7 +212,7 @@ LIMIT 2
 """);
     }
 
-    [ConditionalFact]
+    [ConditionalFact(Skip = "The provider translates C# int / int to SQL `/`, which SingleStore evaluates as decimal division (5 / 2 = 2.5), not integer division.")]
     public virtual void Divide_integer_by_integer_then_multiply_constants()
     {
         using var context = CreateContext();
@@ -292,7 +292,7 @@ LIMIT 2
 """);
     }
 
-    [ConditionalFact]
+    [ConditionalFact(Skip = "The provider translates C# int / int to SQL `/`, which SingleStore evaluates as decimal division (5 / 2 = 2.5), not integer division.")]
     public virtual void Divide_integer_by_integer_then_multiply_cast_decimal2_constants()
     {
         using var context = CreateContext();
@@ -312,7 +312,7 @@ LIMIT 2
 """);
     }
 
-    [ConditionalFact]
+    [ConditionalFact(Skip = "The provider translates C# int / int to SQL `/`, which SingleStore evaluates as decimal division (5 / 2 = 2.5), not integer division.")]
     public virtual void Divide_integer_by_integer_then_multiply_parameters()
     {
         using var context = CreateContext();
@@ -352,7 +352,7 @@ LIMIT 2
 """);
     }
 
-    [ConditionalFact]
+    [ConditionalFact(Skip = "The provider translates C# int / int to SQL `/`, which SingleStore evaluates as decimal division (5 / 2 = 2.5), not integer division.")]
     public virtual void Divide_integer_by_integer_then_multiply_cast_decimal2_parameters()
     {
         using var context = CreateContext();

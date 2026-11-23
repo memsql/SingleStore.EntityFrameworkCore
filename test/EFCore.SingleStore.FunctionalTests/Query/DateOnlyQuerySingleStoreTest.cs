@@ -77,12 +77,12 @@ LIMIT 2
                 .Where(i => i.BestServedBefore.ToDateTime(new TimeOnly(12, 21, 42)) == matchExpireDateTime));
 
         AssertSql(
-"""
+            """
 @matchExpireDateTime='2299-12-31T12:21:42.0000000' (DbType = DateTime)
 
 SELECT `i`.`IceCreamId`, `i`.`BestServedBefore`, `i`.`Name`
 FROM `IceCream` AS `i`
-WHERE ADDTIME(CAST(`i`.`BestServedBefore` AS datetime(6)), '12:21:42') = @matchExpireDateTime
+WHERE CAST(ADDTIME(CAST(`i`.`BestServedBefore` AS datetime(6)), '12:21:42') AS datetime(6)) = @matchExpireDateTime
 LIMIT 2
 """);
     }

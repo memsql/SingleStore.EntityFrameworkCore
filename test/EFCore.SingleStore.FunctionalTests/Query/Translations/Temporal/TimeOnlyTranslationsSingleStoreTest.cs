@@ -53,27 +53,33 @@ WHERE EXTRACT(second FROM `b`.`TimeOnly`) = 10
 """);
     }
 
-    // Translation not yet implemented
-    public override Task Millisecond()
-        => AssertTranslationFailed(() => base.Millisecond());
+    public override async Task Millisecond()
+    {
+        await base.Millisecond();
 
-    // Translation not yet implemented
+        AssertSql(
+            """
+SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
+FROM `BasicTypesEntities` AS `b`
+WHERE (EXTRACT(microsecond FROM `b`.`TimeOnly`)) DIV (1000) = 123
+""");
+    }
+
     public override Task Microsecond()
-        => AssertTranslationFailed(() => base.Millisecond());
+        => AssertTranslationFailed(() => base.Microsecond());
 
-    // Probably not relevant for PostgreSQL, which supports microsecond precision only
     public override Task Nanosecond()
-        => AssertTranslationFailed(() => base.Millisecond());
+        => AssertTranslationFailed(() => base.Nanosecond());
 
     public override async Task AddHours()
     {
         await base.AddHours();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE DATE_ADD(`b`.`TimeOnly`, INTERVAL CAST(3.0 AS signed) hour) = TIME '18:30:10'
+WHERE (ADDTIME(`b`.`TimeOnly`, "03:00:00")) = '18:30:10':>time(6)
 """);
     }
 
@@ -82,10 +88,10 @@ WHERE DATE_ADD(`b`.`TimeOnly`, INTERVAL CAST(3.0 AS signed) hour) = TIME '18:30:
         await base.AddMinutes();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE DATE_ADD(`b`.`TimeOnly`, INTERVAL CAST(3.0 AS signed) minute) = TIME '15:33:10'
+WHERE (ADDTIME(`b`.`TimeOnly`, "00:03:00")) = '15:33:10':>time(6)
 """);
     }
 
@@ -94,10 +100,10 @@ WHERE DATE_ADD(`b`.`TimeOnly`, INTERVAL CAST(3.0 AS signed) minute) = TIME '15:3
         await base.Add_TimeSpan();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE (`b`.`TimeOnly` + TIME '03:00:00') = TIME '18:30:10'
+WHERE (ADDTIME(`b`.`TimeOnly`, '03:00:00')) = '18:30:10':>time(6)
 """);
     }
 
@@ -106,10 +112,10 @@ WHERE (`b`.`TimeOnly` + TIME '03:00:00') = TIME '18:30:10'
         await base.IsBetween();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE (`b`.`TimeOnly` >= TIME '14:00:00') & (`b`.`TimeOnly` < TIME '16:00:00')
+WHERE (`b`.`TimeOnly` >= '14:00:00') & (`b`.`TimeOnly` < '16:00:00')
 """);
     }
 
@@ -118,10 +124,10 @@ WHERE (`b`.`TimeOnly` >= TIME '14:00:00') & (`b`.`TimeOnly` < TIME '16:00:00')
         await base.Subtract();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE (`b`.`TimeOnly` - TIME '03:00:00') = TIME '12:30:10'
+WHERE (ADDTIME(`b`.`TimeOnly`, "-03:00:00")) = '12:30:10':>time(6)
 """);
     }
 
@@ -130,10 +136,10 @@ WHERE (`b`.`TimeOnly` - TIME '03:00:00') = TIME '12:30:10'
         await base.FromDateTime_compared_to_property();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE TIME(`b`.`DateTime`) = `b`.`TimeOnly`
+WHERE TIME(`b`.`DateTime`) = `b`.`TimeOnly`:>time(6)
 """);
     }
 
@@ -142,12 +148,12 @@ WHERE TIME(`b`.`DateTime`) = `b`.`TimeOnly`
         await base.FromDateTime_compared_to_parameter();
 
         AssertSql(
-"""
+            """
 @time='15:30' (DbType = Time)
 
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE TIME(`b`.`DateTime`) = @time
+WHERE TIME(`b`.`DateTime`) = @time:>time(6)
 """);
     }
 
@@ -156,10 +162,10 @@ WHERE TIME(`b`.`DateTime`) = @time
         await base.FromDateTime_compared_to_constant();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE TIME(`b`.`DateTime`) = TIME '15:30:10'
+WHERE TIME(`b`.`DateTime`) = '15:30:10':>time(6)
 """);
     }
 
@@ -180,12 +186,12 @@ WHERE `b`.`TimeSpan` < `b`.`TimeOnly`
         await base.FromTimeSpan_compared_to_parameter();
 
         AssertSql(
-"""
+            """
 @time='01:02' (DbType = Time)
 
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE `b`.`TimeSpan` = @time
+WHERE `b`.`TimeSpan` = @time:>time(6)
 """);
     }
 

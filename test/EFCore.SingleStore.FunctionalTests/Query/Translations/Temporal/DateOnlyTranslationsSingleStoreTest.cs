@@ -91,10 +91,10 @@ WHERE (TO_DAYS(`b`.`DateOnly`) - 366) = 726780
         await base.AddYears();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(3 AS signed) year) = DATE '1993-11-10'
+WHERE DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(3 AS signed) year) = '1993-11-10'
 """);
     }
 
@@ -103,10 +103,10 @@ WHERE DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(3 AS signed) year) = DATE '1993-11-
         await base.AddMonths();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(3 AS signed) month) = DATE '1991-02-10'
+WHERE DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(3 AS signed) month) = '1991-02-10'
 """);
     }
 
@@ -115,10 +115,10 @@ WHERE DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(3 AS signed) month) = DATE '1991-02
         await base.AddDays();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(3 AS signed) day) = DATE '1990-11-13'
+WHERE DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(3 AS signed) day) = '1990-11-13'
 """);
     }
 
@@ -141,10 +141,10 @@ WHERE ((TO_DAYS(`b`.`DateOnly`) - 366) - @DayNumber) = 5
         await base.FromDateTime();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE DATE(`b`.`DateTime`) = DATE '1998-05-04'
+WHERE DATE(`b`.`DateTime`) = '1998-05-04'
 """);
     }
 
@@ -165,12 +165,12 @@ WHERE DATE(`b`.`DateTime`) = `b`.`DateOnly`
         await base.FromDateTime_compared_to_constant_and_parameter();
 
         AssertSql(
-"""
+            """
 @dateOnly='10/11/0002' (DbType = Date)
 
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE DATE(`b`.`DateTime`) IN (@dateOnly, DATE '1998-05-04')
+WHERE DATE(`b`.`DateTime`) IN (@dateOnly, '1998-05-04')
 """);
     }
 
@@ -179,10 +179,10 @@ WHERE DATE(`b`.`DateTime`) IN (@dateOnly, DATE '1998-05-04')
         await base.ToDateTime_property_with_constant_TimeOnly();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE ADDTIME(CAST(`b`.`DateOnly` AS datetime(6)), TIME '21:05:19.9405') = TIMESTAMP '2020-01-01 21:05:19.9405'
+WHERE CAST(ADDTIME(CAST(`b`.`DateOnly` AS datetime(6)), '21:05:19.9405') AS datetime(6)) = '2020-01-01 21:05:19.9405'
 """);
     }
 
@@ -191,10 +191,10 @@ WHERE ADDTIME(CAST(`b`.`DateOnly` AS datetime(6)), TIME '21:05:19.9405') = TIMES
         await base.ToDateTime_property_with_property_TimeOnly();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE ADDTIME(CAST(`b`.`DateOnly` AS datetime(6)), `b`.`TimeOnly`) = TIMESTAMP '2020-01-01 15:30:10'
+WHERE CAST(ADDTIME(CAST(`b`.`DateOnly` AS datetime(6)), `b`.`TimeOnly`) AS datetime(6)) = '2020-01-01 15:30:10'
 """);
     }
 
@@ -203,10 +203,10 @@ WHERE ADDTIME(CAST(`b`.`DateOnly` AS datetime(6)), `b`.`TimeOnly`) = TIMESTAMP '
         await base.ToDateTime_constant_DateTime_with_property_TimeOnly();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE ADDTIME(CAST(DATE '1990-11-10' AS datetime(6)), `b`.`TimeOnly`) = TIMESTAMP '1990-11-10 15:30:10'
+WHERE CAST(ADDTIME(CAST('1990-11-10' AS datetime(6)), `b`.`TimeOnly`) AS datetime(6)) = '1990-11-10 15:30:10'
 """);
     }
 
@@ -215,10 +215,10 @@ WHERE ADDTIME(CAST(DATE '1990-11-10' AS datetime(6)), `b`.`TimeOnly`) = TIMESTAM
         await base.ToDateTime_with_complex_DateTime();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE ADDTIME(CAST(DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(1 AS signed) year) AS datetime(6)), `b`.`TimeOnly`) = TIMESTAMP '2021-01-01 15:30:10'
+WHERE CAST(ADDTIME(CAST(DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(1 AS signed) year) AS datetime(6)), `b`.`TimeOnly`) AS datetime(6)) = '2021-01-01 15:30:10'
 """);
     }
 
@@ -227,10 +227,10 @@ WHERE ADDTIME(CAST(DATE_ADD(`b`.`DateOnly`, INTERVAL CAST(1 AS signed) year) AS 
         await base.ToDateTime_with_complex_TimeOnly();
 
         AssertSql(
-"""
+            """
 SELECT `b`.`Id`, `b`.`Bool`, `b`.`Byte`, `b`.`ByteArray`, `b`.`DateOnly`, `b`.`DateTime`, `b`.`DateTimeOffset`, `b`.`Decimal`, `b`.`Double`, `b`.`Enum`, `b`.`FlagsEnum`, `b`.`Float`, `b`.`Guid`, `b`.`Int`, `b`.`Long`, `b`.`Short`, `b`.`String`, `b`.`TimeOnly`, `b`.`TimeSpan`
 FROM `BasicTypesEntities` AS `b`
-WHERE ADDTIME(CAST(`b`.`DateOnly` AS datetime(6)), DATE_ADD(`b`.`TimeOnly`, INTERVAL CAST(1.0 AS signed) hour)) = TIMESTAMP '2020-01-01 16:30:10'
+WHERE CAST(ADDTIME(CAST(`b`.`DateOnly` AS datetime(6)), ADDTIME(`b`.`TimeOnly`, "01:00:00")) AS datetime(6)) = '2020-01-01 16:30:10'
 """);
     }
 

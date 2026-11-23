@@ -30,15 +30,15 @@ public class BasicTypesQuerySingleStoreFixture : BasicTypesQueryFixtureBase, ITe
 
         foreach (var item in data.BasicTypesEntities)
         {
-            // For all relevant temporal types, chop sub-microsecond precision which PostgreSQL does not support.
-            // Temporal types which aren't set (default) get mapped to -infinity on PostgreSQL; this value causes many tests to fail.
+            // Strip sub-microsecond precision, since SingleStore's DATETIME(6) and TIME(6) types store at most microseconds,
+            // and move unset (default) temporal values off their minimum value.
 
             if (item.DateTime == default)
             {
                 item.DateTime += TimeSpan.FromSeconds(1);
             }
 
-            // PostgreSQL maps DateTime to timestamptz by default, but that represents UTC timestamps which require DateTimeKind.Utc.
+            // Seed DateTime values as DateTimeKind.Utc, which several DateTime test overrides rely on.
             item.DateTime = DateTime.SpecifyKind(new DateTime(StripSubMicrosecond(item.DateTime.Ticks)), DateTimeKind.Utc);
 
             if (item.DateOnly == default)
@@ -54,9 +54,7 @@ public class BasicTypesQuerySingleStoreFixture : BasicTypesQueryFixtureBase, ITe
                 item.DateTimeOffset += TimeSpan.FromSeconds(1);
             }
 
-            // PostgreSQL doesn't have a real DateTimeOffset type; we map .NET DateTimeOffset to timestamptz, which represents a UTC
-            // timestamp, and so we only support offset=0.
-            // Also chop sub-microsecond precision which PostgreSQL does not support.
+            // Seed DateTimeOffset values with a zero offset (UTC) and without sub-microsecond precision.
             item.DateTimeOffset = new DateTimeOffset(StripSubMicrosecond(item.DateTimeOffset.Ticks), TimeSpan.Zero);
         }
 
