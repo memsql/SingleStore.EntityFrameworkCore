@@ -178,6 +178,7 @@ jobs:
         run: .\.github\workflows\test_setup\run-test-windows.ps1 -test_block EFCore.SingleStore.IntegrationTests -target_framework net10.0
 
       - name: Run Functional Test Block
+        timeout-minutes: 200
         run: ${{ matrix.func_test_block_path }}
 
       - name: Terminate Cluster
