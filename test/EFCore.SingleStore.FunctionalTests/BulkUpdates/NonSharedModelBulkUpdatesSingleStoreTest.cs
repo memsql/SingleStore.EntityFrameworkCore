@@ -202,7 +202,6 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore.")]
     public override async Task Update_with_alias_uniquification_in_setter_subquery(bool async)
     {
         await base.Update_with_alias_uniquification_in_setter_subquery(async);

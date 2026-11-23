@@ -180,16 +180,70 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
                        && IsJsonEachKeyColumn(subquery, projectedColumn)));
     }
 
-    // SingleStore supports multi-table DELETE with any join type, but (like MySQL) not with ORDER BY or LIMIT.
+    #region ExecuteDelete
+
+    // The shaper of the entity being deleted by the ExecuteDelete() currently being translated. EF Core's
+    // IsValidSelectExpressionForExecuteDelete() does not get told which table is the delete target, so we remember the shaper here
+    // to find it ourselves.
+    private StructuralTypeShaperExpression _executeDeleteShaper;
+
+    protected override DeleteExpression TranslateExecuteDelete(ShapedQueryExpression source)
+    {
+        // EF Core calls this method recursively for its subquery fallback, so restore the outer value afterwards.
+        var previousShaper = _executeDeleteShaper;
+        _executeDeleteShaper = UnwrapIncludes(source.ShaperExpression) as StructuralTypeShaperExpression;
+
+        try
+        {
+            return base.TranslateExecuteDelete(source);
+        }
+        finally
+        {
+            _executeDeleteShaper = previousShaper;
+        }
+
+        static Expression UnwrapIncludes(Expression shaper)
+        {
+            while (shaper is IncludeExpression includeExpression)
+            {
+                shaper = includeExpression.EntityExpression;
+            }
+
+            return shaper;
+        }
+    }
+
+    // SingleStore's DELETE grammar has no ORDER BY, and LIMIT is only supported in single-table DELETE statements.
+    // Multi-table DELETE is supported with any join type, as long as the rows are deleted from the first (left-most) table:
+    // SingleStore rejects deleting from any other table with "Operation 'Update/Delete right table of a join' is not allowed".
+    // Whenever we return false, EF Core falls back to `DELETE FROM t WHERE <key> IN/EXISTS (<original query>)`.
     protected override bool IsValidSelectExpressionForExecuteDelete(SelectExpression selectExpression)
         => selectExpression is
            {
+               Tables: [TableExpression, ..],
+               Orderings: [],
                Offset: null,
                GroupBy: [],
                Having: null
            } &&
-           (selectExpression.Tables.Count == 1 || (selectExpression.Orderings.Count == 0 && selectExpression.Limit is null)) &&
-           selectExpression.Tables[0] is TableExpression;
+           (selectExpression.Tables.Count == 1 ||
+            (selectExpression.Limit is null && IsDeleteTargetFirstTable(selectExpression)));
+
+    private bool IsDeleteTargetFirstTable(SelectExpression selectExpression)
+    {
+        if (_executeDeleteShaper is not { ValueBufferExpression: ProjectionBindingExpression projectionBinding } shaper ||
+            selectExpression.GetProjection(projectionBinding) is not StructuralTypeProjectionExpression projection)
+        {
+            return false;
+        }
+
+        // Same way EF Core determines the delete target in TranslateExecuteDelete(): via the table of the entity's first property.
+        var column = projection.BindProperty(shaper.StructuralType.GetProperties().First());
+
+        return column.TableAlias == selectExpression.Tables[0].Alias;
+    }
+
+    #endregion ExecuteDelete
 
     protected override bool IsValidSelectExpressionForExecuteUpdate(
         SelectExpression selectExpression,
