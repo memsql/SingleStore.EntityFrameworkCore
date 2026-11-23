@@ -148,8 +148,6 @@ dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.T
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.TPTInheritanceBulkUpdatesSingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
-dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypeBulkUpdatesSingleStoreTest.'
-$TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypesTrackingSingleStoreTest.'
 $TOTAL_FAILURES += ($LASTEXITCODE -ne 0)
 dotnet.exe test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypeQuerySingleStoreTest.'

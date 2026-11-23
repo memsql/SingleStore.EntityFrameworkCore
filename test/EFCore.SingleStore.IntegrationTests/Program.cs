@@ -21,12 +21,6 @@ namespace EntityFrameworkCore.SingleStore.IntegrationTests
             }
             else
             {
-                Console.WriteLine("Args:");
-                for (var i = 0; i < args.Length; i++)
-                {
-                    Console.WriteLine($"{i}: {args[i]}");
-                }
-
                 var serviceCollection = new ServiceCollection();
                 serviceCollection
                     .AddLogging(builder =>

@@ -46,6 +46,7 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
     {
         _sqlExpressionFactory = parentVisitor._sqlExpressionFactory;
         _typeMappingSource = parentVisitor._typeMappingSource;
+        _sqlAliasManager = parentVisitor._sqlAliasManager;
         _options = parentVisitor._options;
     }
 

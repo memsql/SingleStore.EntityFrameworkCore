@@ -11,7 +11,7 @@ S2MS_API_KEY = os.getenv("S2MS_API_KEY")  # project UI env-var reference
 WORKSPACE_GROUP_BASE_NAME = "ef-core-provider-ci-test-cluster"
 WORKSPACE_NAME = "tests"
 
-AUTO_TERMINATE_MINUTES = 210
+AUTO_TERMINATE_MINUTES = 240
 WORKSPACE_ENDPOINT_FILE = "WORKSPACE_ENDPOINT_FILE"
 WORKSPACE_GROUP_ID_FILE = "WORKSPACE_GROUP_ID_FILE"
 
@@ -66,8 +66,9 @@ def terminate_workspace(workspace_manager) -> None:
             workspace.terminate(wait_on_terminated=True)
         workspace_group.terminate()
     except Exception as e:
-        if "already terminated" in str(e):
-            print(f"Workspace group {workspace_group_id} is already terminated.")
+        # The cluster may already be gone, e.g. because it reached AUTO_TERMINATE_MINUTES.
+        if getattr(e, "errno", None) == 404 or "already terminated" in str(e):
+            print(f"Workspace group {workspace_group_id} is already terminated or no longer exists: {e}")
             return
         raise
 

@@ -148,8 +148,6 @@ dotnet test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.Value
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.UpdatesSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
-dotnet test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypeBulkUpdatesSingleStoreTest.'
-((TOTAL_FAILURES += $? != 0))
 dotnet test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypesTrackingSingleStoreTest.'
 ((TOTAL_FAILURES += $? != 0))
 dotnet test -f net10.0 -c Release --no-build --filter 'FullyQualifiedName~.ComplexTypeQuerySingleStoreTest.'

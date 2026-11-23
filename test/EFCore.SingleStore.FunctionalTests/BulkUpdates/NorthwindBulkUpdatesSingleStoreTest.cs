@@ -217,10 +217,21 @@ WHERE EXISTS (
 """);
     }
 
-    [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
     public override async Task Delete_Where_predicate_with_GroupBy_aggregate(bool async)
     {
-        await base.Delete_Where_predicate_with_GroupBy_aggregate(async);
+        // Same as the base test, but with `OrderBy` for the groups and for First() within each group: without it, which
+        // group and order get picked is arbitrary on a distributed SingleStore table.
+        await AssertDelete(
+            async,
+            ss => ss.Set<OrderDetail>()
+                .Where(
+                    e => e.OrderID
+                        < ss.Set<Order>()
+                            .GroupBy(o => o.CustomerID)
+                            .Where(g => g.Count() > 11)
+                            .OrderBy(g => g.Key)
+                            .Select(g => g.OrderBy(o => o.OrderID).First()).First().OrderID),
+            rowsAffectedCount: 284);
 
         AssertSql(
 """
@@ -231,18 +242,29 @@ WHERE `o`.`OrderID` < (
         SELECT `o1`.`OrderID`
         FROM `Orders` AS `o1`
         WHERE (`o0`.`CustomerID` = `o1`.`CustomerID`) OR (`o0`.`CustomerID` IS NULL AND (`o1`.`CustomerID` IS NULL))
+        ORDER BY `o1`.`OrderID`
         LIMIT 1)
     FROM `Orders` AS `o0`
     GROUP BY `o0`.`CustomerID`
     HAVING COUNT(*) > 11
+    ORDER BY `o0`.`CustomerID`
     LIMIT 1)
 """);
     }
 
-    [ConditionalTheory(Skip = "SingleStore does not support this type of query: unsupported nested scalar subselects")]
     public override async Task Delete_Where_predicate_with_GroupBy_aggregate_2(bool async)
     {
-        await base.Delete_Where_predicate_with_GroupBy_aggregate_2(async);
+        // Same as the base test, but with `OrderBy` for First() within each group: without it, which order gets picked is
+        // arbitrary on a distributed SingleStore table.
+        await AssertDelete(
+            async,
+            ss => ss.Set<OrderDetail>()
+                .Where(
+                    e => ss.Set<Order>()
+                        .GroupBy(o => o.CustomerID)
+                        .Where(g => g.Count() > 9)
+                        .Select(g => g.OrderBy(o => o.OrderID).First()).Contains(e.Order)),
+            rowsAffectedCount: 109);
 
         AssertSql(
 """
@@ -254,6 +276,7 @@ WHERE `o0`.`OrderID` IN (
         SELECT `o2`.`OrderID`
         FROM `Orders` AS `o2`
         WHERE (`o1`.`CustomerID` = `o2`.`CustomerID`) OR (`o1`.`CustomerID` IS NULL AND (`o2`.`CustomerID` IS NULL))
+        ORDER BY `o2`.`OrderID`
         LIMIT 1)
     FROM `Orders` AS `o1`
     GROUP BY `o1`.`CustomerID`
@@ -744,7 +767,15 @@ WHERE `c`.`CustomerID` LIKE 'F%'
 
     public override async Task Update_Where_Skip_set_constant(bool async)
     {
-        await base.Update_Where_Skip_set_constant(async);
+        // Same as the base test, but with `OrderBy`: `Skip` without it selects arbitrary rows on a distributed SingleStore
+        // table, so re-running the query to check the result does not necessarily return the updated rows.
+        await AssertUpdate(
+            async,
+            ss => ss.Set<Customer>().Where(c => c.CustomerID.StartsWith("F")).OrderBy(c => c.CustomerID).Skip(4),
+            e => e,
+            s => s.SetProperty(c => c.ContactName, "Updated"),
+            rowsAffectedCount: 4,
+            (b, a) => Assert.All(a, c => Assert.Equal("Updated", c.ContactName)));
 
         AssertExecuteUpdateSql(
 """
@@ -756,6 +787,7 @@ INNER JOIN (
     SELECT `c`.`CustomerID`
     FROM `Customers` AS `c`
     WHERE `c`.`CustomerID` LIKE 'F%'
+    ORDER BY `c`.`CustomerID`
     LIMIT 18446744073709551610 OFFSET @p
 ) AS `c1` ON `c0`.`CustomerID` = `c1`.`CustomerID`
 SET `c0`.`ContactName` = @p0
