@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using System.Linq;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Diagnostics.Internal;
 using Microsoft.EntityFrameworkCore.Infrastructure;
@@ -16,6 +16,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocNavigationsQuerySingleStoreTest : AdHocNavigationsQueryRelationalTestBase
 {
+    public AdHocNavigationsQuerySingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     [ConditionalFact]
     public override async Task ThenInclude_with_interface_navigations()
     {

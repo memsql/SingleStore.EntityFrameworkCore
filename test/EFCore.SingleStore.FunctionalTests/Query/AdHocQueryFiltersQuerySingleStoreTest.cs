@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -13,17 +13,30 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelationalTestBase
 {
+    public AdHocQueryFiltersQuerySingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     [ConditionalFact]
     public override async Task Query_filter_with_contains_evaluates_correctly()
     {
-        var contextFactory = await InitializeAsync<Context10295>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
-        {
-            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
-            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
-            modelBuilder.Entity<Context10295.MyEntity10295>()
-                .Property(e => e.Id)
-                .HasColumnType("bigint");
-        });
+        // The query filter excludes Id 1, so the base seed relies on AUTO_INCREMENT generating 1 and 2.
+        // On a distributed SingleStore cluster AUTO_INCREMENT values do not start at 1, so seed explicit keys.
+        var contextFactory = await InitializeAsync<Context10295>(
+            seed: async c =>
+            {
+                c.Entities.AddRange(
+                    new Context10295.MyEntity10295 { Id = 1, Name = "Name1" },
+                    new Context10295.MyEntity10295 { Id = 2, Name = "Name2" });
+                await c.SaveChangesAsync();
+            },
+            onModelCreating: modelBuilder =>
+            {
+                modelBuilder.Entity<Context10295.MyEntity10295>()
+                    .Property(e => e.Id)
+                    .ValueGeneratedNever();
+            });
         using var context = contextFactory.CreateContext();
         var result = context.Entities.ToList();
         Assert.Single(result);
@@ -150,60 +163,137 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
     }
 
     [ConditionalFact]
-    public override async Task GroupJoin_SelectMany_gets_flattened()
+    public override async Task Named_query_filters()
+    {
+        var contextFactory = await InitializeAsync<Context8576_NamedFilters>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
+        {
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<Context8576.MyEntity8576>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+        });
+        using var context = contextFactory.CreateContext();
+
+        var result = context.Entities.ToList();
+        Assert.Single(result);
+    }
+
+    [ConditionalFact]
+    public override async Task Named_query_filters_ignore_some()
+    {
+        var contextFactory = await InitializeAsync<Context8576_NamedFilters>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
+        {
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<Context8576.MyEntity8576>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+        });
+        using var context = contextFactory.CreateContext();
+        var result = context.Entities
+            .IgnoreQueryFilters(["ActiveFilter", "NameFilter"])
+            .ToList();
+        Assert.Equal(2, result.Count);
+    }
+
+    [ConditionalFact]
+    public override async Task Named_query_filters_ignore_all()
+    {
+        var contextFactory = await InitializeAsync<Context8576_NamedFilters>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
+        {
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<Context8576.MyEntity8576>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+        });
+        using var context = contextFactory.CreateContext();
+
+        var result = context.Entities
+            .IgnoreQueryFilters()
+            .ToList();
+        Assert.Equal(2, result.Count);
+    }
+
+    [ConditionalFact]
+    public override async Task Named_query_filters_anonymous()
     {
         // We're skipping this test when we're running tests on Managed Service due to the specifics of
         // how AUTO_INCREMENT works (https://docs.singlestore.com/cloud/reference/sql-reference/data-definition-language-ddl/create-table/#auto-increment-behavior)
+        // The anonymous query filter excludes the entities with the IDs 1 and 7, so the test relies on the generated ID values.
         if (AppConfig.ManagedService)
         {
             return;
         }
 
-        var contextFactory = await InitializeAsync<Context19708>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
+        var contextFactory = await InitializeAsync<Context8576>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
         {
             // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
             // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
-            modelBuilder.Entity<Context19708.Customer19708>()
-                .Property(e => e.Id)
-                .HasColumnType("bigint");
-            modelBuilder.Entity<Context19708.CustomerMembership19708>()
+            modelBuilder.Entity<Context8576.MyEntity8576>()
                 .Property(e => e.Id)
                 .HasColumnType("bigint");
         });
-        using (var context = contextFactory.CreateContext())
-        {
-            var query = context.CustomerFilters.ToList();
-        }
+        using var context = contextFactory.CreateContext();
 
-        using (var context = contextFactory.CreateContext())
-        {
-            var query = context.Set<Context19708.CustomerView19708>()
-                .OrderBy(e => e.Id)
-                .ThenBy(e => e.CustomerMembershipId)
-                .ToList();
-
-            Assert.Collection(
-                query,
-                t => AssertCustomerView(t, 1, "First", 1, "FirstChild"),
-                t => AssertCustomerView(t, 2, "Second", 2, "SecondChild1"),
-                t => AssertCustomerView(t, 2, "Second", 3, "SecondChild2"),
-                t => AssertCustomerView(t, 3, "Third", null, ""));
-
-            static void AssertCustomerView(
-                Context19708.CustomerView19708 actual,
-                int id,
-                string name,
-                int? customerMembershipId,
-                string customerMembershipName)
-            {
-                Assert.Equal(id, actual.Id);
-                Assert.Equal(name, actual.Name);
-                Assert.Equal(customerMembershipId, actual.CustomerMembershipId);
-                Assert.Equal(customerMembershipName, actual.CustomerMembershipName);
-            }
-        }
+        var result = context.Entities
+            .ToList();
+        Assert.Single(result);
     }
 
+    [ConditionalFact]
+    public override async Task Named_query_filters_anonymous_ignore()
+    {
+        var contextFactory = await InitializeAsync<Context8576>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
+        {
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<Context8576.MyEntity8576>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+        });
+        using var context = contextFactory.CreateContext();
+
+        var result = context.Entities
+            .IgnoreQueryFilters()
+            .ToList();
+        Assert.Equal(2, result.Count);
+    }
+
+    [ConditionalFact]
+    public override async Task Named_query_filters_overwriting()
+    {
+        var contextFactory = await InitializeAsync<Context8576_Overwriting>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
+        {
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<Context8576.MyEntity8576>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+        });
+        using var context = contextFactory.CreateContext();
+
+        var result = context.Entities.ToList();
+        Assert.Single(result);
+    }
+
+    [ConditionalFact]
+    public override async Task Named_query_filters_removing()
+    {
+        var contextFactory = await InitializeAsync<Context8576_Removing>(seed: c => c.SeedAsync(), onModelCreating: modelBuilder =>
+        {
+            // We're changing the data type of the fields from INT to BIGINT, because in SingleStore
+            // on a sharded (distributed) table, AUTO_INCREMENT can only be used on a BIGINT column
+            modelBuilder.Entity<Context8576.MyEntity8576>()
+                .Property(e => e.Id)
+                .HasColumnType("bigint");
+        });
+        using var context = contextFactory.CreateContext();
+
+        var result = context.Entities.ToList();
+        Assert.Equal(2, result.Count);
+    }
 
     [ConditionalTheory]
     [MemberData(nameof(IsAsyncData))]
@@ -368,4 +458,3 @@ public class AdHocQueryFiltersQuerySingleStoreTest : AdHocQueryFiltersQueryRelat
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 }
-

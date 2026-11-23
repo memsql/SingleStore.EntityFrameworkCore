@@ -15,5 +15,10 @@
     <PackageReference Include="xunit.runner.console" />
     <PackageReference Include="GitHubActionsTestLogger" />
     <PackageReference Include="Xunit.SkippableFact" />
+
+    <!-- Override vulnerable transitive versions (9.0.0) pulled in by Microsoft.Build.Tasks.Core via EF Core Design/Specification.Tests. -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" />
+    <!-- Part of the ASP.NET Core shared framework, so Web SDK projects get it from there (NU1510 otherwise). -->
+    <PackageReference Include="System.Security.Cryptography.Xml" Condition="'$(UsingMicrosoftNETSdkWeb)' != 'true'" />
   </ItemGroup>
 </Project>

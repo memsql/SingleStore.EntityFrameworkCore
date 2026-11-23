@@ -1,9 +1,9 @@
 using System;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
-using Microsoft.EntityFrameworkCore;
 using SingleStoreConnector;
 using Xunit;
 
@@ -11,6 +11,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.BulkUpdates;
 
 public class NonSharedModelBulkUpdatesSingleStoreTest : NonSharedModelBulkUpdatesRelationalTestBase
 {
+    public NonSharedModelBulkUpdatesSingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 
@@ -78,8 +83,10 @@ WHERE `b`.`Title` LIKE 'Arthur%'
 
         AssertSql(
 """
+@p='SomeValue' (Size = 4000)
+
 UPDATE `Owner` AS `o`
-SET `o`.`Title` = 'SomeValue'
+SET `o`.`Title` = @p
 """);
     }
 
@@ -101,8 +108,8 @@ SET `o`.`Title` = CONCAT(COALESCE(`o`.`Title`, ''), '_Suffix')
         AssertSql(
 """
 UPDATE `Owner` AS `o`
-SET `o`.`OwnedReference_Number` = CHAR_LENGTH(`o`.`Title`),
-    `o`.`Title` = COALESCE(CAST(`o`.`OwnedReference_Number` AS char), '')
+SET `o`.`Title` = COALESCE(CAST(`o`.`OwnedReference_Number` AS char), ''),
+    `o`.`OwnedReference_Number` = CHAR_LENGTH(`o`.`Title`)
 """);
     }
 
@@ -195,7 +202,6 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
 """);
     }
 
-    [ConditionalTheory(Skip = "Feature 'Correlated subselect that can not be transformed and does not match on shard keys' is not supported by SingleStore.")]
     public override async Task Update_with_alias_uniquification_in_setter_subquery(bool async)
     {
         await base.Update_with_alias_uniquification_in_setter_subquery(async);
@@ -206,11 +212,13 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
         await base.Update_non_owned_property_on_entity_with_owned_in_join(async);
 
         AssertSql(
-            """
-            UPDATE `Owner` AS `o`
-            INNER JOIN `Owner` AS `o0` ON `o`.`Id` = `o0`.`Id`
-            SET `o`.`Title` = 'NewValue'
-            """);
+"""
+@p='NewValue' (Size = 4000)
+
+UPDATE `Owner` AS `o`
+INNER JOIN `Owner` AS `o0` ON `o`.`Id` = `o0`.`Id`
+SET `o`.`Title` = @p
+""");
     }
 
     [ConditionalTheory(Skip = "Operation 'Update/Delete right table of a join' is not allowed.")]
@@ -232,7 +240,7 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
 
         AssertSql(
             """
-        @__p_0='1'
+        @p='1'
 
         DELETE `o`
         FROM `Owner` AS `o`
@@ -240,9 +248,40 @@ SET `b0`.`Rating` = CHAR_LENGTH(`b0`.`Title`),
             SELECT `o0`.`Id`
             FROM `Owner` AS `o0`
             ORDER BY `o0`.`Title`
-            LIMIT 18446744073709551610 OFFSET @__p_0
+            LIMIT 18446744073709551610 OFFSET @p
         )
         """);
+    }
+
+    public override async Task Delete_with_view_mapping(bool async)
+    {
+        await base.Delete_with_view_mapping(async);
+
+        AssertSql(
+            """
+DELETE `b`
+FROM `Blogs` AS `b`
+""");
+    }
+
+    public override async Task Update_with_view_mapping(bool async)
+    {
+        await base.Update_with_view_mapping(async);
+
+        AssertSql(
+            """
+@p='Updated' (Size = 4000)
+
+UPDATE `Blogs` AS `b`
+SET `b`.`Data` = @p
+""");
+    }
+
+    public override async Task Update_complex_type_with_view_mapping(bool async)
+    {
+        await base.Update_complex_type_with_view_mapping(async);
+
+        AssertSql();
     }
 
     private void AssertSql(params string[] expected)

@@ -46,11 +46,116 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
     {
         _sqlExpressionFactory = parentVisitor._sqlExpressionFactory;
         _typeMappingSource = parentVisitor._typeMappingSource;
+        _sqlAliasManager = parentVisitor._sqlAliasManager;
         _options = parentVisitor._options;
     }
 
     protected override QueryableMethodTranslatingExpressionVisitor CreateSubqueryVisitor()
         => new SingleStoreQueryableMethodTranslatingExpressionVisitor(this);
+
+    #region Prevent LIMIT LEAST(...)
+
+    // EF Core 10 combines a new row limit with an already existing one into a single `LIMIT LEAST(oldLimit, newLimit)`
+    // (e.g. for `Take(x).Take(y)` or `Take(x).First()`). SingleStore (like MySQL) only accepts non-negative integer constants
+    // (or parameters, which SingleStoreConnector substitutes client-side) in the LIMIT clause, not expressions.
+    // So whenever EF Core would generate LEAST() for the limit, we push the existing limit down into a subquery instead, which
+    // is what EF Core did up to version 9.
+    //
+    // EF Core applies the limit in a private ApplyLimit() method, that is called by TranslateTake(), TranslateFirstOrDefault(),
+    // TranslateSingleOrDefault(), TranslateLastOrDefault() and TranslateElementAtOrDefault(). The last two always push down an
+    // existing limit themselves before calling ApplyLimit() (via ReverseOrderings() and ApplyOffset()), so only the first three
+    // need to be handled here.
+
+    protected override ShapedQueryExpression TranslateTake(ShapedQueryExpression source, Expression count)
+    {
+        var selectExpression = (SelectExpression)source.QueryExpression;
+
+        if (selectExpression.Limit is not null)
+        {
+            var newLimit = TranslateExpression(count);
+            if (newLimit is null)
+            {
+                return null;
+            }
+
+            PushdownLimitIfLeastWouldBeGenerated(selectExpression, newLimit);
+        }
+
+        return base.TranslateTake(source, count);
+    }
+
+    protected override ShapedQueryExpression TranslateFirstOrDefault(
+        ShapedQueryExpression source,
+        LambdaExpression predicate,
+        Type returnType,
+        bool returnDefault)
+    {
+        // The base implementation translates the predicate before applying the limit (which pushes down an existing limit, unless
+        // the predicate is constant TRUE). We do the same here, so we can inspect the final state before the limit gets applied.
+        if (predicate is not null)
+        {
+            source = TranslateWhere(source, predicate);
+            if (source is null)
+            {
+                return null;
+            }
+        }
+
+        // FirstOrDefault() always applies a limit of 1.
+        PushdownLimitIfLeastWouldBeGenerated(
+            (SelectExpression)source.QueryExpression,
+            TranslateExpression(Expression.Constant(1)));
+
+        return base.TranslateFirstOrDefault(source, predicate: null, returnType, returnDefault);
+    }
+
+    protected override ShapedQueryExpression TranslateSingleOrDefault(
+        ShapedQueryExpression source,
+        LambdaExpression predicate,
+        Type returnType,
+        bool returnDefault)
+    {
+        if (predicate is not null)
+        {
+            source = TranslateWhere(source, predicate);
+            if (source is null)
+            {
+                return null;
+            }
+        }
+
+        // SingleOrDefault() applies a constant limit of 2 (or 1 in subqueries). Since only the fact that the new limit is a constant
+        // matters for the decision, we can use 2 here.
+        PushdownLimitIfLeastWouldBeGenerated(
+            (SelectExpression)source.QueryExpression,
+            TranslateExpression(Expression.Constant(2)));
+
+        return base.TranslateSingleOrDefault(source, predicate: null, returnType, returnDefault);
+    }
+
+    /// <summary>
+    ///     Mirrors the decision of EF Core's private <c>RelationalQueryableMethodTranslatingExpressionVisitor.ApplyLimit()</c>:
+    ///     If there is an existing limit that EF Core would combine with the new one using LEAST(), push it down into a subquery
+    ///     first, so EF Core can just set the new limit on the outer query.
+    /// </summary>
+    protected virtual void PushdownLimitIfLeastWouldBeGenerated(SelectExpression selectExpression, SqlExpression newLimit)
+    {
+        if (selectExpression.Limit is not { } oldLimit)
+        {
+            return;
+        }
+
+        // EF Core does not use LEAST() if both limits are constants (it picks the smaller one), or if both limits are identical.
+        var bothConstants = oldLimit is SqlConstantExpression { Value: int } &&
+                            newLimit is SqlConstantExpression { Value: int };
+
+        if (!bothConstants && !oldLimit.Equals(newLimit))
+        {
+            selectExpression.PushdownIntoSubquery();
+        }
+    }
+
+    #endregion
 
     protected override bool IsNaturallyOrdered(SelectExpression selectExpression)
     {
@@ -76,39 +181,70 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
                        && IsJsonEachKeyColumn(subquery, projectedColumn)));
     }
 
-    protected override bool IsValidSelectExpressionForExecuteDelete(
-        SelectExpression selectExpression,
-        StructuralTypeShaperExpression shaper,
-        [NotNullWhen(true)] out TableExpression tableExpression)
-    {
-        if (selectExpression.Offset == null
-            && selectExpression.GroupBy.Count == 0
-            && selectExpression.Having == null
-            && (selectExpression.Tables.Count == 1 || selectExpression.Orderings.Count == 0))
-        {
-            TableExpressionBase table;
-            if (selectExpression.Tables.Count == 1)
-            {
-                table = selectExpression.Tables[0];
-            }
-            else
-            {
-                var projectionBindingExpression = (ProjectionBindingExpression)shaper.ValueBufferExpression;
-                var entityProjectionExpression = (StructuralTypeProjectionExpression)selectExpression.GetProjection(projectionBindingExpression);
-                var column = entityProjectionExpression.BindProperty(shaper.StructuralType.GetProperties().First());
-                table = selectExpression.GetTable(column).UnwrapJoin();
-            }
+    #region ExecuteDelete
 
-            if (table is TableExpression te)
-            {
-                tableExpression = te;
-                return true;
-            }
+    // The shaper of the entity being deleted by the ExecuteDelete() currently being translated. EF Core's
+    // IsValidSelectExpressionForExecuteDelete() does not get told which table is the delete target, so we remember the shaper here
+    // to find it ourselves.
+    private StructuralTypeShaperExpression _executeDeleteShaper;
+
+    protected override DeleteExpression TranslateExecuteDelete(ShapedQueryExpression source)
+    {
+        // EF Core calls this method recursively for its subquery fallback, so restore the outer value afterwards.
+        var previousShaper = _executeDeleteShaper;
+        _executeDeleteShaper = UnwrapIncludes(source.ShaperExpression) as StructuralTypeShaperExpression;
+
+        try
+        {
+            return base.TranslateExecuteDelete(source);
+        }
+        finally
+        {
+            _executeDeleteShaper = previousShaper;
         }
 
-        tableExpression = null;
-        return false;
+        static Expression UnwrapIncludes(Expression shaper)
+        {
+            while (shaper is IncludeExpression includeExpression)
+            {
+                shaper = includeExpression.EntityExpression;
+            }
+
+            return shaper;
+        }
     }
+
+    // SingleStore's DELETE grammar has no ORDER BY, and LIMIT is only supported in single-table DELETE statements.
+    // Multi-table DELETE is supported with any join type, as long as the rows are deleted from the first (left-most) table:
+    // SingleStore rejects deleting from any other table with "Operation 'Update/Delete right table of a join' is not allowed".
+    // Whenever we return false, EF Core falls back to `DELETE FROM t WHERE <key> IN/EXISTS (<original query>)`.
+    protected override bool IsValidSelectExpressionForExecuteDelete(SelectExpression selectExpression)
+        => selectExpression is
+           {
+               Tables: [TableExpression, ..],
+               Orderings: [],
+               Offset: null,
+               GroupBy: [],
+               Having: null
+           } &&
+           (selectExpression.Tables.Count == 1 ||
+            (selectExpression.Limit is null && IsDeleteTargetFirstTable(selectExpression)));
+
+    private bool IsDeleteTargetFirstTable(SelectExpression selectExpression)
+    {
+        if (_executeDeleteShaper is not { ValueBufferExpression: ProjectionBindingExpression projectionBinding } shaper ||
+            selectExpression.GetProjection(projectionBinding) is not StructuralTypeProjectionExpression projection)
+        {
+            return false;
+        }
+
+        // Same way EF Core determines the delete target in TranslateExecuteDelete(): via the table of the entity's first property.
+        var column = projection.BindProperty(shaper.StructuralType.GetProperties().First());
+
+        return column.TableAlias == selectExpression.Tables[0].Alias;
+    }
+
+    #endregion ExecuteDelete
 
     protected override bool IsValidSelectExpressionForExecuteUpdate(
         SelectExpression selectExpression,
@@ -249,6 +385,7 @@ public class SingleStoreQueryableMethodTranslatingExpressionVisitor : Relational
 
     protected override ShapedQueryExpression TranslatePrimitiveCollection(SqlExpression sqlExpression, IProperty property, string tableAlias)
     {
+        // TODO: PLAT-7535 (primitive collections support)
         if (!_options.PrimitiveCollectionsSupport)
         {
             throw new InvalidOperationException(

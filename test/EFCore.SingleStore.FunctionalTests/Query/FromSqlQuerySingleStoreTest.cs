@@ -62,6 +62,35 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             return base.FromSqlRaw_composed_with_common_table_expression(async);
         }
 
+        // Same as the base test, except for the result: SingleStoreConnector ignores `Size` for input parameters, so the
+        // second parameter isn't truncated to "Sea" (as it is on SQL Server) and both subqueries return the same customer.
+        public override async Task Multiple_occurrences_of_FromSql_with_db_parameter_adds_two_parameters(bool async)
+        {
+            using var context = CreateContext();
+            var city = "Seattle";
+
+            var dbParameter1 = CreateDbParameter("city", city);
+            dbParameter1.Size = 7;
+            var subquery1 = context.Database.SqlQueryRaw<UnmappedCustomer>(
+                NormalizeDelimitersInRawString("SELECT * FROM [Customers] WHERE [City] = {0}"),
+                dbParameter1);
+
+            var dbParameter2 = CreateDbParameter("city", city);
+            dbParameter2.Size = 3;
+            var subquery2 = context.Database.SqlQueryRaw<UnmappedCustomer>(
+                NormalizeDelimitersInRawString("SELECT * FROM [Customers] WHERE [City] = {0}"),
+                dbParameter2);
+
+            var query = subquery1.Intersect(subquery2);
+
+            var actual = async
+                ? await query.ToArrayAsync()
+                : query.ToArray();
+
+            var customer = Assert.Single(actual);
+            Assert.Equal("WHITC", customer.CustomerID);
+        }
+
         protected override DbParameter CreateDbParameter(string name, object value)
             => new SingleStoreParameter
             {

@@ -525,8 +525,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
             RelationalTypeMapping stringTypeMapping,
             StartsEndsWithContains methodType)
         {
-            if (pattern is SqlParameterExpression patternParameter &&
-                patternParameter.Name.StartsWith(QueryCompilationContext.QueryParameterPrefix, StringComparison.Ordinal))
+            if (pattern is SqlParameterExpression patternParameter)
             {
                 // The pattern is a parameter, register a runtime parameter that will contain the rewritten LIKE pattern, where
                 // all special characters have been escaped.
@@ -718,7 +717,7 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionTranslators.Internal
             QueryContext queryContext,
             string baseParameterName,
             StartsEndsWithContains methodType)
-            => queryContext.ParameterValues[baseParameterName] switch
+            => queryContext.Parameters[baseParameterName] switch
             {
                 null => null,
 

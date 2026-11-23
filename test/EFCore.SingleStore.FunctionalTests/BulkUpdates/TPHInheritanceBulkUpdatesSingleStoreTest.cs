@@ -1,7 +1,6 @@
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore.BulkUpdates;
 using Microsoft.EntityFrameworkCore.TestUtilities;
-using SingleStoreConnector;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Infrastructure;
 using EntityFrameworkCore.SingleStore.Tests.TestUtilities.Attributes;
@@ -92,19 +91,17 @@ WHERE (
         AssertSql();
     }
 
+    [ConditionalTheory(Skip = "SingleStore does not support this type of query: subselect with DISTINCT")]
     public override async Task Delete_GroupBy_Where_Select_First_3(bool async)
     {
-        // Not supported by MySQL:
-        //     Error Code: 1093. You can't specify target table 'c' for update in FROM clause
-        await Assert.ThrowsAsync<SingleStoreException>(
-            () => base.Delete_GroupBy_Where_Select_First_3(async));
+        await base.Delete_GroupBy_Where_Select_First_3(async);
 
         AssertSql(
 """
 DELETE `a`
 FROM `Animals` AS `a`
 WHERE `a`.`Id` IN (
-SELECT (
+    SELECT (
         SELECT `a1`.`Id`
         FROM `Animals` AS `a1`
         WHERE `a0`.`CountryId` = `a1`.`CountryId`
@@ -161,8 +158,10 @@ WHERE EXISTS (
 
         AssertExecuteUpdateSql(
 """
+@p='Monovia' (Size = 4000)
+
 UPDATE `Countries` AS `c`
-SET `c`.`Name` = 'Monovia'
+SET `c`.`Name` = @p
 WHERE (
     SELECT COUNT(*)
     FROM `Animals` AS `a`
@@ -176,8 +175,10 @@ WHERE (
 
         AssertExecuteUpdateSql(
 """
+@p='Monovia' (Size = 4000)
+
 UPDATE `Countries` AS `c`
-SET `c`.`Name` = 'Monovia'
+SET `c`.`Name` = @p
 WHERE (
     SELECT COUNT(*)
     FROM `Animals` AS `a`
@@ -198,8 +199,10 @@ WHERE (
 
         AssertExecuteUpdateSql(
 """
+@p='Animal' (Size = 4000)
+
 UPDATE `Animals` AS `a`
-SET `a`.`Name` = 'Animal'
+SET `a`.`Name` = @p
 WHERE `a`.`Name` = 'Great spotted kiwi'
 """);
     }
@@ -210,8 +213,10 @@ WHERE `a`.`Name` = 'Great spotted kiwi'
 
         AssertExecuteUpdateSql(
 """
+@p='NewBird' (Size = 4000)
+
 UPDATE `Animals` AS `a`
-SET `a`.`Name` = 'NewBird'
+SET `a`.`Name` = @p
 WHERE `a`.`Discriminator` = 'Kiwi'
 """);
     }
@@ -222,8 +227,10 @@ WHERE `a`.`Discriminator` = 'Kiwi'
 
         AssertExecuteUpdateSql(
 """
+@p='SomeOtherKiwi' (Size = 4000)
+
 UPDATE `Animals` AS `a`
-SET `a`.`Name` = 'SomeOtherKiwi'
+SET `a`.`Name` = @p
 WHERE `a`.`Discriminator` = 'Kiwi'
 """);
     }
@@ -234,8 +241,10 @@ WHERE `a`.`Discriminator` = 'Kiwi'
 
         AssertExecuteUpdateSql(
 """
+@p='0'
+
 UPDATE `Animals` AS `a`
-SET `a`.`FoundOn` = 0
+SET `a`.`FoundOn` = @p
 WHERE `a`.`Discriminator` = 'Kiwi'
 """);
     }
@@ -246,9 +255,12 @@ WHERE `a`.`Discriminator` = 'Kiwi'
 
         AssertExecuteUpdateSql(
 """
+@p='Kiwi' (Size = 4000)
+@p0='0'
+
 UPDATE `Animals` AS `a`
-SET `a`.`FoundOn` = 0,
-    `a`.`Name` = 'Kiwi'
+SET `a`.`Name` = @p,
+    `a`.`FoundOn` = @p0
 WHERE `a`.`Discriminator` = 'Kiwi'
 """);
     }
@@ -259,8 +271,10 @@ WHERE `a`.`Discriminator` = 'Kiwi'
 
         AssertExecuteUpdateSql(
 """
+@p='0'
+
 UPDATE `Drinks` AS `d`
-SET `d`.`SugarGrams` = 0
+SET `d`.`SugarGrams` = @p
 WHERE `d`.`Discriminator` = 1
 """);
     }
@@ -271,8 +285,10 @@ WHERE `d`.`Discriminator` = 1
 
         AssertExecuteUpdateSql(
 """
+@p='0'
+
 UPDATE `Drinks` AS `d`
-SET `d`.`SugarGrams` = 0
+SET `d`.`SugarGrams` = @p
 WHERE `d`.`Discriminator` = 1
 """);
     }

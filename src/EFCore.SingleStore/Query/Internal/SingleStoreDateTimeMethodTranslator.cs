@@ -195,13 +195,19 @@ namespace EntityFrameworkCore.SingleStore.Query.Internal
                         return convertExpression;
                     }
 
-                    return _sqlExpressionFactory.NullableFunction(
-                        "ADDTIME",
-                        new[]
-                        {
-                            convertExpression,
-                            arguments[0]
-                        },
+                    // SingleStore's ADDTIME() returns a string (e.g. '2020-01-01 15:30:10.000000'), not a DATETIME, so comparing its
+                    // result with a DATETIME value would compare strings and fail to match. Type the function as string, so that the
+                    // CAST() back to DATETIME is not optimized away by the SQL generator.
+                    return _sqlExpressionFactory.Convert(
+                        _sqlExpressionFactory.NullableFunction(
+                            "ADDTIME",
+                            new[]
+                            {
+                                convertExpression,
+                                arguments[0]
+                            },
+                            typeof(string),
+                            _sqlExpressionFactory.FindMapping(typeof(string), storeTypeName: null)),
                         method.ReturnType);
                 }
             }

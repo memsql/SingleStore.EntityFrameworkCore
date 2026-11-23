@@ -1,17 +1,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Tests;
-using Microsoft.EntityFrameworkCore;
 using Xunit;
 
 namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocManyToManyQuerySingleStoreTest : AdHocManyToManyQueryRelationalTestBase
 {
+    public AdHocManyToManyQuerySingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     [ConditionalFact]
     public override async Task SelectMany_with_collection_selector_having_subquery()
     {

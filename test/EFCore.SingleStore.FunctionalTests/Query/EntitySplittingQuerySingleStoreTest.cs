@@ -1,4 +1,5 @@
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -10,7 +11,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class EntitySplittingQuerySingleStoreTest : EntitySplittingQueryTestBase
 {
-    public EntitySplittingQuerySingleStoreTest(ITestOutputHelper testOutputHelper)
+
+    public EntitySplittingQuerySingleStoreTest(NonSharedFixture fixture, ITestOutputHelper testOutputHelper)
+        : base(fixture)
     {
         // Fixture.TestSqlLoggerFactory.SetTestOutputHelper(testOutputHelper);
     }

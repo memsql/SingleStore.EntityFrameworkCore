@@ -11,7 +11,7 @@ S2MS_API_KEY = os.getenv("S2MS_API_KEY")  # project UI env-var reference
 WORKSPACE_GROUP_BASE_NAME = "ef-core-provider-ci-test-cluster"
 WORKSPACE_NAME = "tests"
 
-AUTO_TERMINATE_MINUTES = 150
+AUTO_TERMINATE_MINUTES = 240
 WORKSPACE_ENDPOINT_FILE = "WORKSPACE_ENDPOINT_FILE"
 WORKSPACE_GROUP_ID_FILE = "WORKSPACE_GROUP_ID_FILE"
 
@@ -40,7 +40,7 @@ def create_workspace(workspace_manager):
             region=region.id,
             firewall_ranges=["0.0.0.0/0"],
             admin_password=SQL_USER_PASSWORD,
-            expires_at="150m"
+            expires_at=f"{AUTO_TERMINATE_MINUTES}m"
         )
     workspace_group = retry(create_workspace_group)
 
@@ -59,11 +59,18 @@ def create_workspace(workspace_manager):
 def terminate_workspace(workspace_manager) -> None:
     with open(WORKSPACE_GROUP_ID_FILE, "r") as f:
         workspace_group_id = f.read()
-    workspace_group = workspace_manager.get_workspace_group(workspace_group_id)
+    try:
+        workspace_group = workspace_manager.get_workspace_group(workspace_group_id)
 
-    for workspace in workspace_group.workspaces:
-        workspace.terminate(wait_on_terminated=True)
-    workspace_group.terminate()
+        for workspace in workspace_group.workspaces:
+            workspace.terminate(wait_on_terminated=True)
+        workspace_group.terminate()
+    except Exception as e:
+        # The cluster may already be gone, e.g. because it reached AUTO_TERMINATE_MINUTES.
+        if getattr(e, "errno", None) == 404 or "already terminated" in str(e):
+            print(f"Workspace group {workspace_group_id} is already terminated or no longer exists: {e}")
+            return
+        raise
 
 
 def check_and_update_connection(create_db: Optional[str] = None):

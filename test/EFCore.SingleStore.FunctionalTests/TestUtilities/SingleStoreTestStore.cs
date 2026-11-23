@@ -24,7 +24,6 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
 
         private readonly string _connectionString;
         private readonly string _scriptPath;
-        private readonly bool _useConnectionString;
         private readonly bool _noBackslashEscapes;
 
         protected override string OpenDelimiter => "`";
@@ -68,13 +67,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             SingleStoreGuidFormat guidFormat = SingleStoreGuidFormat.Default)
             : base(name, shared, new SingleStoreConnection(CreateConnectionString(name, noBackslashEscapes, guidFormat)))
         {
-            _useConnectionString = useConnectionString;
+            // Tests can also set `UseConnectionString` after the store has been created (e.g. `CreateTestStore25225()` in
+            // `AdHocQuerySplittingQueryTestBase`), so the connection string has to be available either way.
+            UseConnectionString = useConnectionString;
             _noBackslashEscapes = noBackslashEscapes;
-
-            if (useConnectionString)
-            {
-                _connectionString = CreateConnectionString(name, _noBackslashEscapes, guidFormat);
-            }
+            _connectionString = CreateConnectionString(name, _noBackslashEscapes, guidFormat);
 
             ServerVersion = new Lazy<ServerVersion>(() => Microsoft.EntityFrameworkCore.ServerVersion.AutoDetect((SingleStoreConnection)Connection));
             DatabaseCharSet = databaseCharSet ?? ServerVersion.Value.DefaultCharSet;
@@ -103,7 +100,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
         private static int GetCommandTimeout() => AppConfig.Config.GetValue("Data:CommandTimeout", DefaultCommandTimeout);
 
         public override DbContextOptionsBuilder AddProviderOptions(DbContextOptionsBuilder builder)
-            => _useConnectionString
+            => UseConnectionString
                 ? builder.UseSingleStore(_connectionString, x => AddOptions(x, _noBackslashEscapes))
                 : builder.UseSingleStore(Connection, x => AddOptions(x, _noBackslashEscapes));
 
@@ -112,7 +109,7 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             return builder
                 // Our UseSingleStore() methods explicitly set TranslateParameterizedCollectionsToConstants() as the default, which is not the
                 // default that the EF Core tests expect.
-                .TranslateParameterizedCollectionsToParameters()
+                .UseParameterizedCollectionMode(ParameterTranslationMode.MultipleParameters)
                 .UseQuerySplittingBehavior(QuerySplittingBehavior.SingleQuery)
                 .CommandTimeout(GetCommandTimeout())
                 .ExecutionStrategy(d => new TestSingleStoreRetryingExecutionStrategy(d));
@@ -195,31 +192,31 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities
             return true;
         }
 
-        public override void Dispose()
+        // EF Core 10 removed the synchronous TestStore.Dispose(); TestStore is now only IAsyncDisposable.
+        public override async ValueTask DisposeAsync()
         {
-            DeleteDatabase();
-            ChangeTableType();
+            await DeleteDatabaseAsync();
+            await ChangeTableTypeAsync();
+            await base.DisposeAsync();
         }
 
-        private void DeleteDatabase()
+        private async Task DeleteDatabaseAsync()
         {
             // TODO: PLAT-6404 (Investigate how to drop the databases that aren't created by SingleStoreTestStore)
             string[] databases = {"TwoDatabasesOne", "TwoDatabasesIntercept", "TwoDatabasesOneB",
                 "TwoDatabasesTwo", "TwoDatabasesTwoB", "ConnectionTest", "ConnectionSettings", "SeedsA", "SeedsS", $"{Name}"};
 
-            using (var master = new SingleStoreConnection(CreateAdminConnectionString()))
+            await using var master = new SingleStoreConnection(CreateAdminConnectionString());
+            foreach (var db in databases)
             {
-                foreach (var db in databases)
-                {
-                    ExecuteNonQuery(master, $@"DROP DATABASE IF EXISTS `{db}`;");
-                }
+                await ExecuteNonQueryAsync(master, $@"DROP DATABASE IF EXISTS `{db}`;");
             }
         }
 
-        private void ChangeTableType()
+        private async Task ChangeTableTypeAsync()
         {
-            using var master = new SingleStoreConnection(CreateAdminConnectionString());
-            ExecuteNonQuery(master, "set global default_table_type = columnstore;");
+            await using var master = new SingleStoreConnection(CreateAdminConnectionString());
+            await ExecuteNonQueryAsync(master, "set global default_table_type = columnstore;");
         }
 
         private static string GetCreateDatabaseStatement(string name, string charset = null, string collation = null)

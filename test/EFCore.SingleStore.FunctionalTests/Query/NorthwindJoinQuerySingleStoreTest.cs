@@ -57,20 +57,28 @@ WHERE `c`.`CustomerID` LIKE 'A%'
 ORDER BY `c`.`CustomerID`, `t0`.`OrderID0`, `t0`.`OrderID`");
         }
 
-        // https://github.com/npgsql/efcore.pg/issues/2759
-        // public override Task Join_local_collection_int_closure_is_cached_correctly(bool async)
-        //     => Assert.ThrowsAsync<InvalidOperationException>(() => base.Join_local_collection_int_closure_is_cached_correctly(async));
+        // EF Core 10 no longer needs primitive collections support to translate this query.
         public override async Task Join_local_collection_int_closure_is_cached_correctly(bool async)
         {
-            if (SingleStoreTestHelpers.HasPrimitiveCollectionsSupport(Fixture))
-            {
-                await base.Join_local_collection_int_closure_is_cached_correctly(async);
-            }
-            else
-            {
-                await Assert.ThrowsAsync<InvalidOperationException>(()
-                    => base.Join_local_collection_int_closure_is_cached_correctly(async));
-            }
+            await base.Join_local_collection_int_closure_is_cached_correctly(async);
+
+            AssertSql(
+                """
+@p1='1'
+@p2='2'
+
+SELECT `e`.`EmployeeID`
+FROM `Employees` AS `e`
+INNER JOIN (SELECT @p1 AS `Value` UNION ALL SELECT @p2) AS `p` ON `e`.`EmployeeID` = `p`.`Value`
+""",
+                //
+                """
+@p1='3'
+
+SELECT `e`.`EmployeeID`
+FROM `Employees` AS `e`
+INNER JOIN (SELECT @p1 AS `Value`) AS `p` ON `e`.`EmployeeID` = `p`.`Value`
+""");
         }
 
         private void AssertSql(params string[] expected)

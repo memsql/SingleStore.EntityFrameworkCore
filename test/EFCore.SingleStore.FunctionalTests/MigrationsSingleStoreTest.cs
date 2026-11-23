@@ -775,6 +775,56 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
             }
         }
 
+        public override async Task Multiop_drop_table_and_create_the_same_table_in_one_migration()
+        {
+            await base.Multiop_drop_table_and_create_the_same_table_in_one_migration();
+
+            AssertSql(
+"""
+DROP TABLE `Customers`;
+""",
+                //
+                """
+CREATE TABLE `Customers` (
+    `Id` int NOT NULL,
+    `Name` longtext CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `PK_Customers` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+""");
+        }
+
+        public override async Task Multiop_create_table_and_drop_it_in_one_migration()
+        {
+            await base.Multiop_create_table_and_drop_it_in_one_migration();
+
+            AssertSql(
+"""
+CREATE TABLE `Customers` (
+    `Id` int NOT NULL,
+    `Name` longtext CHARACTER SET utf8mb4 NULL,
+    CONSTRAINT `PK_Customers` PRIMARY KEY (`Id`)
+) CHARACTER SET=utf8mb4;
+""",
+                //
+                """
+DROP TABLE `Customers`;
+""");
+        }
+
+        // Renaming the table renames its primary key constraint, which requires dropping and re-adding the primary key.
+        [ConditionalTheory(Skip = "SingleStore only supports online ALTER TABLE")]
+        public override Task Multiop_rename_table_and_drop()
+        {
+            return base.Multiop_rename_table_and_drop();
+        }
+
+        // Renaming the table renames its primary key constraint, which requires dropping and re-adding the primary key.
+        [ConditionalTheory(Skip = "SingleStore only supports online ALTER TABLE")]
+        public override Task Multiop_rename_table_and_create_new_table_with_the_old_name()
+        {
+            return base.Multiop_rename_table_and_create_new_table_with_the_old_name();
+        }
+
         [ConditionalTheory(Skip = "TODO")]
         public override Task Rename_table_with_primary_key()
         {
@@ -2010,25 +2060,6 @@ SELECT ROW_COUNT();
 """);
         }
 
-        public override async Task Create_table_with_complex_type_with_required_properties_on_derived_entity_in_TPH()
-        {
-            await base.Create_table_with_complex_type_with_required_properties_on_derived_entity_in_TPH();
-
-            AssertSql(
-"""
-CREATE TABLE `Contacts` (
-    `Id` int NOT NULL,
-    `Discriminator` varchar(8) CHARACTER SET utf8mb4 NOT NULL,
-    `Name` longtext CHARACTER SET utf8mb4 NULL,
-    `Number` int NULL,
-    `MyComplex_Prop` longtext NULL,
-    `MyComplex_MyNestedComplex_Bar` datetime(6) NULL,
-    `MyComplex_MyNestedComplex_Foo` int NULL,
-    CONSTRAINT `PK_Contacts` PRIMARY KEY (`Id`)
-) CHARACTER SET=utf8mb4;
-""");
-        }
-
         public override async Task Add_required_primitive_collection_to_existing_table()
         {
             await base.Add_required_primitive_collection_to_existing_table();
@@ -2145,38 +2176,52 @@ ALTER TABLE `Customers` ADD `Numbers` longtext CHARACTER SET utf8mb4 NOT NULL DE
 
         #region ToJson
 
+        // TODO: PLAT-6409 (requires JSON column support)
+
         public override Task Create_table_with_json_column()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Create_table_with_json_column());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Create_table_with_json_column());
 
         public override Task Create_table_with_json_column_explicit_json_column_names()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Create_table_with_json_column_explicit_json_column_names());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Create_table_with_json_column_explicit_json_column_names());
 
         public override Task Rename_table_with_json_column()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Rename_table_with_json_column());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Rename_table_with_json_column());
 
         public override Task Add_json_columns_to_existing_table()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Add_json_columns_to_existing_table());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Add_json_columns_to_existing_table());
 
         public override Task Convert_json_entities_to_regular_owned()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_json_entities_to_regular_owned());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Convert_json_entities_to_regular_owned());
 
         public override Task Convert_regular_owned_entities_to_json()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_regular_owned_entities_to_json());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Convert_regular_owned_entities_to_json());
 
         public override Task Convert_string_column_to_a_json_column_containing_reference()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_string_column_to_a_json_column_containing_reference());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Convert_string_column_to_a_json_column_containing_reference());
 
         public override Task Convert_string_column_to_a_json_column_containing_required_reference()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_string_column_to_a_json_column_containing_required_reference());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Convert_string_column_to_a_json_column_containing_required_reference());
 
         public override Task Convert_string_column_to_a_json_column_containing_collection()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Convert_string_column_to_a_json_column_containing_collection());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Convert_string_column_to_a_json_column_containing_collection());
 
         public override Task Drop_json_columns_from_existing_table()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Drop_json_columns_from_existing_table());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Drop_json_columns_from_existing_table());
 
         public override Task Rename_json_column()
-            => Assert.ThrowsAsync<NullReferenceException>(() => base.Rename_json_column());
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Rename_json_column());
+
+        public override Task Create_table_with_complex_properties_mapped_to_json()
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Create_table_with_complex_properties_mapped_to_json());
+
+        public override Task Create_table_with_complex_properties_with_nested_collection_mapped_to_json()
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Create_table_with_complex_properties_with_nested_collection_mapped_to_json());
+
+        public override Task Create_table_with_complex_type_with_required_properties_on_derived_entity_in_TPH()
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Create_table_with_complex_type_with_required_properties_on_derived_entity_in_TPH());
+
+        public override Task Create_table_with_optional_complex_type_with_required_properties()
+            => Assert.ThrowsAsync<InvalidOperationException>(() => base.Create_table_with_optional_complex_type_with_required_properties());
 
         #endregion ToJson
 

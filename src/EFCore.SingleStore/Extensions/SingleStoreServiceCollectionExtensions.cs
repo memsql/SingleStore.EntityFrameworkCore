@@ -130,8 +130,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .TryAdd<IQueryCompilationContextFactory, SingleStoreQueryCompilationContextFactory>()
                 .TryAdd<IQueryTranslationPostprocessorFactory, SingleStoreQueryTranslationPostprocessorFactory>()
 
-                // TODO: Injecting this service will make our original JSON implementations work, but interferes with EF Core 8's new
-                //       primitive collections support.
+                // TODO: PLAT-7535 (primitive collections support): Injecting this service will make our original JSON implementations
+                //       work, but interferes with EF Core 8's new primitive collections support.
                 //       We will need to limit the preprocessor logic to only the relevant cases.
                 .TryAdd<IQueryTranslationPreprocessorFactory, SingleStoreQueryTranslationPreprocessorFactory>()
 

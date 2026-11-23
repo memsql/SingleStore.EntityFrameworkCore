@@ -1,4 +1,6 @@
 using System.Threading.Tasks;
+using JetBrains.Annotations;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
@@ -8,6 +10,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class ToSqlQuerySingleStoreTest : ToSqlQueryTestBase
 {
+    public ToSqlQuerySingleStoreTest([NotNull] NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 

@@ -44,12 +44,12 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query
             // When the comparison parameter is not a constant, we have to use a case
             // statement
             AssertSql(
-                $@"@__comparison_0='{comparison:D}'
+                $@"@comparison='{comparison:D}'
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    WHEN @comparison IN (4, 0, 2) THEN `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)
     ELSE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
@@ -161,12 +161,12 @@ WHERE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_
             // When the comparison parameter is not a constant, we have to use a case
             // statement
             AssertSql(
-                $@"@__comparison_0='{comparison:D}'
+                $@"@comparison='{comparison:D}'
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    WHEN @comparison IN (4, 0, 2) THEN `c`.`CustomerID` = ('anton' :> VARCHAR(255) COLLATE utf8mb4_bin)
     ELSE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
@@ -278,12 +278,12 @@ WHERE LCASE(`c`.`CustomerID`) = (LCASE('anton') :> VARCHAR(255) COLLATE utf8mb4_
             // When the comparison parameter is not a constant, we have to use a case
             // statement
             AssertSql(
-                $@"@__comparison_0='{comparison:D}'
+                $@"@comparison='{comparison:D}'
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('%nto%' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    WHEN @comparison IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('%nto%' :> VARCHAR(255) COLLATE utf8mb4_bin)
     ELSE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nto%') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
@@ -398,12 +398,12 @@ WHERE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nto%') :> VARCHAR(255) COLLATE utf8m
             // When the comparison parameter is not a constant, we have to use a case
             // statement
             AssertSql(
-                $@"@__comparison_0='{comparison:D}'
+                $@"@comparison='{comparison:D}'
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('anto' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    WHEN @comparison IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('anto' :> VARCHAR(255) COLLATE utf8mb4_bin)
     ELSE LCASE(`c`.`CustomerID`) LIKE (LCASE('anto%') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
@@ -516,12 +516,12 @@ WHERE LCASE(LCASE(`c`.`CustomerID`)) LIKE (LCASE('anto%') :> VARCHAR(255) COLLAT
                 assertEmpty: expected == 0);
 
             AssertSql(
-                $@"@__comparison_0='{comparison:D}'
+                $@"@comparison='{comparison:D}'
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('%nton' :> VARCHAR(255) COLLATE utf8mb4_bin)
+    WHEN @comparison IN (4, 0, 2) THEN `c`.`CustomerID` LIKE ('%nton' :> VARCHAR(255) COLLATE utf8mb4_bin)
     ELSE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nton') :> VARCHAR(255) COLLATE utf8mb4_bin)
 END");
         }
@@ -635,12 +635,12 @@ WHERE LCASE(`c`.`CustomerID`) LIKE (LCASE('%nton') :> VARCHAR(255) COLLATE utf8m
 
             // When the comparison parameter is not a constant, we have to use a case
             // statement
-            AssertSql($"@__comparison_0='{comparison:D}'" + @"
+            AssertSql($"@comparison='{comparison:D}'" + @"
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
 WHERE CASE
-    WHEN @__comparison_0 IN (4, 0, 2) THEN LOCATE(('nt' :> VARCHAR(255) COLLATE utf8mb4_bin), `c`.`CustomerID`) - 1
+    WHEN @comparison IN (4, 0, 2) THEN LOCATE(('nt' :> VARCHAR(255) COLLATE utf8mb4_bin), `c`.`CustomerID`) - 1
     ELSE LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`)) - 1
 END = 1");
         }
@@ -672,11 +672,11 @@ WHERE (LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`Cust
                 assertEmpty: expected == 0);
 
             AssertSql(
-     @$"@__startIndex_0='{startIndex}'
+     @$"@startIndex='{startIndex}'
 
 SELECT `c`.`CustomerID`, `c`.`Address`, `c`.`City`, `c`.`CompanyName`, `c`.`ContactName`, `c`.`ContactTitle`, `c`.`Country`, `c`.`Fax`, `c`.`Phone`, `c`.`PostalCode`, `c`.`Region`
 FROM `Customers` AS `c`
-WHERE (LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`), @__startIndex_0 + 1) - 1) = 1");
+WHERE (LOCATE((LCASE('nt') :> VARCHAR(255) COLLATE utf8mb4_bin), LCASE(`c`.`CustomerID`), @startIndex + 1) - 1) = 1");
         }
 
         [ConditionalTheory]

@@ -32,11 +32,11 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SingleStoreTargetFramework>net8.0</SingleStoreTargetFramework>
-    <SingleStoreTestTargetFramework>net9.0</SingleStoreTestTargetFramework>
-    <EfCoreTargetFramework>net8.0</EfCoreTargetFramework>
-    <EfCoreTestTargetFramework>net9.0</EfCoreTestTargetFramework>
-    <SingleStoreConnectorTargetFramework>net8.0</SingleStoreConnectorTargetFramework>
+    <SingleStoreTargetFramework>net10.0</SingleStoreTargetFramework>
+    <SingleStoreTestTargetFramework>net10.0</SingleStoreTestTargetFramework>
+    <EfCoreTargetFramework>net10.0</EfCoreTargetFramework>
+    <EfCoreTestTargetFramework>net10.0</EfCoreTestTargetFramework>
+    <SingleStoreConnectorTargetFramework>net10.0</SingleStoreConnectorTargetFramework>
   </PropertyGroup>
 
    <PropertyGroup>

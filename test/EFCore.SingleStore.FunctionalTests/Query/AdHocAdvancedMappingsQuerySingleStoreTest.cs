@@ -1,11 +1,11 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Query;
 using Microsoft.EntityFrameworkCore.TestUtilities;
 using EntityFrameworkCore.SingleStore.FunctionalTests.TestUtilities;
 using EntityFrameworkCore.SingleStore.Tests;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Xunit;
 
@@ -13,6 +13,11 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests.Query;
 
 public class AdHocAdvancedMappingsQuerySingleStoreTest : AdHocAdvancedMappingsQueryRelationalTestBase
 {
+    public AdHocAdvancedMappingsQuerySingleStoreTest(NonSharedFixture fixture)
+        : base(fixture)
+    {
+    }
+
     protected override ITestStoreFactory TestStoreFactory
         => SingleStoreTestStoreFactory.Instance;
 
@@ -91,6 +96,7 @@ FROM (
     SELECT `o`.`Id`
     FROM `Offers` AS `o`
     WHERE `o`.`Id` = 1
+    ORDER BY `o`.`Id`
     LIMIT 1
 ) AS `o0`
 INNER JOIN (
@@ -108,7 +114,7 @@ ORDER BY `o0`.`Id`
 
         AssertSql(
 """
-@__p_0='10'
+@p='10'
 
 SELECT `a`.`Id`, `s`.`Info_Created0` AS `Created`
 FROM (
@@ -117,7 +123,7 @@ FROM (
     INNER JOIN `Bs` AS `b` ON `c`.`BId` = `b`.`Id`
     WHERE `b`.`AId` = 1
     ORDER BY `c`.`Id`
-    LIMIT @__p_0
+    LIMIT @p
 ) AS `s`
 LEFT JOIN `As` AS `a` ON `s`.`AId` = `a`.`Id`
 ORDER BY `s`.`Id`
@@ -273,7 +279,7 @@ ORDER BY `s`.`Id`
 
             Assert.Equal(
                 CoreStrings.TranslationFailed(
-                    @"DbSet<MockEntity>()    .Cast<IDummyEntity>()    .Where(e => e.Id == __id_0)"),
+                    @"DbSet<MockEntity>()    .Cast<IDummyEntity>()    .Where(e => e.Id == @id)"),
                 message.Replace("\r", "").Replace("\n", ""));
         }
     }

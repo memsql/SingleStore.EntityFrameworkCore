@@ -39,7 +39,9 @@ namespace EntityFrameworkCore.SingleStore.FunctionalTests
                 .ToList();
 
             var sqlResult = context.SimpleGuidEntities
+#pragma warning disable EF1003
                 .FromSqlRaw("select * from `SimpleGuidEntities` where `GuidValue` = " + sqlEquivalent)
+#pragma warning restore EF1003
                 .ToList();
 
             Assert.Single(result);

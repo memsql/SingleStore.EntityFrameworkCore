@@ -115,8 +115,9 @@ namespace EntityFrameworkCore.SingleStore.IntegrationTests.Commands
                     selected.Enqueue(blog.Title);
                 }
             }
-
+#pragma warning disable EF1003
             _db.Database.ExecuteSqlRaw("DELETE FROM `" + _db.Model.FindEntityType(typeof(Blog)).GetTableName() + "`");
+#pragma warning restore EF1003
 
             PerfTest(insert1, "Insert 1", iterations, concurrency, ops).GetAwaiter().GetResult();
             var insertCount = _db.Blogs.Count();

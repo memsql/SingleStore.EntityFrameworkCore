@@ -542,6 +542,20 @@ namespace EntityFrameworkCore.SingleStore.Query.ExpressionVisitors.Internal
             return leftJoinExpression.Update(table, joinPredicate);
         }
 
+        protected override Expression VisitRightJoin(RightJoinExpression rightJoinExpression)
+        {
+            Check.NotNull(rightJoinExpression, nameof(rightJoinExpression));
+
+            var parentOptimize = _optimize;
+            _optimize = false;
+            var table = (TableExpressionBase)Visit(rightJoinExpression.Table);
+            _optimize = true;
+            var joinPredicate = (SqlExpression)Visit(rightJoinExpression.JoinPredicate);
+            _optimize = parentOptimize;
+
+            return rightJoinExpression.Update(table, joinPredicate);
+        }
+
         protected override Expression VisitRowValue(RowValueExpression rowValueExpression)
         {
             var parentOptimize = _optimize;
